@@ -1,17 +1,30 @@
 package com.eu.habbo.habbohotel.mentions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
+import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomChatType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboManager;
+import com.eu.habbo.messages.outgoing.mentions.MentionReceivedComposer;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MentionManager {
 
@@ -43,6 +56,9 @@ public class MentionManager {
     public static final String PERMISSION_EVERYONE = "acc_mention_everyone";
     public static final String PERMISSION_FRIENDS = "acc_mention_friends";
 
+    /** Someone who gets the mention: always a user id, and the connected habbo when they are online. */
+    private record Target(int userId, Habbo online) {}
+
     private Set<String> parseAliases(String configKey, String defaultValue) {
         Set<String> aliases = new HashSet<>();
         String raw = Emulator.getConfig().getValue(configKey, defaultValue);
@@ -67,17 +83,6 @@ public class MentionManager {
         return parseAliases("mentions.everyone.aliases", "all,everyone,tutti");
     }
 
-    private BroadcastScope classifyAlias(String alias,
-                                         Set<String> everyone,
-                                         Set<String> friends,
-                                         Set<String> room) {
-        if (alias.isEmpty()) return BroadcastScope.NONE;
-        if (everyone.contains(alias)) return BroadcastScope.EVERYONE;
-        if (friends.contains(alias)) return BroadcastScope.FRIENDS;
-        if (room.contains(alias)) return BroadcastScope.ROOM;
-        return BroadcastScope.NONE;
-    }
-
     public void process(Habbo sender, Room room, String message, RoomChatType type) {
         try {
             if (!this.isEnabled()) {
@@ -100,36 +105,26 @@ public class MentionManager {
                 return;
             }
 
-            Set<String> roomAliases = this.roomAliases();
-            Set<String> friendsAliases = this.friendsAliases();
-            Set<String> everyoneAliases = this.everyoneAliases();
+            MentionTokens.Parsed parsed =
+                    MentionTokens.parse(message, this.everyoneAliases(), this.friendsAliases(), this.roomAliases());
+            BroadcastScope broadcastScope = parsed.scope();
+            LinkedHashSet<String> directTokens = parsed.directTokens();
 
-            BroadcastScope broadcastScope = BroadcastScope.NONE;
-            LinkedHashSet<String> directTokens = new LinkedHashSet<>();
-
-            for (String token : message.split("\\s+")) {
-                if (token.length() < 2 || token.charAt(0) != '@') {
-                    continue;
-                }
-
-                String raw = token.substring(1);
-                String aliasCandidate = trimTrailingPunctuation(raw).toLowerCase();
-
-                BroadcastScope scope = this.classifyAlias(aliasCandidate, everyoneAliases, friendsAliases, roomAliases);
-
-                if (scope != BroadcastScope.NONE) {
-                    if (scope.ordinal() > broadcastScope.ordinal()) {
-                        broadcastScope = scope;
-                    }
-                } else if (!raw.isEmpty()) {
-                    directTokens.add(raw);
-                }
-            }
-
+            boolean denied = false;
             if (broadcastScope == BroadcastScope.EVERYONE && !sender.hasPermission(PERMISSION_EVERYONE)) {
                 broadcastScope = BroadcastScope.NONE;
+                denied = true;
             } else if (broadcastScope == BroadcastScope.FRIENDS && !sender.hasPermission(PERMISSION_FRIENDS)) {
                 broadcastScope = BroadcastScope.NONE;
+                denied = true;
+            }
+
+            if (denied) {
+                // The line went out, the broadcast did not: say so instead of dropping it silently.
+                sender.whisperLocalizedOrDefault(
+                        "mentions.permission.denied",
+                        "You are not allowed to mention everyone or all your friends.",
+                        RoomChatMessageBubbles.ALERT);
             }
 
             if (broadcastScope == BroadcastScope.NONE && directTokens.isEmpty()) {
@@ -146,9 +141,8 @@ public class MentionManager {
 
             int maxTargets = Emulator.getConfig().getInt("mentions.max.targets", 50);
             if (maxTargets <= 0) maxTargets = 1;
-            int maxDirectTokens = Math.min(directTokens.size(), maxTargets);
 
-            List<Habbo> targets = new ArrayList<>();
+            List<Target> targets = new ArrayList<>();
             Set<Integer> seen = new HashSet<>();
 
             switch (broadcastScope) {
@@ -159,27 +153,11 @@ public class MentionManager {
                     this.collectFriendsTargets(sender, senderId, targets, seen, maxTargets);
                     break;
                 case ROOM:
-                    this.collectRoomTargets(room, senderId, targets, seen, maxTargets, true);
+                    this.collectRoomTargets(room, senderId, targets, seen, maxTargets);
                     break;
                 case NONE:
                 default:
-                    int processed = 0;
-                    for (String token : directTokens) {
-                        if (processed++ >= maxDirectTokens) break;
-                        Habbo habbo = this.resolveHabbo(room, token);
-                        if (habbo == null || habbo.getHabboInfo().getId() == senderId) {
-                            continue;
-                        }
-                        if (!acceptsMention(habbo, false)) {
-                            continue;
-                        }
-                        if (seen.add(habbo.getHabboInfo().getId())) {
-                            targets.add(habbo);
-                        }
-                        if (targets.size() >= maxTargets) {
-                            break;
-                        }
-                    }
+                    this.collectDirectTargets(room, senderId, directTokens, targets, seen, maxTargets);
                     break;
             }
 
@@ -191,29 +169,74 @@ public class MentionManager {
             if (broadcastScope != BroadcastScope.NONE) this.roomBroadcastCooldowns.put(senderId, now);
             this.pruneCooldownsIfDue(now);
 
-            int mentionType = (broadcastScope != BroadcastScope.NONE) ? HabboMention.TYPE_ROOM : HabboMention.TYPE_DIRECT;
+            int mentionType =
+                    (broadcastScope != BroadcastScope.NONE) ? HabboMention.TYPE_ROOM : HabboMention.TYPE_DIRECT;
             int timestamp = Emulator.getIntUnixTimestamp();
             String roomName = truncate(room.getName(), ROOM_NAME_MAX_LENGTH);
             String storedMessage = truncate(message, MESSAGE_MAX_LENGTH);
 
-            for (Habbo target : targets) {
-                this.store(target, sender, room, storedMessage, mentionType, timestamp, roomName);
-            }
+            this.storeAll(targets, sender, room, storedMessage, mentionType, timestamp, roomName);
         } catch (Exception e) {
             LOGGER.error("Failed to process mentions.", e);
         }
     }
 
-    private void collectRoomTargets(Room room, int senderId, List<Habbo> targets, Set<Integer> seen, int maxTargets, boolean isBroadcast) {
+    /** Names are looked up among the people online first, then among everyone who could still read it later. */
+    private void collectDirectTargets(
+            Room room,
+            int senderId,
+            Set<String> directTokens,
+            List<Target> targets,
+            Set<Integer> seen,
+            int maxTargets) {
+        int maxDirectTokens = Math.min(directTokens.size(), maxTargets);
+        List<String> unresolved = new ArrayList<>();
+        int processed = 0;
+
+        for (String token : directTokens) {
+            if (processed++ >= maxDirectTokens) break;
+
+            if (this.isBotOrPetName(room, token)
+                    || this.isBotOrPetName(room, MentionTokens.trimTrailingPunctuation(token))) {
+                continue;
+            }
+
+            Habbo habbo = this.resolveOnline(room, token);
+            if (habbo == null) {
+                unresolved.add(token);
+                continue;
+            }
+
+            if (habbo.getHabboInfo().getId() == senderId || !acceptsMention(habbo, false, senderId)) {
+                continue;
+            }
+
+            if (seen.add(habbo.getHabboInfo().getId())) {
+                targets.add(new Target(habbo.getHabboInfo().getId(), habbo));
+            }
+
+            if (targets.size() >= maxTargets) {
+                return;
+            }
+        }
+
+        if (!unresolved.isEmpty() && targets.size() < maxTargets) {
+            this.collectOfflineTargets(unresolved, senderId, targets, seen, maxTargets);
+        }
+    }
+
+    private void collectRoomTargets(Room room, int senderId, List<Target> targets, Set<Integer> seen, int maxTargets) {
         for (Habbo habbo : room.getHabbos()) {
             if (habbo == null || habbo.getHabboInfo().getId() == senderId) continue;
-            if (!acceptsMention(habbo, isBroadcast)) continue;
-            if (seen.add(habbo.getHabboInfo().getId())) targets.add(habbo);
+            if (!acceptsMention(habbo, true, senderId)) continue;
+            if (seen.add(habbo.getHabboInfo().getId()))
+                targets.add(new Target(habbo.getHabboInfo().getId(), habbo));
             if (targets.size() >= maxTargets) break;
         }
     }
 
-    private void collectFriendsTargets(Habbo sender, int senderId, List<Habbo> targets, Set<Integer> seen, int maxTargets) {
+    private void collectFriendsTargets(
+            Habbo sender, int senderId, List<Target> targets, Set<Integer> seen, int maxTargets) {
         if (sender.getMessenger() == null) return;
         HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
         for (MessengerBuddy buddy : sender.getMessenger().getFriends().values()) {
@@ -222,63 +245,126 @@ public class MentionManager {
             if (buddyId == senderId) continue;
             Habbo online = habboManager.getHabbo(buddyId);
             if (online == null) continue;
-            if (!acceptsMention(online, true)) continue;
-            if (seen.add(buddyId)) targets.add(online);
+            if (!acceptsMention(online, true, senderId)) continue;
+            if (seen.add(buddyId)) targets.add(new Target(buddyId, online));
             if (targets.size() >= maxTargets) break;
         }
     }
 
-    private void collectEveryoneTargets(int senderId, List<Habbo> targets, Set<Integer> seen, int maxTargets) {
-        for (Habbo habbo : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values()) {
+    private void collectEveryoneTargets(int senderId, List<Target> targets, Set<Integer> seen, int maxTargets) {
+        for (Habbo habbo : Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .values()) {
             if (habbo == null || habbo.getHabboInfo().getId() == senderId) continue;
-            if (!acceptsMention(habbo, true)) continue;
-            if (seen.add(habbo.getHabboInfo().getId())) targets.add(habbo);
+            if (!acceptsMention(habbo, true, senderId)) continue;
+            if (seen.add(habbo.getHabboInfo().getId()))
+                targets.add(new Target(habbo.getHabboInfo().getId(), habbo));
             if (targets.size() >= maxTargets) break;
         }
     }
 
-    private boolean acceptsMention(Habbo recipient, boolean isBroadcast) {
+    /**
+     * Names nobody online answers to: the mention is kept for the next login, unless the user
+     * switched mentions off or ignores the sender. One query for all of them.
+     */
+    private void collectOfflineTargets(
+            List<String> tokens, int senderId, List<Target> targets, Set<Integer> seen, int maxTargets) {
+        Set<String> names = new LinkedHashSet<>();
+        for (String token : tokens) {
+            names.add(token);
+            String trimmed = MentionTokens.trimTrailingPunctuation(token);
+            if (!trimmed.isEmpty()) {
+                names.add(trimmed);
+            }
+        }
+
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < names.size(); i++) {
+            placeholders.append(i == 0 ? "?" : ", ?");
+        }
+
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT users.id FROM users LEFT JOIN users_settings ON users_settings.user_id = users.id"
+                                + " WHERE users.username IN (" + placeholders + ") AND users.id <> ?"
+                                + " AND COALESCE(users_settings.mentions_enabled, '1') = '1'"
+                                + " AND NOT EXISTS (SELECT 1 FROM users_ignored WHERE users_ignored.user_id = users.id"
+                                + " AND users_ignored.target_id = ?)")) {
+            int index = 1;
+            for (String name : names) {
+                statement.setString(index++, name);
+            }
+            statement.setInt(index++, senderId);
+            statement.setInt(index, senderId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next() && targets.size() < maxTargets) {
+                    int userId = set.getInt(1);
+                    if (seen.add(userId)) {
+                        targets.add(new Target(userId, null));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Failed to resolve offline mention targets.", e);
+        }
+    }
+
+    private boolean acceptsMention(Habbo recipient, boolean isBroadcast, int senderId) {
         if (recipient == null) return false;
         if (recipient.getClient() == null) return false;
         if (recipient.getHabboStats() == null) return false;
         if (!recipient.getHabboStats().mentionsEnabled()) return false;
         if (isBroadcast && !recipient.getHabboStats().massMentionsEnabled()) return false;
-        return true;
+        return !recipient.getHabboStats().userIgnored(senderId);
     }
 
-    private void store(Habbo target, Habbo sender, Room room, String message, int mentionType, int timestamp, String roomName) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO habbo_mentions (target_user_id, sender_user_id, sender_username, room_id, room_name, message, mention_type, timestamp, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)",
-                     Statement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, target.getHabboInfo().getId());
-            statement.setInt(2, sender.getHabboInfo().getId());
-            statement.setString(3, sender.getHabboInfo().getUsername());
-            statement.setInt(4, room.getId());
-            statement.setString(5, roomName);
-            statement.setString(6, message);
-            statement.setInt(7, mentionType);
-            statement.setInt(8, timestamp);
-            statement.executeUpdate();
+    /** One connection for the whole fan-out; the people online are told as soon as their row exists. */
+    private void storeAll(
+            List<Target> targets,
+            Habbo sender,
+            Room room,
+            String message,
+            int mentionType,
+            int timestamp,
+            String roomName) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO habbo_mentions (target_user_id, sender_user_id, sender_username, room_id, room_name, message, mention_type, timestamp, `read`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)",
+                        Statement.RETURN_GENERATED_KEYS)) {
+            for (Target target : targets) {
+                try {
+                    statement.setInt(1, target.userId());
+                    statement.setInt(2, sender.getHabboInfo().getId());
+                    statement.setString(3, sender.getHabboInfo().getUsername());
+                    statement.setInt(4, room.getId());
+                    statement.setString(5, roomName);
+                    statement.setString(6, message);
+                    statement.setInt(7, mentionType);
+                    statement.setInt(8, timestamp);
+                    statement.executeUpdate();
 
-            int generatedId = 0;
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) {
-                    generatedId = keys.getInt(1);
+                    int generatedId = 0;
+                    try (ResultSet keys = statement.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            generatedId = keys.getInt(1);
+                        }
+                    }
+
+                    if (generatedId > 0
+                            && target.online() != null
+                            && target.online().getClient() != null) {
+                        HabboMention mention = new HabboMention(
+                                target.userId(), generatedId, sender, room, roomName, message, mentionType, timestamp);
+                        target.online().getClient().sendResponse(new MentionReceivedComposer(mention));
+                    }
+                } catch (SQLException e) {
+                    LOGGER.error("Failed to store mention.", e);
                 }
             }
-
-            if (generatedId <= 0) {
-                return;
-            }
-
-            HabboMention mention = new HabboMention(target.getHabboInfo().getId(), generatedId, sender, room, roomName, message, mentionType, timestamp);
-
-            if (target.getClient() != null) {
-                target.getClient().sendResponse(new com.eu.habbo.messages.outgoing.mentions.MentionReceivedComposer(mention));
-            }
         } catch (SQLException e) {
-            LOGGER.error("Failed to store mention.", e);
+            LOGGER.error("Failed to store mentions.", e);
         }
     }
 
@@ -286,9 +372,9 @@ public class MentionManager {
         List<HabboMention> mentions = new ArrayList<>();
         if (limit <= 0) limit = 50;
         if (limit > 200) limit = 200;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT habbo_mentions.*, users.look AS sender_figure FROM habbo_mentions LEFT JOIN users ON users.id = habbo_mentions.sender_user_id WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT habbo_mentions.*, users.look AS sender_figure FROM habbo_mentions LEFT JOIN users ON users.id = habbo_mentions.sender_user_id WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
             statement.setInt(1, userId);
             statement.setInt(2, limit);
             try (ResultSet set = statement.executeQuery()) {
@@ -309,8 +395,8 @@ public class MentionManager {
         String query = mode == 1
                 ? "UPDATE habbo_mentions SET `read` = 1 WHERE target_user_id = ? AND id = ? AND `read` = 0"
                 : "UPDATE habbo_mentions SET `read` = 1 WHERE target_user_id = ? AND `read` = 0";
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, userId);
             if (mode == 1) {
                 statement.setInt(2, mentionId);
@@ -323,9 +409,9 @@ public class MentionManager {
 
     public void delete(int userId, int mentionId) {
         if (mentionId <= 0) return;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "DELETE FROM habbo_mentions WHERE target_user_id = ? AND id = ?")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("DELETE FROM habbo_mentions WHERE target_user_id = ? AND id = ?")) {
             statement.setInt(1, userId);
             statement.setInt(2, mentionId);
             statement.executeUpdate();
@@ -339,6 +425,11 @@ public class MentionManager {
         return tryAcquire(this.requestListCooldowns, userId, cooldownMs);
     }
 
+    /**
+     * Kept for plugins built against earlier releases: the packet handlers no longer use it,
+     * because mark-read must always apply what the client already showed.
+     */
+    @Deprecated
     public boolean tryAcquireMarkRead(int userId, int mode) {
         long cooldownMs;
         ConcurrentHashMap<Integer, Long> bucket;
@@ -352,6 +443,8 @@ public class MentionManager {
         return tryAcquire(bucket, userId, cooldownMs);
     }
 
+    /** Kept for plugins built against earlier releases; the delete handler no longer uses it. */
+    @Deprecated
     public boolean tryAcquireDelete(int userId) {
         long cooldownMs = Emulator.getConfig().getInt("mentions.delete.cooldown.ms", 500);
         return tryAcquire(this.deleteCooldowns, userId, cooldownMs);
@@ -398,14 +491,8 @@ public class MentionManager {
         }
     }
 
-    private static final String TRAILING_PUNCTUATION = ".,!?;:)]}\"'";
-
-    private static String trimTrailingPunctuation(String value) {
-        int end = value.length();
-        while (end > 0 && TRAILING_PUNCTUATION.indexOf(value.charAt(end - 1)) >= 0) {
-            end--;
-        }
-        return value.substring(0, end);
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
     }
 
     private static String truncate(String value, int max) {
@@ -417,11 +504,11 @@ public class MentionManager {
     private boolean isBotOrPetName(Room room, String token) {
         if (room == null || token == null || token.isEmpty()) return false;
 
-        List<com.eu.habbo.habbohotel.bots.Bot> bots = room.getBots(token);
+        List<Bot> bots = room.getBots(token);
         if (bots != null && !bots.isEmpty()) return true;
 
         if (room.getUnitManager() != null && room.getUnitManager().getPets() != null) {
-            for (com.eu.habbo.habbohotel.pets.Pet pet : room.getUnitManager().getPets()) {
+            for (Pet pet : room.getUnitManager().getPets()) {
                 if (pet != null && pet.getName() != null && pet.getName().equalsIgnoreCase(token)) {
                     return true;
                 }
@@ -431,15 +518,8 @@ public class MentionManager {
         return false;
     }
 
-    private Habbo resolveHabbo(Room room, String rawToken) {
-        if (isBotOrPetName(room, rawToken)) {
-            return null;
-        }
-        String trimmedForBotCheck = trimTrailingPunctuation(rawToken);
-        if (!trimmedForBotCheck.equals(rawToken) && isBotOrPetName(room, trimmedForBotCheck)) {
-            return null;
-        }
-
+    /** The connected habbo a name belongs to, in the room first and anywhere in the hotel after. */
+    private Habbo resolveOnline(Room room, String rawToken) {
         Habbo habbo = room.getHabbo(rawToken);
         if (habbo != null) {
             return habbo;
@@ -450,7 +530,7 @@ public class MentionManager {
         if (habbo != null) {
             return habbo;
         }
-        String trimmed = trimTrailingPunctuation(rawToken);
+        String trimmed = MentionTokens.trimTrailingPunctuation(rawToken);
         if (!trimmed.isEmpty() && !trimmed.equals(rawToken)) {
             habbo = room.getHabbo(trimmed);
             if (habbo != null) {

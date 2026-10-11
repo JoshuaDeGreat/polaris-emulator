@@ -32,6 +32,9 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
     private final Habbo habbo;
     public int roomId;
     public boolean isCommand = false;
+    /** Set by the room chat once the line has been sent to the room; a refused line stays false. */
+    public boolean delivered = false;
+
     public boolean filtered = false;
     private int roomUnitId;
     private String message;

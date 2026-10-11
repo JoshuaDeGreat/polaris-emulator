@@ -430,6 +430,7 @@ public class RoomChatManager {
                         .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
                                 roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
             } else {
+                roomChatMessage.delivered = true;
                 this.handleTalk(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
             }
         } else if (chatType == RoomChatType.SHOUT) {
@@ -438,6 +439,7 @@ public class RoomChatManager {
                         .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
                                 roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
             } else {
+                roomChatMessage.delivered = true;
                 this.handleShout(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
             }
         }

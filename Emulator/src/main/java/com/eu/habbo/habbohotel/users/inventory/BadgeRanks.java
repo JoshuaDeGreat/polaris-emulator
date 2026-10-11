@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,15 +28,15 @@ public final class BadgeRanks {
     static final long CACHE_TTL_MS = 60_000L;
     public static final int UNKNOWN = -1;
 
-    private static volatile Map<Integer, Integer> ranks = Collections.emptyMap();
-    private static volatile long expiresAt = 0L;
+    private static final AtomicReference<Map<Integer, Integer>> RANKS = new AtomicReference<>(Collections.emptyMap());
+    private static final AtomicLong EXPIRES_AT = new AtomicLong();
     private static final AtomicBoolean LOADING = new AtomicBoolean(false);
 
     private BadgeRanks() {}
 
     public static int rankOf(int userId) {
         refreshIfStale();
-        return ranks.getOrDefault(userId, UNKNOWN);
+        return RANKS.get().getOrDefault(userId, UNKNOWN);
     }
 
     /** Ranks from (user id, badge count) rows, in leaderboard order. */
@@ -51,7 +53,7 @@ public final class BadgeRanks {
     }
 
     private static void refreshIfStale() {
-        if (expiresAt > System.currentTimeMillis() || !LOADING.compareAndSet(false, true)) {
+        if (EXPIRES_AT.get() > System.currentTimeMillis() || !LOADING.compareAndSet(false, true)) {
             return;
         }
 
@@ -59,16 +61,16 @@ public final class BadgeRanks {
             try {
                 List<int[]> totals = load();
                 if (totals != null) {
-                    ranks = rank(totals);
+                    RANKS.set(rank(totals));
                 }
             } finally {
-                expiresAt = System.currentTimeMillis() + CACHE_TTL_MS;
+                EXPIRES_AT.set(System.currentTimeMillis() + CACHE_TTL_MS);
                 LOADING.set(false);
             }
         };
 
         if (Emulator.getThreading() == null || Emulator.getThreading().run(load) == null) {
-            expiresAt = System.currentTimeMillis() + CACHE_TTL_MS;
+            EXPIRES_AT.set(System.currentTimeMillis() + CACHE_TTL_MS);
             LOADING.set(false);
         }
     }

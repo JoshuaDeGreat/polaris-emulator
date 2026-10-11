@@ -15,35 +15,15 @@ public class ModToolPickTicketEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
-            this.packet.readInt();
-            int ticketId = this.packet.readInt();
+            // The window picks several issues at once: the count comes first, then the ids.
+            int count = this.packet.readInt();
 
-            if (!ModToolTicketGuard.isPositiveId(ticketId)) {
-                this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
+            if (!ModToolTicketGuard.isValidReleaseBatch(count)) {
                 return;
             }
 
-            ModToolIssue issue =
-                    Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
-
-            if (issue != null) {
-                if (!ModToolTicketGuard.canPick(issue)) {
-                    // Somebody else got there first: the window says who, instead of a bare alert.
-                    this.client.sendResponse(new ModToolIssueInfoComposer(issue));
-                    this.client.sendResponse(new ModToolIssuePickFailedComposer(issue));
-
-                    return;
-                }
-
-                // this.client.sendResponse(new ModToolIssueInfoComposer(issue));
-                Emulator.getGameEnvironment().getModToolManager().pickTicket(issue, this.client.getHabbo());
-
-                // IssueHandler.initialize() asks for the sanction preview as soon as the ticket
-                // window opens, so send it unprompted instead of leaving the field blank.
-                this.client.sendResponse(
-                        ModToolSanctionPreview.forTopic(issue.id, -1, issue.category, issue.reportedId));
-            } else {
-                this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
+            while (count-- > 0) {
+                this.pick(this.packet.readInt());
             }
         } else {
             ScripterManager.scripterDetected(
@@ -54,5 +34,33 @@ public class ModToolPickTicketEvent extends MessageHandler {
                                     "%username%",
                                     this.client.getHabbo().getHabboInfo().getUsername()));
         }
+    }
+
+    private void pick(int ticketId) {
+        if (!ModToolTicketGuard.isPositiveId(ticketId)) {
+            this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
+            return;
+        }
+
+        ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
+
+        if (issue == null) {
+            this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
+            return;
+        }
+
+        if (!ModToolTicketGuard.canPick(issue)) {
+            // Somebody else got there first: the window says who, instead of a bare alert.
+            this.client.sendResponse(new ModToolIssueInfoComposer(issue));
+            this.client.sendResponse(new ModToolIssuePickFailedComposer(issue));
+
+            return;
+        }
+
+        Emulator.getGameEnvironment().getModToolManager().pickTicket(issue, this.client.getHabbo());
+
+        // IssueHandler.initialize() asks for the sanction preview as soon as the ticket
+        // window opens, so send it unprompted instead of leaving the field blank.
+        this.client.sendResponse(ModToolSanctionPreview.forTopic(issue.id, -1, issue.category, issue.reportedId));
     }
 }

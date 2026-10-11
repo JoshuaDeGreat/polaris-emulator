@@ -1067,6 +1067,8 @@ U|com/eu/habbo/habbohotel/users/custombadge/CustomBadgeManager.java|CALL|getData
 U|com/eu/habbo/habbohotel/users/custombadge/CustomBadgeManager.java|CALL|getGameServer|5
 U|com/eu/habbo/habbohotel/users/infostand/InfostandBackgroundManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/inventory/BadgeOwnerCounts.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/users/inventory/BadgeRanks.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/users/inventory/BadgeRanks.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/users/inventory/BadgesComponent.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/users/inventory/BadgesComponent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/users/inventory/BadgesComponent.java|CALL|getThreading|1

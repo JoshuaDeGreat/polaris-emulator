@@ -35,6 +35,9 @@ public class MentionManager {
     private final ConcurrentHashMap<Integer, Long> cooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> roomBroadcastCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> requestListCooldowns = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Long> markReadCooldowns = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Long> markAllCooldowns = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Long> deleteCooldowns = new ConcurrentHashMap<>();
 
     private volatile long lastPrune = System.currentTimeMillis();
     private static final long PRUNE_INTERVAL_MS = 5 * 60_000L;
@@ -422,6 +425,31 @@ public class MentionManager {
         return tryAcquire(this.requestListCooldowns, userId, cooldownMs);
     }
 
+    /**
+     * Kept for plugins built against earlier releases: the packet handlers no longer use it,
+     * because mark-read must always apply what the client already showed.
+     */
+    @Deprecated
+    public boolean tryAcquireMarkRead(int userId, int mode) {
+        long cooldownMs;
+        ConcurrentHashMap<Integer, Long> bucket;
+        if (mode == 1) {
+            cooldownMs = Emulator.getConfig().getInt("mentions.markread.cooldown.ms", 500);
+            bucket = this.markReadCooldowns;
+        } else {
+            cooldownMs = Emulator.getConfig().getInt("mentions.markall.cooldown.ms", 5000);
+            bucket = this.markAllCooldowns;
+        }
+        return tryAcquire(bucket, userId, cooldownMs);
+    }
+
+    /** Kept for plugins built against earlier releases; the delete handler no longer uses it. */
+    @Deprecated
+    public boolean tryAcquireDelete(int userId) {
+        long cooldownMs = Emulator.getConfig().getInt("mentions.delete.cooldown.ms", 500);
+        return tryAcquire(this.deleteCooldowns, userId, cooldownMs);
+    }
+
     private boolean tryAcquire(ConcurrentHashMap<Integer, Long> bucket, int userId, long cooldownMs) {
         long now = System.currentTimeMillis();
         Long last = bucket.get(userId);
@@ -440,10 +468,16 @@ public class MentionManager {
         long mentionWindow = Emulator.getConfig().getInt("mentions.cooldown.ms", 3000);
         long roomWindow = Emulator.getConfig().getInt("mentions.room.cooldown.ms", 15000);
         long requestWindow = Emulator.getConfig().getInt("mentions.request.cooldown.ms", 2000);
+        long markReadWindow = Emulator.getConfig().getInt("mentions.markread.cooldown.ms", 500);
+        long markAllWindow = Emulator.getConfig().getInt("mentions.markall.cooldown.ms", 5000);
+        long deleteWindow = Emulator.getConfig().getInt("mentions.delete.cooldown.ms", 500);
 
         prune(this.cooldowns, now, mentionWindow);
         prune(this.roomBroadcastCooldowns, now, roomWindow);
         prune(this.requestListCooldowns, now, requestWindow);
+        prune(this.markReadCooldowns, now, markReadWindow);
+        prune(this.markAllCooldowns, now, markAllWindow);
+        prune(this.deleteCooldowns, now, deleteWindow);
     }
 
     private static void prune(ConcurrentHashMap<Integer, Long> bucket, long now, long windowMs) {

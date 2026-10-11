@@ -40,23 +40,20 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
                 return;
             }
 
-            ModToolIssue issue =
-                    environment.getModToolManager().getTicket(issueId);
+            ModToolIssue issue = environment.getModToolManager().getTicket(issueId);
 
             if (issue == null) {
                 return;
             }
 
             if (issue.modId == this.client.getHabbo().getHabboInfo().getId()) {
-                CfhTopic modToolCategory =
-                        environment.getModToolManager().getCfhTopic(category);
+                CfhTopic modToolCategory = environment.getModToolManager().getCfhTopic(category);
 
                 if (modToolCategory != null) {
                     ModToolPreset defaultSanction = modToolCategory.defaultSanction;
 
                     if (defaultSanction != null) {
-                        Habbo target =
-                                environment.getHabboManager().getHabbo(issue.reportedId);
+                        Habbo target = environment.getHabboManager().getHabbo(issue.reportedId);
 
                         if (!ModToolManager.canModerateTarget(this.client.getHabbo(), issue.reportedId)) {
                             return;

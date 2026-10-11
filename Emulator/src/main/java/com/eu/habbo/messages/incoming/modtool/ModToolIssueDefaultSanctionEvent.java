@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.modtool;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.modtool.CfhTopic;
 import com.eu.habbo.habbohotel.modtool.ModToolBanType;
 import com.eu.habbo.habbohotel.modtool.ModToolIssue;
@@ -19,6 +20,7 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
+            GameEnvironment environment = Emulator.getGameEnvironment();
             int issueId = this.packet.readInt();
             // The window sends the ids of the issues it groups with this one before the topic;
             // they are skipped here, only the issue that was picked is closed.
@@ -39,7 +41,7 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
             }
 
             ModToolIssue issue =
-                    Emulator.getGameEnvironment().getModToolManager().getTicket(issueId);
+                    environment.getModToolManager().getTicket(issueId);
 
             if (issue == null) {
                 return;
@@ -47,21 +49,21 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
 
             if (issue.modId == this.client.getHabbo().getHabboInfo().getId()) {
                 CfhTopic modToolCategory =
-                        Emulator.getGameEnvironment().getModToolManager().getCfhTopic(category);
+                        environment.getModToolManager().getCfhTopic(category);
 
                 if (modToolCategory != null) {
                     ModToolPreset defaultSanction = modToolCategory.defaultSanction;
 
                     if (defaultSanction != null) {
                         Habbo target =
-                                Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.reportedId);
+                                environment.getHabboManager().getHabbo(issue.reportedId);
 
                         if (!ModToolManager.canModerateTarget(this.client.getHabbo(), issue.reportedId)) {
                             return;
                         }
 
                         if (defaultSanction.banLength > 0) {
-                            Emulator.getGameEnvironment()
+                            environment
                                     .getModToolManager()
                                     .ban(
                                             issue.reportedId,
@@ -80,8 +82,8 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
                 }
 
                 // Closing it as handled also tells the reporter and stores the decision.
-                Habbo sender = Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.senderId);
-                Emulator.getGameEnvironment().getModToolManager().closeTicketAsHandled(issue, sender);
+                Habbo sender = environment.getHabboManager().getHabbo(issue.senderId);
+                environment.getModToolManager().closeTicketAsHandled(issue, sender);
             } else {
                 this.client.getHabbo().alert(Emulator.getTexts().getValue("supporttools.not_ticket_owner"));
             }

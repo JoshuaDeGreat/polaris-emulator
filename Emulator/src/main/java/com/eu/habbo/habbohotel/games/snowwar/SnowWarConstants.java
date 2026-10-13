@@ -104,6 +104,10 @@ public final class SnowWarConstants {
     public static final int ERROR_NOT_ENOUGH_PLAYERS = 3;
     public static final int ERROR_NO_TICKETS = 4;
     public static final int ERROR_INTERNAL = 5;
+    /** Sent to a player who has done nothing for a while: act now or be removed. */
+    public static final int ERROR_IDLE_WARNING = 6;
+    /** Sent to a player after they were removed from a match for being idle. */
+    public static final int ERROR_IDLE_REMOVED = 7;
 
     private SnowWarConstants() {}
 }

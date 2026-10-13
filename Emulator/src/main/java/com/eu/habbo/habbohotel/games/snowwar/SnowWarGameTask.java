@@ -156,6 +156,11 @@ public class SnowWarGameTask implements Runnable {
                 return;
             }
 
+            this.game.checkIdlePlayers(System.currentTimeMillis());
+            if (this.game.getState() != SnowWarGameState.RUNNING) {
+                return;
+            }
+
             // Queue movement events for players who are walking.
             for (SnowWarGamePlayer player : this.game.getActivePlayers()) {
                 SnowWarAttributes attr = player.getAttributes();

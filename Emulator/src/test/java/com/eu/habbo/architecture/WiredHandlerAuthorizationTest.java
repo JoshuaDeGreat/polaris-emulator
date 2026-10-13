@@ -42,6 +42,10 @@ class WiredHandlerAuthorizationTest {
      */
     private static final Set<String> EXEMPT = Set.of(
             "WiredFeatureCapabilitiesEvent.java",
+            // Viewer packet, not a configuration change: every visitor sees the room's
+            // leaderboard panels, as in the official client. It reads only the published
+            // panels of the visitor's own room (currentRoom()) and writes nothing.
+            "WiredLeaderboardSubscribeEvent.java",
             // Resolves array targets after the inspection/update handlers check their gates.
             "WiredArrayCreatorToolsSupport.java",
             "WiredConditionSaveAdapter.java",

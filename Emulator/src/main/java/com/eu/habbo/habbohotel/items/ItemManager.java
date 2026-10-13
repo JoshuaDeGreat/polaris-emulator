@@ -342,6 +342,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterFu
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUser;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUsersByVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
@@ -367,6 +368,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariable
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxNumberDisplay;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxProgressBar;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxStatusBar;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
@@ -1182,6 +1184,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("totem_head", InteractionTotemHead.class));
         this.interactionsList.add(new ItemInteraction("totem_planet", InteractionTotemPlanet.class));
         this.interactionsList.add(new ItemInteraction("wf_room_linker", InteractionWiredRoomLinker.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_var_leaderboard", WiredExtraVariableLeaderboard.class));
+        this.interactionsList.add(new ItemInteraction("wf_label", WiredExtraLabel.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {

@@ -90,6 +90,30 @@ class WiredStackExecutorTest {
         assertEquals(List.of(), calls);
     }
 
+    @Test
+    void aSelfFeedingChainStopsAtItsStackBudgetAndTheNextChainStartsFresh() {
+        List<String> calls = new ArrayList<>();
+        Room room = room(94);
+        AtomicInteger runs = new AtomicInteger();
+        WiredStackExecutor[] executor = new WiredStackExecutor[1];
+        WiredStack[] stack = new WiredStack[1];
+        // Like a signal sent to its own antenna: every run starts the stack again.
+        IWiredEffect loop = context -> {
+            runs.incrementAndGet();
+            executor[0].executeDirect(stack[0], event(room), false);
+        };
+        stack[0] = new WiredStack(item(9_401), trigger(calls, false), List.of(), List.of(loop));
+        executor[0] = executor(calls, 4_000L);
+        executor[0].setMaxStacksPerChain(5);
+
+        assertTrue(executor[0].executeDirect(stack[0], event(room), false));
+        assertEquals(5, runs.get());
+
+        runs.set(0);
+        assertTrue(executor[0].executeDirect(stack[0], event(room), false));
+        assertEquals(5, runs.get(), "a new chain gets a new budget");
+    }
+
     private static WiredStackExecutor executor(List<String> calls, long now) {
         WiredConditionEvaluator conditionEvaluator = new WiredConditionEvaluator((room, format, arguments) -> {});
         WiredExecutionGuard executionGuard = new WiredExecutionGuard(

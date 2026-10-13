@@ -240,6 +240,32 @@ class RoomUserVariableRepository {
         }
     }
 
+    /** The figures of these users by id; at most a few hundred ids per call. */
+    Map<Integer, String> figures(Collection<Integer> userIds) throws SQLException {
+        Map<Integer, String> figures = new HashMap<>();
+        if (userIds.isEmpty()) {
+            return figures;
+        }
+        String placeholders = String.join(",", java.util.Collections.nCopies(userIds.size(), "?"));
+        try (Connection connection = dataSource.get().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT id, look FROM users WHERE id IN (" + placeholders + ")")) {
+            int index = 1;
+            for (Integer userId : userIds) {
+                statement.setInt(index++, userId);
+            }
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    String look = set.getString("look");
+                    if (look != null) {
+                        figures.put(set.getInt("id"), look);
+                    }
+                }
+            }
+        }
+        return figures;
+    }
+
     /** The id of the user with this name if they have a saved row in the room, else 0. */
     int participantIdByName(int roomId, String username) throws SQLException {
         try (Connection connection = dataSource.get().getConnection();

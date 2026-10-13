@@ -118,6 +118,36 @@ class RoomUserVariableStoreTest {
     }
 
     @Test
+    void figuresComeFromTheRoomOrTheUsersTable() {
+        this.database.looks.put(7, "hd-180-1");
+        this.database.looks.put(8, "hd-190-2");
+
+        Map<Integer, String> figures = this.store.figures(java.util.List.of(7, 8, 9, -3));
+        assertEquals("hd-180-1", figures.get(7));
+        assertEquals("hd-190-2", figures.get(8));
+        assertFalse(figures.containsKey(9), "unknown users are left out");
+        assertFalse(figures.containsKey(-3), "pets and bots are not users");
+    }
+
+    @Test
+    void savedRowWritesMoveTheChangeVersionAndReadsDoNot() {
+        this.database.save(ROOM, 7, POINTS, 5, 100, 200);
+        long before = this.manager.getChangeVersion();
+
+        this.store.get(7, POINTS);
+        this.store.page(POINTS, RoomUserVariableStore.Order.VALUE, true, 0, 10);
+        assertEquals(before, this.manager.getChangeVersion(), "reads change nothing");
+
+        assertEquals(Write.WRITTEN, this.store.update(7, POINTS, 6));
+        long afterUpdate = this.manager.getChangeVersion();
+        assertTrue(afterUpdate > before);
+        assertEquals(Write.NOT_HELD, this.store.update(8, POINTS, 6));
+        assertEquals(afterUpdate, this.manager.getChangeVersion(), "a write that found nothing changes nothing");
+        assertEquals(Write.WRITTEN, this.store.remove(7, POINTS));
+        assertTrue(this.manager.getChangeVersion() > afterUpdate);
+    }
+
+    @Test
     void usersInTheRoomStayLiveAndKeepTheirValuesWhenTheyLeave() {
         this.database.save(ROOM, 7, POINTS, 5, 100, 200);
         this.enter(7, "dave");

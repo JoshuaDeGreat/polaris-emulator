@@ -32,6 +32,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.label.WiredLabelSupport;
 import com.eu.habbo.messages.incoming.users.UserNuxEvent;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
 import com.eu.habbo.messages.outgoing.polls.PollStartComposer;
@@ -1025,6 +1026,8 @@ public class RoomManager {
         // AIR 13 WiredEnvironment (347): tells the client whether avatar clicks go through the
         // server and which achievements this room's wired can hand out.
         habbo.getClient().sendResponse(new WiredEnvironmentComposer(room).compose());
+        // AIR furniture labels (2237): the wf_label notes this player may see.
+        WiredLabelSupport.sendAll(room, habbo);
 
         if (!room.getCurrentPets().isEmpty()) {
             habbo.getClient()

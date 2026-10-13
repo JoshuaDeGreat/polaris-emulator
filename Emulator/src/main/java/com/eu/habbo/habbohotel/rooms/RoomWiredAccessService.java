@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
 import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.wired.label.WiredLabelSupport;
 import com.eu.habbo.messages.outgoing.wired.WiredRoomSettingsDataComposer;
 import java.sql.SQLException;
 import java.util.Map;
@@ -110,6 +111,8 @@ final class RoomWiredAccessService {
         for (Habbo habbo : this.room.getCurrentHabbos().values()) {
             if (habbo != null && habbo.getClient() != null) {
                 habbo.getClient().sendResponse(new WiredRoomSettingsDataComposer(this.room, habbo));
+                // Who may inspect wired decides who sees the inspectors-only labels.
+                WiredLabelSupport.sendAll(this.room, habbo);
             }
         }
     }

@@ -42,10 +42,12 @@ import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetTree;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredBlob;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFx;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -53,6 +55,8 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.label.WiredLabelSupport;
+import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxSupport;
 
@@ -81,6 +85,11 @@ final class RoomItemRegistry {
             // A variable fx box placed or loaded: the room's fx service starts telling players what to draw.
             if (item instanceof WiredExtraVariableFx) {
                 WiredVariableFxSupport.ensure(this.room);
+            }
+
+            // A leaderboard box placed or loaded: the room's leaderboard service starts sending panels.
+            if (item instanceof WiredExtraVariableLeaderboard) {
+                WiredLeaderboardSupport.ensure(this.room);
             }
 
             if (item instanceof InteractionWiredTrigger trigger) {
@@ -126,12 +135,21 @@ final class RoomItemRegistry {
             WiredManager.invalidateRoom(this.room);
         }
         this.room.onFurnitureTopologyChanged(item, true);
+
+        // A furniture label placed: the players who may see it get it straight away.
+        if (item instanceof WiredExtraLabel label) {
+            WiredLabelSupport.broadcastChanged(this.room, label);
+        }
     }
 
     void unregister(HabboItem item) {
         RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
         if (specialTypes == null) {
             return;
+        }
+
+        if (item instanceof WiredExtraLabel) {
+            WiredLabelSupport.broadcastRemoved(this.room, item.getId());
         }
 
         boolean cleanedSignalAntennaReferences =

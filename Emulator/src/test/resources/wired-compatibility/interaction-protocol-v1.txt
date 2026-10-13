@@ -400,6 +400,8 @@ INTERACTION 394 wf_act_reset_reward_track=WiredEffectResetRewardTrack
 INTERACTION 395 wf_xtra_text_output_global=WiredExtraTextOutputGlobal
 INTERACTION 396 wf_var_daily_task=WiredExtraDailyTask
 INTERACTION 397 wf_room_linker=InteractionWiredRoomLinker
+INTERACTION 398 wf_xtra_var_leaderboard=WiredExtraVariableLeaderboard
+INTERACTION 399 wf_label=WiredExtraLabel
 
 LAYOUT EFFECT 000 TOGGLE_STATE=0
 LAYOUT EFFECT 001 RESET_TIMERS=1

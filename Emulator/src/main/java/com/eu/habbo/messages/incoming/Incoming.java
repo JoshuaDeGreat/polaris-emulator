@@ -312,7 +312,8 @@ public class Incoming {
     public static final int SetHomeRoomEvent = 1740;
     public static final int RoomUserGiveHandItemEvent = 2941;
     public static final int RoomUserGiveHandItemPetEvent = 2768;
-    public static final int AmbassadorVisitCommandEvent = 2970;
+    public static final int AmbassadorVisitCommandEvent =
+            9400; // CUSTOM: official 2970 is now the furniture label settings save
     public static final int AmbassadorAlertCommandEvent = 2996;
     public static final int SaveUserVolumesEvent = 1367;
     public static final int SavePreferOldChatEvent = 1262;
@@ -517,6 +518,9 @@ public class Incoming {
     public static final int WiredRoomStateActionEvent = 3761;
     public static final int WiredRoomLogsPageEvent = 3882;
     public static final int WiredVariableHoldersPageEvent = 975;
+    public static final int WiredLeaderboardSubscribeEvent = 2833; // AIR (variable leaderboard)
+    public static final int WiredLabelSaveTextEvent = 2638; // AIR (furniture label text)
+    public static final int WiredLabelSaveSettingsEvent = 2970; // AIR (furniture label settings)
     public static final int WiredVariableHoldersRequestEvent = 2973;
     public static final int WiredVariableHashesEvent = 1497;
     public static final int WiredGenerateWebApiKeyEvent = 2819;

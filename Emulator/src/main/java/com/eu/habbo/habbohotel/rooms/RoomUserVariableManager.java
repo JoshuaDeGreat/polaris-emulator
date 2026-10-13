@@ -45,6 +45,8 @@ public class RoomUserVariableManager {
     private final Set<Integer> residents = ConcurrentHashMap.newKeySet();
     /** Bumped whenever stored rows of a whole variable are deleted, so a load that raced it reads again. */
     private final AtomicLong storedClears = new AtomicLong();
+    /** Bumped on every change to any holder's variables, live or saved; readers poll it to skip work. */
+    private final AtomicLong changeVersion = new AtomicLong();
 
     private final RoomUserVariableStore store;
 
@@ -930,7 +932,18 @@ public class RoomUserVariableManager {
                         this.room.getRoomVariableManager().createSnapshot()));
     }
 
+    /** Grows on every change to the room's user variables, saved rows of absent users included. */
+    public long getChangeVersion() {
+        return this.changeVersion.get();
+    }
+
+    /** A saved row changed without the live store noticing (a write for a user who is not in the room). */
+    void noteSavedChange() {
+        this.changeVersion.incrementAndGet();
+    }
+
     public void requestBroadcast() {
+        this.changeVersion.incrementAndGet();
         com.eu.habbo.threading.ThreadPooling threading = Emulator.getThreading();
         if (threading == null) {
             return;

@@ -12,12 +12,24 @@ public class SnowStormGameChatEvent extends MessageHandler {
             return;
         }
 
-        String message = this.packet.readString();
-
         int userId = this.client.getHabbo().getHabboInfo().getId();
         if (!SnowWarManager.getInstance().allowPacket(userId)) {
             return;
         }
+
+        // The message must be the whole payload: its length prefix has to
+        // match the bytes that follow (readString would silently clamp it).
+        int available = this.packet.bytesAvailable();
+        int declaredLength = available >= Short.BYTES
+                ? this.packet
+                        .getBuffer()
+                        .getUnsignedShort(this.packet.getBuffer().readerIndex())
+                : -1;
+        if (!SnowWarPacket.isWholeString(available, declaredLength, SnowWarPacket.MAX_CHAT_BYTES)) {
+            SnowWarPacket.reject(userId, "game chat", "length prefix does not match the payload");
+            return;
+        }
+        String message = this.packet.readString();
         SnowWarGame game = SnowWarManager.getInstance().getGameByUserId(userId);
 
         if (game == null) {

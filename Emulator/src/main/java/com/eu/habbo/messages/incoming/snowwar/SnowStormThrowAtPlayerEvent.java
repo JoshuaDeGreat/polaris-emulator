@@ -12,13 +12,21 @@ public class SnowStormThrowAtPlayerEvent extends MessageHandler {
             return;
         }
 
-        int targetObjectId = this.packet.readInt();
-        int trajectory = this.packet.readInt();
-        // AIR turn/subturn values may follow; the server-authoritative Polaris
-        // handler safely ignores them as trailing bytes.
-
         int userId = this.client.getHabbo().getHabboInfo().getId();
         if (!SnowWarManager.getInstance().allowPacket(userId)) {
+            return;
+        }
+
+        // targetObjectId, trajectory [, turn, subturn]
+        if (!SnowWarPacket.hasInts(this.packet.bytesAvailable(), 2)) {
+            SnowWarPacket.reject(userId, "throw at player", "unexpected payload length");
+            return;
+        }
+        int targetObjectId = this.packet.readInt();
+        int trajectory = this.packet.readInt();
+        if (targetObjectId <= 0 || !SnowWarPacket.isTrajectory(trajectory)) {
+            SnowWarPacket.reject(
+                    userId, "throw at player", "bad target " + targetObjectId + " or trajectory " + trajectory);
             return;
         }
         SnowWarGame game = SnowWarManager.getInstance().getGameByUserId(userId);

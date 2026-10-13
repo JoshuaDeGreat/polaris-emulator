@@ -200,6 +200,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterFurniByVa
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUser | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUsersByVariable | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel | EXTRA | configured=false | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics | EXTRA | configured=true | execute=false

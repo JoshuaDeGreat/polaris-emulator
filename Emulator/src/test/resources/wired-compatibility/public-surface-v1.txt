@@ -3816,6 +3816,28 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraF
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#DEFAULT_COLOR:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#MAX_TEXT_LENGTH:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#VISIBILITY_EVERYONE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#VISIBILITY_WIRED_INSPECTORS:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#getColor(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#getText(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#getVisibility(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#isAlwaysOpen(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#isVisibleTo(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#onClick(com.eu.habbo.habbohotel.gameclients.GameClient,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#onPickUp(-):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#onWalk(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#setSettings(int,int,boolean):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel#setText(java.lang.String):void throws -
+
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers#CODE:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers#MODE_DIRECTLY_ON_FURNI:int
@@ -7837,6 +7859,15 @@ FIELD public final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreT
 METHOD public static com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#valueOf(java.lang.String):com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType throws -
 METHOD public static com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#values(-):com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType[] throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.label.WiredLabelSupport extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#broadcastChanged(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#broadcastRemoved(com.eu.habbo.habbohotel.rooms.Room,int):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#labels(com.eu.habbo.habbohotel.rooms.Room):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel> throws -
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#republish(com.eu.habbo.habbohotel.rooms.Room):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#save(com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#sendAll(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.label.WiredLabelSupport#visibleTo(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel> throws -
+
 TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk extends java.lang.Record
 RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk index:int
 RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk totalCount:int
@@ -8308,6 +8339,16 @@ CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEv
 METHOD public com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent#getRatelimit(-):int throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent#handle(-):void throws java.lang.Exception
 
+TYPE public com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent extends com.eu.habbo.messages.incoming.MessageHandler
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent(-) throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent#getRatelimit(-):int throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent#handle(-):void throws java.lang.Exception
+
+TYPE public com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent extends com.eu.habbo.messages.incoming.MessageHandler
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent(-) throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent#getRatelimit(-):int throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent#handle(-):void throws java.lang.Exception
+
 TYPE public com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent#handle(-):void throws java.lang.Exception
@@ -8477,6 +8518,15 @@ METHOD protected com.eu.habbo.messages.outgoing.wired.WiredExtraDataComposer#com
 TYPE public com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer(int,java.lang.String,int,boolean,boolean) throws -
 METHOD protected com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
+
+TYPE public com.eu.habbo.messages.outgoing.wired.WiredLabelsComposer extends com.eu.habbo.messages.outgoing.MessageComposer
+FIELD public static final com.eu.habbo.messages.outgoing.wired.WiredLabelsComposer#TYPE_LABEL:int
+CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredLabelsComposer(java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel>) throws -
+METHOD protected com.eu.habbo.messages.outgoing.wired.WiredLabelsComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
+
+TYPE public com.eu.habbo.messages.outgoing.wired.WiredLabelsUpdateComposer extends com.eu.habbo.messages.outgoing.MessageComposer
+CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredLabelsUpdateComposer(java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel>,java.util.List<java.lang.Integer>) throws -
+METHOD protected com.eu.habbo.messages.outgoing.wired.WiredLabelsUpdateComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
 
 TYPE public com.eu.habbo.messages.outgoing.wired.WiredLeaderboardChunkComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredLeaderboardChunkComposer(int,int,java.lang.String,com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk) throws -

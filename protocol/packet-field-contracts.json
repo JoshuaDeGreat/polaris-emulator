@@ -5267,6 +5267,33 @@
       "fields": []
     },
     {
+      "name": "WIRED_LABEL_SAVE_TEXT",
+      "direction": "client_to_server",
+      "header": 2638,
+      "java": {
+        "symbol": "WiredLabelSaveTextEvent",
+        "className": "WiredLabelSaveTextEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLabelSaveTextEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LABEL_SAVE_TEXT",
+        "className": "WiredLabelSaveTextComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLabelSaveTextComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "furniId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "text"
+        }
+      ]
+    },
+    {
       "name": "PET_PLACE",
       "direction": "client_to_server",
       "header": 2647,
@@ -6099,6 +6126,43 @@
           "kind": "scalar",
           "type": "int",
           "name": "effectId"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_LABEL_SAVE_SETTINGS",
+      "direction": "client_to_server",
+      "header": 2970,
+      "java": {
+        "symbol": "WiredLabelSaveSettingsEvent",
+        "className": "WiredLabelSaveSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLabelSaveSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LABEL_SAVE_SETTINGS",
+        "className": "WiredLabelSaveSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLabelSaveSettingsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "furniId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "color"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "visibility"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "alwaysOpen"
         }
       ]
     },
@@ -21309,6 +21373,14 @@
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
+      "direction": "client_to_server",
+      "side": "typescript",
+      "header": 9401,
+      "symbol": "WELCOME_OPEN_GIFT",
+      "path": "packages/communication/src/messages/outgoing/room/furniture/OpenWelcomeGiftComposer.ts",
+      "reason": "Header is registered only by the Octane Renderer packet registry"
+    },
+    {
       "direction": "server_to_client",
       "side": "java",
       "header": 690,
@@ -21682,14 +21754,6 @@
       "header": 2596,
       "symbol": "CLIENT_PONG",
       "path": "packages/communication/src/messages/outgoing/handshake/PongMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2638,
-      "symbol": "WELCOME_OPEN_GIFT",
-      "path": "packages/communication/src/messages/outgoing/room/furniture/OpenWelcomeGiftComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -23263,22 +23327,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value chatEntries.length / 2 has no statically resolvable wire type"
     },
     {
-      "name": "VISIT_USER",
-      "direction": "client_to_server",
-      "header": 2970,
-      "java": {
-        "symbol": "AmbassadorVisitCommandEvent",
-        "className": "AmbassadorVisitCommandEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/ambassadors/AmbassadorVisitCommandEvent.java"
-      },
-      "typescript": {
-        "symbol": "VISIT_USER",
-        "className": "VisitUserComposer",
-        "path": "packages/communication/src/messages/outgoing/friendlist/VisitUserComposer.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
-    },
-    {
       "name": "GET_SONG_INFO",
       "direction": "client_to_server",
       "header": 3082,
@@ -23869,6 +23917,22 @@
         "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardCatalogReorderComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing value orderedIds.length has no statically resolvable wire type"
+    },
+    {
+      "name": "VISIT_USER",
+      "direction": "client_to_server",
+      "header": 9400,
+      "java": {
+        "symbol": "AmbassadorVisitCommandEvent",
+        "className": "AmbassadorVisitCommandEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/ambassadors/AmbassadorVisitCommandEvent.java"
+      },
+      "typescript": {
+        "symbol": "VISIT_USER",
+        "className": "VisitUserComposer",
+        "path": "packages/communication/src/messages/outgoing/friendlist/VisitUserComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
     },
     {
       "name": "HOTEL_VIEW_LANDING_SAVE",
@@ -24925,6 +24989,22 @@
         "path": "packages/communication/src/messages/parser/marketplace/MarketplaceItemStatsParser.ts"
       },
       "reason": "Java analyzer: Packet fields delegated to external serializer serializeItemInfo inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
+      "name": "WIRED_LABELS_UPDATE",
+      "direction": "server_to_client",
+      "header": 796,
+      "java": {
+        "symbol": "WiredLabelsUpdateComposer",
+        "className": "WiredLabelsUpdateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLabelsUpdateComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LABELS_UPDATE",
+        "className": "WiredLabelsUpdateParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLabelsUpdateParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "CATALOG_PAGE",
@@ -26269,6 +26349,22 @@
         "path": "packages/communication/src/messages/parser/catalog/GiftWrappingConfigurationParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
+      "name": "WIRED_LABELS",
+      "direction": "server_to_client",
+      "header": 2237,
+      "java": {
+        "symbol": "WiredLabelsComposer",
+        "className": "WiredLabelsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLabelsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LABELS",
+        "className": "WiredLabelsParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLabelsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "GROUP_BADGE_PARTS",

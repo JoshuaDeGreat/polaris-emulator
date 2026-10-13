@@ -552,6 +552,8 @@ import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent;
@@ -1349,6 +1351,8 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredRoomLogsPageEvent, WiredRoomLogsPageEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersPageEvent, WiredVariableHoldersPageEvent.class);
         this.registerHandler(Incoming.WiredLeaderboardSubscribeEvent, WiredLeaderboardSubscribeEvent.class);
+        this.registerHandler(Incoming.WiredLabelSaveTextEvent, WiredLabelSaveTextEvent.class);
+        this.registerHandler(Incoming.WiredLabelSaveSettingsEvent, WiredLabelSaveSettingsEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersRequestEvent, WiredVariableHoldersRequestEvent.class);
         this.registerHandler(Incoming.WiredVariableHashesEvent, WiredVariableHashesEvent.class);
         this.registerHandler(Incoming.WiredAllVariablesRequestEvent, WiredAllVariablesRequestEvent.class);

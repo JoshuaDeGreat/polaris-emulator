@@ -10,6 +10,10 @@ public final class SnowWarConstants {
     // Timing
     public static final int SUBTURNS_PER_TICK = 3;
     public static final int SERVER_TICK_MS = 150;
+    /** Consecutive failed ticks before a match is ended instead of left frozen. */
+    public static final int MAX_TICK_FAILURES = 5;
+
+    public static final long SLOW_TICK_WARNING_INTERVAL_MS = 10_000L;
     public static final int SUBTURN_MS = 50;
 
     // Movement

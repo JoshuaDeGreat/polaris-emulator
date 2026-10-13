@@ -23,12 +23,20 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The main game loop: runs every 150ms, simulates 3 subturns of 50ms and
  * broadcasts a single GAMESTATUS packet per tick (README 7.5).
+ *
+ * <p>The task is the single owner of the simulation: {@link #run()} and every
+ * player action ({@link SnowWarGame#handleWalk} and friends) hold this task's
+ * monitor, so an action is applied wholly between two ticks and never in the
+ * middle of a subturn.
  */
 public class SnowWarGameTask implements Runnable {
 
@@ -60,6 +68,13 @@ public class SnowWarGameTask implements Runnable {
      */
     private final Map<SnowWarItem, Long> rayGunLastFired = new IdentityHashMap<>();
 
+    /** Consecutive ticks that threw. Only touched under this task's monitor. */
+    private int consecutiveFailures = 0;
+
+    private long lastSlowTickWarning = 0;
+
+    private volatile ScheduledFuture<?> schedule;
+
     public SnowWarGameTask(SnowWarGame game) {
         this.game = game;
     }
@@ -88,12 +103,40 @@ public class SnowWarGameTask implements Runnable {
         this.pendingEvents.add(event);
     }
 
+    /**
+     * Starts the loop at a fixed rate, so a slow tick does not push every
+     * following turn back (a fixed delay after each tick drifts the server
+     * clock away from the client's 150ms turns).
+     */
+    public void start() {
+        try {
+            this.schedule = Emulator.getThreading()
+                    .getService()
+                    .scheduleAtFixedRate(
+                            this,
+                            SnowWarConstants.SERVER_TICK_MS,
+                            SnowWarConstants.SERVER_TICK_MS,
+                            TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            LOGGER.warn("SnowWar game {}: tick loop rejected (shutting down).", this.game.getId());
+        }
+    }
+
+    public void stop() {
+        ScheduledFuture<?> current = this.schedule;
+        if (current != null) {
+            current.cancel(false);
+        }
+    }
+
     @Override
     public synchronized void run() {
         if (this.game.getState() != SnowWarGameState.RUNNING) {
+            this.stop();
             return;
         }
 
+        long tickStarted = System.nanoTime();
         try {
             // Match timer.
             if (this.game.getTotalSecondsLeft() <= 0) {
@@ -125,12 +168,49 @@ public class SnowWarGameTask implements Runnable {
 
             this.game.broadcast(
                     new SnowStormGameStatusComposer(this.currentTurn, this.currentChecksum, this.turnEventsList));
+            this.consecutiveFailures = 0;
         } catch (Exception e) {
-            LOGGER.error("Error in SnowWar game " + this.game.getId() + " tick.", e);
-        } finally {
-            if (this.game.getState() == SnowWarGameState.RUNNING) {
-                Emulator.getThreading().run(this, SnowWarConstants.SERVER_TICK_MS);
+            // An exception escaping a fixed-rate task cancels it silently, so
+            // never let one out. A tick that keeps failing would leave the
+            // players frozen in a broken arena: end the match instead.
+            this.consecutiveFailures++;
+            LOGGER.error(
+                    "Error in SnowWar game {} tick ({}/{}).",
+                    this.game.getId(),
+                    this.consecutiveFailures,
+                    SnowWarConstants.MAX_TICK_FAILURES,
+                    e);
+            if (this.consecutiveFailures >= SnowWarConstants.MAX_TICK_FAILURES) {
+                try {
+                    this.game.endGame();
+                } catch (Exception endException) {
+                    LOGGER.error(
+                            "SnowWar game {} could not be ended after repeated tick failures.",
+                            this.game.getId(),
+                            endException);
+                }
             }
+        } finally {
+            if (this.game.getState() != SnowWarGameState.RUNNING) {
+                this.stop();
+            }
+            this.warnIfSlow(tickStarted);
+        }
+    }
+
+    private void warnIfSlow(long tickStarted) {
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - tickStarted);
+        if (elapsedMs <= SnowWarConstants.SERVER_TICK_MS) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - this.lastSlowTickWarning >= SnowWarConstants.SLOW_TICK_WARNING_INTERVAL_MS) {
+            this.lastSlowTickWarning = now;
+            LOGGER.warn(
+                    "SnowWar game {}: tick took {} MS, over its {} MS budget.",
+                    this.game.getId(),
+                    elapsedMs,
+                    SnowWarConstants.SERVER_TICK_MS);
         }
     }
 

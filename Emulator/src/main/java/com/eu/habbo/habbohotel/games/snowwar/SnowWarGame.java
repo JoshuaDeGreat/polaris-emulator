@@ -289,13 +289,15 @@ public class SnowWarGame {
             return;
         }
 
-        this.state = SnowWarGameState.RUNNING;
+        // Publish the task before the state, so an action that sees RUNNING
+        // always finds the task it has to lock.
+        this.task = new SnowWarGameTask(this);
         this.endTimeMillis = System.currentTimeMillis() + (this.gameLengthSeconds * 1000L);
+        this.state = SnowWarGameState.RUNNING;
 
         this.broadcast(new SnowStormOnStageRunningComposer(this.gameLengthSeconds));
 
-        this.task = new SnowWarGameTask(this);
-        Emulator.getThreading().run(this.task, SnowWarConstants.SERVER_TICK_MS);
+        this.task.start();
     }
 
     public SnowWarGameTask getTask() {
@@ -412,11 +414,30 @@ public class SnowWarGame {
     // Player actions (called from packet handlers)
     // ========================================================================
 
-    public void handleWalk(SnowWarGamePlayer player, int worldX, int worldY) {
-        if (this.state != SnowWarGameState.RUNNING) {
+    /**
+     * Applies a player action under the tick's monitor. Packet handlers run on
+     * network threads; without this an action could change a player's state,
+     * ammo or the snowball list halfway through a tick, so the server would
+     * simulate (and checksum) something different from what it sends.
+     */
+    private void runAction(SnowWarGamePlayer player, Runnable action) {
+        SnowWarGameTask current = this.task;
+        if (this.state != SnowWarGameState.RUNNING || current == null) {
             return;
         }
+        synchronized (current) {
+            // The player may have left between the handler's lookup and here.
+            if (this.state == SnowWarGameState.RUNNING && this.getPlayer(player.getUserId()) == player) {
+                action.run();
+            }
+        }
+    }
 
+    public void handleWalk(SnowWarGamePlayer player, int worldX, int worldY) {
+        this.runAction(player, () -> this.applyWalk(player, worldX, worldY));
+    }
+
+    private void applyWalk(SnowWarGamePlayer player, int worldX, int worldY) {
         SnowWarAttributes attr = player.getAttributes();
 
         // AIR's HumanGameObject.changeMoveTarget cancels an in-progress
@@ -457,10 +478,10 @@ public class SnowWarGame {
         // needs no clamp.
         int maxWorldX = this.map.getSizeX() * SnowWarConstants.TILE_SIZE;
         int maxWorldY = this.map.getSizeY() * SnowWarConstants.TILE_SIZE;
-        worldX = Math.max(0, Math.min(worldX, maxWorldX));
-        worldY = Math.max(0, Math.min(worldY, maxWorldY));
+        int targetX = Math.max(0, Math.min(worldX, maxWorldX));
+        int targetY = Math.max(0, Math.min(worldY, maxWorldY));
 
-        this.throwSnowball(player, worldX, worldY, trajectory);
+        this.runAction(player, () -> this.throwSnowball(player, targetX, targetY, trajectory));
     }
 
     public void handleThrowAtPlayer(SnowWarGamePlayer player, int targetObjectId, int trajectory) {
@@ -468,13 +489,17 @@ public class SnowWarGame {
             return;
         }
 
-        SnowWarGamePlayer target = this.getPlayerByObjectId(targetObjectId);
-        if (target == null || !this.isOpponent(player, target)) {
-            return;
-        }
+        this.runAction(player, () -> {
+            // Read the target's position under the lock, so it is the one the
+            // next tick starts from.
+            SnowWarGamePlayer target = this.getPlayerByObjectId(targetObjectId);
+            if (target == null || !this.isOpponent(player, target)) {
+                return;
+            }
 
-        SnowWarPoint targetWorld = target.getAttributes().getWorldPosition();
-        this.throwSnowball(player, targetWorld.getX(), targetWorld.getY(), trajectory);
+            SnowWarPoint targetWorld = target.getAttributes().getWorldPosition();
+            this.throwSnowball(player, targetWorld.getX(), targetWorld.getY(), trajectory);
+        });
     }
 
     /**
@@ -539,10 +564,10 @@ public class SnowWarGame {
     }
 
     public void handleCreateSnowball(SnowWarGamePlayer player) {
-        if (this.state != SnowWarGameState.RUNNING || this.task == null) {
-            return;
-        }
+        this.runAction(player, () -> this.applyCreateSnowball(player));
+    }
 
+    private void applyCreateSnowball(SnowWarGamePlayer player) {
         SnowWarAttributes attr = player.getAttributes();
 
         if (attr.getActivityState() != SnowWarActivityState.NORMAL) {

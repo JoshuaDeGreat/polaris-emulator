@@ -55,6 +55,8 @@ final class WiredStackExecutor {
 
     private final WiredServices services;
     private final int maxStepsPerStack;
+    private final ThreadLocal<WiredChainBudget> chainBudget = new ThreadLocal<>();
+    private int maxStacksPerChain = WiredChainBudget.DEFAULT_MAX_STACKS;
     private final WiredConditionEvaluator conditionEvaluator;
     private final WiredEffectPlanner effectPlanner;
     private final WiredExecutionGuard executionGuard;
@@ -96,7 +98,32 @@ final class WiredStackExecutor {
     }
 
     private boolean execute(WiredStack stack, WiredEvent event, long currentTime, boolean negateConditions, Mode mode) {
+        // The outermost stack on this thread opens the chain's budget; stacks its
+        // signals and stack calls run before it returns share it.
+        WiredChainBudget budget = this.chainBudget.get();
+        if (budget != null) {
+            return execute(stack, event, currentTime, negateConditions, mode, budget);
+        }
+        budget = new WiredChainBudget(this.maxStacksPerChain, WiredChainBudget.DEFAULT_MAX_TARGETS);
+        this.chainBudget.set(budget);
+        try {
+            return execute(stack, event, currentTime, negateConditions, mode, budget);
+        } finally {
+            this.chainBudget.remove();
+        }
+    }
+
+    private boolean execute(
+            WiredStack stack,
+            WiredEvent event,
+            long currentTime,
+            boolean negateConditions,
+            Mode mode,
+            WiredChainBudget budget) {
         Room room = event.getRoom();
+        if (budget.isExhausted()) {
+            return false;
+        }
         WiredTextInputCaptureSupport.CaptureResult captureResult = null;
         if (mode == Mode.EVENT) {
             captureResult = resolveTextInputCapture(stack, event);
@@ -144,6 +171,24 @@ final class WiredStackExecutor {
         List<IWiredEffect> executableEffects = this.effectPlanner.executableEffects(stack, conditionsPassed);
         boolean hasSpecialOutcome = conditionsPassed && hasSpecialTriggerOutcome(stack, event);
         if (!shouldContinueAfterConditionCheck(stack, room, conditionsPassed, executableEffects, hasSpecialOutcome)) {
+            return false;
+        }
+
+        if (!budget.tryAdmit(selectedTargets(context))) {
+            if (budget.shouldReport()) {
+                roomDiagnostics.recordRecursionTimeout(
+                        currentTime,
+                        "Wired chain stopped: it ran " + budget.exhaustedReason(),
+                        monitorSourceLabel,
+                        monitorSourceId);
+                this.diagnostics.log(
+                        room,
+                        "Wired chain stopped at stack {}: it ran {} ({} stacks, {} targets so far)",
+                        stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
+                        budget.exhaustedReason(),
+                        budget.stacks(),
+                        budget.targets());
+            }
             return false;
         }
 
@@ -464,6 +509,18 @@ final class WiredStackExecutor {
     }
 
     /** One unit per ten selected furni or users, once the selectors have run. */
+    /** Tests only: a small chain cap keeps a looping chain short. */
+    void setMaxStacksPerChain(int maxStacksPerChain) {
+        this.maxStacksPerChain = Math.max(1, maxStacksPerChain);
+    }
+
+    static int selectedTargets(WiredContext context) {
+        if (context == null || context.targets() == null) {
+            return 0;
+        }
+        return context.targets().items().size() + context.targets().users().size();
+    }
+
     static int selectionCost(WiredContext context) {
         if (context == null || context.targets() == null) {
             return 0;

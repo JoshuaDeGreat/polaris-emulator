@@ -23199,6 +23199,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
+      "name": "WIRED_LEADERBOARD_SUBSCRIBE",
+      "direction": "client_to_server",
+      "header": 2833,
+      "java": {
+        "symbol": "WiredLeaderboardSubscribeEvent",
+        "className": "WiredLeaderboardSubscribeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLeaderboardSubscribeEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LEADERBOARD_SUBSCRIBE",
+        "className": "WiredLeaderboardSubscribeComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLeaderboardSubscribeComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing value chunkIndices.length has no statically resolvable wire type"
+    },
+    {
       "name": "ROOM_TONER_APPLY",
       "direction": "client_to_server",
       "header": 2880,
@@ -25551,6 +25567,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor CategoriesWithVisitorCountData inside parse"
     },
     {
+      "name": "WIRED_LEADERBOARD_SNAPSHOT",
+      "direction": "server_to_client",
+      "header": 1494,
+      "java": {
+        "symbol": "WiredLeaderboardSnapshotComposer",
+        "className": "WiredLeaderboardSnapshotComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLeaderboardSnapshotComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LEADERBOARD_SNAPSHOT",
+        "className": "WiredLeaderboardSnapshotParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLeaderboardSnapshotParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
       "name": "ROOM_SETTINGS",
       "direction": "server_to_client",
       "header": 1498,
@@ -27485,6 +27517,22 @@
         "path": "packages/communication/src/messages/parser/group/GroupSettingsParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in WhileStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+    },
+    {
+      "name": "WIRED_LEADERBOARD_CHUNK",
+      "direction": "server_to_client",
+      "header": 3979,
+      "java": {
+        "symbol": "WiredLeaderboardChunkComposer",
+        "className": "WiredLeaderboardChunkComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLeaderboardChunkComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LEADERBOARD_CHUNK",
+        "className": "WiredLeaderboardChunkParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLeaderboardChunkParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "NAVIGATOR_SEARCHES",

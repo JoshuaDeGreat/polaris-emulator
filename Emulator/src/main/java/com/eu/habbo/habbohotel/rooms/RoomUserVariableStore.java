@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,6 +189,7 @@ public final class RoomUserVariableStore {
             } catch (SQLException e) {
                 throw failure(e);
             }
+            this.live.noteSavedChange();
             return Write.WRITTEN;
         });
     }
@@ -206,14 +208,12 @@ public final class RoomUserVariableStore {
                 return Write.NOT_SAVED;
             }
             try {
-                return this.repository.updateValue(
-                                this.room.getId(),
-                                userId,
-                                definitionItemId,
-                                definition.hasValue() ? value : null,
-                                this.currentTimestamp.getAsInt())
-                        ? Write.WRITTEN
-                        : Write.NOT_HELD;
+                return this.savedWrite(this.repository.updateValue(
+                        this.room.getId(),
+                        userId,
+                        definitionItemId,
+                        definition.hasValue() ? value : null,
+                        this.currentTimestamp.getAsInt()));
             } catch (SQLException e) {
                 throw failure(e);
             }
@@ -232,9 +232,7 @@ public final class RoomUserVariableStore {
                 return Write.NOT_SAVED;
             }
             try {
-                return this.repository.delete(this.room.getId(), userId, definitionItemId)
-                        ? Write.WRITTEN
-                        : Write.NOT_HELD;
+                return this.savedWrite(this.repository.delete(this.room.getId(), userId, definitionItemId));
             } catch (SQLException e) {
                 throw failure(e);
             }
@@ -338,6 +336,44 @@ public final class RoomUserVariableStore {
             holders.add(new Holder(row.userId(), row.username(), value, row.createdAt(), row.updatedAt()));
         }
         return holders;
+    }
+
+    private Write savedWrite(boolean written) {
+        if (!written) {
+            return Write.NOT_HELD;
+        }
+        this.live.noteSavedChange();
+        return Write.WRITTEN;
+    }
+
+    /**
+     * The figures of these users: from the room for those in it, else from the users table. Users
+     * without a known figure are left out.
+     */
+    public Map<Integer, String> figures(Collection<Integer> userIds) {
+        Map<Integer, String> figures = new HashMap<>();
+        List<Integer> absent = new ArrayList<>();
+        for (Integer userId : userIds) {
+            if (userId == null || userId <= 0 || figures.containsKey(userId)) {
+                continue;
+            }
+            Habbo habbo = this.room.getHabbo(userId);
+            if (habbo != null
+                    && habbo.getHabboInfo() != null
+                    && habbo.getHabboInfo().getLook() != null) {
+                figures.put(userId, habbo.getHabboInfo().getLook());
+            } else {
+                absent.add(userId);
+            }
+        }
+        if (!absent.isEmpty()) {
+            try {
+                figures.putAll(this.repository.figures(absent));
+            } catch (SQLException e) {
+                throw failure(e);
+            }
+        }
+        return figures;
     }
 
     private Value liveValue(int userId, int definitionItemId) {

@@ -4490,6 +4490,23 @@ CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredE
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxStatusBar#getCategory(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFxStatusBar#getCode(-):int throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#CODE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#CONTEXT_TYPE:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#getCandidates(com.eu.habbo.habbohotel.rooms.Room):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#getConfig(-):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#hasConfiguration(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#isPublished(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#onPickUp(-):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#onWalk(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#CODE:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#MODE_EXPONENTIAL:int
@@ -7820,6 +7837,196 @@ FIELD public final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreT
 METHOD public static com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#valueOf(java.lang.String):com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType throws -
 METHOD public static com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#values(-):com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType[] throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk index:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk totalCount:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk rows:java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow>
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#SIZE:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk(int,int,java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow>) throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#index(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#rows(-):java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow> throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk#totalCount(-):int throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_CREATION:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_LAST_UPDATE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_LEVEL:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_TEXT_CONNECTION:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_UNUSED:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_USERNAME:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#COLUMN_VALUE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#INT_PARAM_COUNT:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#MAX_COLUMNS:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#MAX_OFFSET_X:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#MAX_OVERRIDES:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#MIN_OFFSET_X:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#NULL_VARIABLE_ID:java.lang.String
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#OPERAND_GLOBAL_VARIABLE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#OPERAND_LITERAL:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#SORT_HIGHEST_VALUE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#SORT_LATEST_CREATION:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#SORT_LATEST_UPDATE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#SORT_LOWEST_VALUE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#SORT_OLDEST_CREATION:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#SORT_OLDEST_UPDATE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#STRING_FIELD_COUNT:int
+FIELD public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#VARIABLE_ID_COUNT:int
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#canonicalId(java.lang.String):java.lang.String throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#decode(com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored,int,int):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#defaultColumn(int):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#defaultLabel(int):java.lang.String throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#defaults(int,int):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#encode(com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#fromWire(int[],java.lang.String):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#isValidWidth(int):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#pageSizes(-):int[] throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#suggest(java.lang.String):java.lang.String throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec#toWire(com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored):java.lang.String throws -
+
+TYPE public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded config:com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded error:java.lang.String
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded(com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig,java.lang.String) throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded#config(-):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded#equals(java.lang.Object):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded#error(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded#hashCode(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Decoded#valid(-):boolean throws -
+
+TYPE public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored intParams:int[]
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored variableIds:java.lang.String[]
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored stringParam:java.lang.String
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored(int[],java.lang.String[],java.lang.String) throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored#intParams(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored#stringParam(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec$Stored#variableIds(-):java.lang.String[] throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig extends java.lang.Object
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#altitude(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#columns(-):java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column> throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#compareEnabled(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#comparisonLiteral(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#description(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#displayOverrides(-):java.util.SortedMap<java.lang.String, java.lang.String> throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#entriesPerPage(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#filterEnabled(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#filterVariableId(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#hasColumn(int):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#offsetX(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#operandKind(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#operandVariableId(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#pageSizeOption(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#sortMode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#tileX(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#tileY(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#title(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig#withLocation(int,int,int,int):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig throws -
+
+TYPE public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column type:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column label:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column width:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column(int,java.lang.String,int) throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column#label(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column#type(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column#width(-):int throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor overlayId:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor revision:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor title:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor description:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor tileX:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor tileY:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor offsetX:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor altitude:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor sortMode:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor columns:java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column>
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor choices:java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice>
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor defaultVariableId:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor pageSizeOption:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor(int,int,java.lang.String,java.lang.String,int,int,int,int,int,java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column>,java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice>,java.lang.String,int) throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#altitude(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#choices(-):java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice> throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#columns(-):java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig$Column> throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#defaultVariableId(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#description(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#offers(java.lang.String):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#offsetX(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#overlayId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#pageSizeOption(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#revision(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#sortMode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#tileX(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#tileY(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#title(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor#withRevision(int):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor throws -
+
+TYPE public static final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice variableId:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice displayName:java.lang.String
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice(java.lang.String,java.lang.String) throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice#displayName(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice#hashCode(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor$Choice#variableId(-):java.lang.String throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardQuery extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardQuery#chunk(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig,java.lang.String,int):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow rank:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow userId:int
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow username:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow figure:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow rawValue:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow creationTime:long
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow lastUpdateTime:long
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow level:java.lang.Integer
+RECORD com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow text:java.lang.String
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow(int,int,java.lang.String,java.lang.String,java.lang.String,long,long,java.lang.Integer,java.lang.String) throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#creationTime(-):long throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#equals(java.lang.Object):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#figure(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#lastUpdateTime(-):long throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#level(-):java.lang.Integer throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#rank(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#rawValue(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#text(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#userId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardRow#username(-):java.lang.String throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService extends java.lang.Object implements com.eu.habbo.habbohotel.wired.tick.WiredTickable
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService(int) throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService#getId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService#getRoomId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService#onWiredTick(com.eu.habbo.habbohotel.rooms.Room,long,int):void throws -
+METHOD public com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService#resetTimer(-):void throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport#drop(com.eu.habbo.habbohotel.rooms.Room):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport#ensure(com.eu.habbo.habbohotel.rooms.Room):com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardService throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport#hello(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport#isActive(int):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport#subscribe(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo,int,int,java.lang.String,int[]):void throws -
+
 TYPE public final com.eu.habbo.habbohotel.wired.migrate.WiredEvents extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.migrate.WiredEvents#botCollision(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit):com.eu.habbo.habbohotel.wired.core.WiredEvent throws -
 METHOD public static com.eu.habbo.habbohotel.wired.migrate.WiredEvents#botCollision(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.users.HabboItem):com.eu.habbo.habbohotel.wired.core.WiredEvent throws -
@@ -8101,6 +8308,10 @@ CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEv
 METHOD public com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent#getRatelimit(-):int throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent#handle(-):void throws java.lang.Exception
 
+TYPE public com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent extends com.eu.habbo.messages.incoming.MessageHandler
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent(-) throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent#handle(-):void throws java.lang.Exception
+
 TYPE public com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent#getRatelimit(-):int throws -
@@ -8266,6 +8477,14 @@ METHOD protected com.eu.habbo.messages.outgoing.wired.WiredExtraDataComposer#com
 TYPE public com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer(int,java.lang.String,int,boolean,boolean) throws -
 METHOD protected com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
+
+TYPE public com.eu.habbo.messages.outgoing.wired.WiredLeaderboardChunkComposer extends com.eu.habbo.messages.outgoing.MessageComposer
+CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredLeaderboardChunkComposer(int,int,java.lang.String,com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardChunk) throws -
+METHOD protected com.eu.habbo.messages.outgoing.wired.WiredLeaderboardChunkComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
+
+TYPE public com.eu.habbo.messages.outgoing.wired.WiredLeaderboardSnapshotComposer extends com.eu.habbo.messages.outgoing.MessageComposer
+CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredLeaderboardSnapshotComposer(java.util.List<com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardDescriptor>) throws -
+METHOD protected com.eu.habbo.messages.outgoing.wired.WiredLeaderboardSnapshotComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
 
 TYPE public com.eu.habbo.messages.outgoing.wired.WiredMonitorDataComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredMonitorDataComposer(com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Snapshot) throws -

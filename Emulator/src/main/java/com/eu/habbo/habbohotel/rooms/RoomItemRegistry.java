@@ -46,6 +46,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVari
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableFx;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLeaderboard;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -53,6 +54,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxSupport;
 
@@ -81,6 +83,11 @@ final class RoomItemRegistry {
             // A variable fx box placed or loaded: the room's fx service starts telling players what to draw.
             if (item instanceof WiredExtraVariableFx) {
                 WiredVariableFxSupport.ensure(this.room);
+            }
+
+            // A leaderboard box placed or loaded: the room's leaderboard service starts sending panels.
+            if (item instanceof WiredExtraVariableLeaderboard) {
+                WiredLeaderboardSupport.ensure(this.room);
             }
 
             if (item instanceof InteractionWiredTrigger trigger) {

@@ -19,6 +19,7 @@ class MemoryUserVariableRepository extends RoomUserVariableRepository {
 
     final Map<Key, StoredAssignment> rows = new ConcurrentHashMap<>();
     final Map<Integer, String> usernames = new HashMap<>();
+    final Map<Integer, String> looks = new HashMap<>();
     volatile Runnable afterFindByUserRead = () -> {};
     volatile Runnable beforeUpsert = () -> {};
 
@@ -126,6 +127,15 @@ class MemoryUserVariableRepository extends RoomUserVariableRepository {
     @Override
     int countUsers(int roomId, int definitionItemId, Collection<Integer> excluded) {
         return this.users(roomId, definitionItemId, excluded).size();
+    }
+
+    @Override
+    Map<Integer, String> figures(Collection<Integer> userIds) {
+        Map<Integer, String> figures = new HashMap<>();
+        for (Integer userId : userIds) {
+            if (this.looks.containsKey(userId)) figures.put(userId, this.looks.get(userId));
+        }
+        return figures;
     }
 
     @Override

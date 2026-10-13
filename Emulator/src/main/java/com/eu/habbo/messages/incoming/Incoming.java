@@ -517,6 +517,7 @@ public class Incoming {
     public static final int WiredRoomStateActionEvent = 3761;
     public static final int WiredRoomLogsPageEvent = 3882;
     public static final int WiredVariableHoldersPageEvent = 975;
+    public static final int WiredLeaderboardSubscribeEvent = 2833; // AIR (variable leaderboard)
     public static final int WiredVariableHoldersRequestEvent = 2973;
     public static final int WiredVariableHashesEvent = 1497;
     public static final int WiredGenerateWebApiKeyEvent = 2819;

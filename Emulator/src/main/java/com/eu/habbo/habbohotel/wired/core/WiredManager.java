@@ -22,6 +22,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredGiveRewardItem;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
+import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport;
 import com.eu.habbo.habbohotel.wired.migrate.WiredEvents;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
@@ -1226,6 +1227,7 @@ public final class WiredManager {
     public static void unregisterRoomTickables(Room room) {
         getTickService().unregisterRoom(room);
         WiredVariableFxSupport.drop(room);
+        WiredLeaderboardSupport.drop(room);
         if (room != null) {
             room.getFurniVariableManager().clearTransientAssignments();
             room.getRoomVariableManager().clearTransientAssignments();

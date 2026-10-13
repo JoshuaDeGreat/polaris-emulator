@@ -171,6 +171,8 @@ public class Outgoing {
     public static final int WiredVariableFxConfigsRemovedComposer = 9474; // CUSTOM
     public static final int WiredVariableFxStatusComposer = 9475; // CUSTOM
     public static final int WiredVariableFxStatusRemovedComposer = 9476; // CUSTOM
+    public static final int WiredLeaderboardSnapshotComposer = 1494; // AIR (variable leaderboard)
+    public static final int WiredLeaderboardChunkComposer = 3979; // AIR (variable leaderboard)
     public static final int ConfInvisStateComposer = 5104; // CUSTOM
     public static final int TranslationLanguagesComposer = 5106; // CUSTOM
     public static final int TranslationResultComposer = 5107; // CUSTOM

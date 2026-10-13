@@ -69,6 +69,10 @@ public class SnowWarManager {
     // entry object itself (see allowPacket).
     private final ConcurrentHashMap<Integer, long[]> packetWindows = new ConcurrentHashMap<>();
 
+    // Last time a malformed SnowWar packet from a user was logged.
+    private final ConcurrentHashMap<Integer, Long> malformedReports = new ConcurrentHashMap<>();
+    private static final long MALFORMED_REPORT_INTERVAL_MS = 60_000L;
+
     private final AtomicInteger gameIdCounter = new AtomicInteger(0);
     private final AtomicInteger gamesPlayed = new AtomicInteger(0);
 
@@ -190,6 +194,7 @@ public class SnowWarManager {
     public void clearUserGame(int userId) {
         this.userGames.remove(userId);
         this.packetWindows.remove(userId);
+        this.malformedReports.remove(userId);
         // A disconnecting editor must release the matchmaking lock and discard
         // an unpublished draft. Published arenas remain in the pool.
         if (this.clearEditor(userId) && this.editorArenas.isEmpty()) {
@@ -208,6 +213,17 @@ public class SnowWarManager {
      * This is a blanket backstop on top of the per-action cooldowns, so a mix
      * of packet types can't be spun in a tight loop.
      */
+    /** True at most once a minute per user, so a misbehaving client cannot flood the log. */
+    public boolean shouldReportMalformed(int userId) {
+        long now = System.currentTimeMillis();
+        Long previous = this.malformedReports.get(userId);
+        if (previous != null && now - previous < MALFORMED_REPORT_INTERVAL_MS) {
+            return false;
+        }
+        this.malformedReports.put(userId, now);
+        return true;
+    }
+
     public boolean allowPacket(int userId) {
         long now = System.currentTimeMillis();
         long[] window = this.packetWindows.computeIfAbsent(userId, id -> new long[] {now, 0});

@@ -12,15 +12,18 @@ public class SnowStormWalkEvent extends MessageHandler {
             return;
         }
 
-        int worldX = this.packet.readInt();
-        int worldY = this.packet.readInt();
-        // AIR turn/subturn values may follow. Polaris remains authoritative and
-        // safely ignores those trailing fields in this isolated packet buffer.
-
         int userId = this.client.getHabbo().getHabboInfo().getId();
         if (!SnowWarManager.getInstance().allowPacket(userId)) {
             return;
         }
+
+        // worldX, worldY [, turn, subturn] - the server ignores the turn fields.
+        if (!SnowWarPacket.hasInts(this.packet.bytesAvailable(), 2)) {
+            SnowWarPacket.reject(userId, "walk", "unexpected payload length");
+            return;
+        }
+        int worldX = this.packet.readInt();
+        int worldY = this.packet.readInt();
         SnowWarGame game = SnowWarManager.getInstance().getGameByUserId(userId);
 
         if (game == null) {
@@ -29,6 +32,10 @@ public class SnowStormWalkEvent extends MessageHandler {
 
         SnowWarGamePlayer player = game.getPlayer(userId);
         if (player == null) {
+            return;
+        }
+        if (!SnowWarPacket.isInArena(game, worldX, worldY)) {
+            SnowWarPacket.reject(userId, "walk", "target outside the arena");
             return;
         }
 

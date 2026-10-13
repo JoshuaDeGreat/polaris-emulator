@@ -16,6 +16,10 @@ public class SnowStormSelectArenaEvent extends MessageHandler {
             return;
         }
 
+        if (!SnowWarPacket.hasInts(this.packet.bytesAvailable(), 1)) {
+            SnowWarPacket.reject(userId, "select arena", "unexpected payload length");
+            return;
+        }
         manager.selectArena(this.client.getHabbo(), this.packet.readInt());
     }
 }

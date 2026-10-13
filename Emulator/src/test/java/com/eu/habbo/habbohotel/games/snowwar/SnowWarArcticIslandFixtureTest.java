@@ -41,30 +41,64 @@ class SnowWarArcticIslandFixtureTest {
         }
     }
 
+    /**
+     * The AIR Arctic Island pond (room_models 'snowstorm_arena_1', from
+     * Domexx/GameCenter) is a frozen moat, three tiles wide, around a walkable
+     * snow island, crossed by a one-tile plank on every side. The painted
+     * snst_bg_1_a_big backdrop shows exactly this ring and these planks.
+     */
     @Test
-    void blocksTheEntireArcticIslandPondButKeepsFourPlankCrossingsWalkable() throws IOException {
+    void arcticIslandPondIsAMoatAroundAWalkableIslandWithFourPlanks() throws IOException {
         List<String> rows =
                 readResource("/snowwar/arena_8_heightmap.txt").lines().toList();
 
-        for (int y = 16; y <= 27; y++) {
-            for (int x = 19; x <= 30; x++) {
-                boolean northPlank = x >= 22 && x <= 23 && y >= 16 && y <= 18;
-                boolean westPlank = x >= 19 && x <= 21 && y >= 22 && y <= 23;
-                boolean eastPlank = x >= 28 && x <= 30 && y >= 20 && y <= 21;
-                boolean southPlank = x >= 25 && x <= 26 && y >= 25 && y <= 27;
-                char expected = northPlank || westPlank || eastPlank || southPlank ? '0' : 'x';
+        assertEquals(
+                readResource("/snowwar/arena_1_heightmap.txt").lines().toList(),
+                rows,
+                "arena 8 uses the original Arctic Island floor");
+
+        for (int y = 19; y <= 30; y++) {
+            for (int x = 20; x <= 32; x++) {
+                boolean island = x >= 23 && x <= 29 && y >= 22 && y <= 27;
+                boolean northPlank = x == 25 && y >= 19 && y <= 21;
+                boolean eastPlank = y == 24 && x >= 30 && x <= 32;
+                boolean westPlank = y == 26 && x >= 20 && x <= 22;
+                boolean southPlank = x == 27 && y >= 28 && y <= 30;
+                char expected = island || northPlank || eastPlank || westPlank || southPlank ? '0' : 'x';
                 assertEquals(expected, rows.get(y).charAt(x), "tile " + x + "," + y);
             }
         }
 
         SnowWarMap map = new SnowWarMap(8, rows, List.of(), List.of(), List.of());
-        assertFalse(map.getTile(19, 16).isWalkable());
-        assertFalse(map.getTile(24, 21).isWalkable());
-        assertFalse(map.getTile(24, 25).isWalkable());
-        assertTrue(map.getTile(22, 16).isWalkable());
-        assertTrue(map.getTile(19, 22).isWalkable());
-        assertTrue(map.getTile(30, 20).isWalkable());
-        assertTrue(map.getTile(25, 25).isWalkable());
+        assertFalse(map.getTile(20, 19).isWalkable());
+        assertFalse(map.getTile(24, 20).isWalkable());
+        assertFalse(map.getTile(31, 29).isWalkable());
+        assertTrue(map.getTile(26, 24).isWalkable(), "island");
+        assertTrue(map.getTile(25, 20).isWalkable(), "north plank");
+        assertTrue(map.getTile(31, 24).isWalkable(), "east plank");
+        assertTrue(map.getTile(21, 26).isWalkable(), "west plank");
+        assertTrue(map.getTile(27, 29).isWalkable(), "south plank");
+    }
+
+    /** Like the original, a snowball machine stands in the middle of the island. */
+    @Test
+    void arcticIslandHasASnowballMachineInTheMiddleOfTheIsland() throws IOException {
+        List<String> rows =
+                readResource("/snowwar/arena_8_heightmap.txt").lines().toList();
+        List<String> machines =
+                readResource("/snowwar/arena_8_snowmachines.dat").lines().toList();
+
+        assertEquals(List.of("25 24"), machines, "island machine only");
+        for (String machine : machines) {
+            String[] parts = machine.trim().split("\\s+");
+            int x = Integer.parseInt(parts[0]);
+            int y = Integer.parseInt(parts[1]);
+            // A machine covers x..x+2 on its row and is used from (x, y + 1).
+            for (int dx = 0; dx < 3; dx++) {
+                assertEquals('0', rows.get(y).charAt(x + dx), "machine tile " + (x + dx) + "," + y);
+            }
+            assertEquals('0', rows.get(y + 1).charAt(x), "pickup tile " + x + "," + (y + 1));
+        }
     }
 
     private static String readResource(String name) throws IOException {

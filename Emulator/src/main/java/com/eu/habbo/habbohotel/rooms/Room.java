@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -181,6 +182,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private int banOption;
     private int pollId;
     private int tradeMode;
+    private int dateCreated;
     private boolean moveDiagonally;
     private boolean allowUnderpass;
     private boolean muteAllPets;
@@ -215,6 +217,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void setSoundboardEnabled(boolean enabled) {
         this.media.soundboardEnabled(enabled);
+    }
+
+    public SoundboardRoomMode getSoundboardMode() {
+        return this.media.soundboardMode();
+    }
+
+    public void setSoundboardMode(SoundboardRoomMode mode) {
+        this.media.soundboardMode(mode);
     }
 
     public String getYoutubeCurrentVideo() {
@@ -305,7 +315,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.allowWalkthrough = initial.allowWalkthrough();
         this.hideWall = initial.hideWall();
         this.setYoutubeEnabled(initial.youtubeEnabled());
-        this.setSoundboardEnabled(initial.soundboardEnabled());
+        this.setSoundboardMode(SoundboardRoomMode.fromWire(initial.soundboardMode()));
         this.chatMode = initial.chatMode();
         this.chatWeight = initial.chatWeight();
         this.chatSpeed = initial.chatSpeed();
@@ -335,6 +345,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
         RoomSnapshot snapshot = RoomSnapshot.complete(initial, set);
         this.tradeMode = snapshot.postBanLoad().tradeMode();
+        this.dateCreated = snapshot.postBanLoad().dateCreated();
         this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
         this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
         this.muteAllPets = snapshot.postBanLoad().muteAllPets();
@@ -1033,6 +1044,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void setTradeMode(int tradeMode) {
         this.tradeMode = tradeMode;
+    }
+
+    public int getDateCreated() {
+        return this.dateCreated;
     }
 
     public boolean moveDiagonally() {

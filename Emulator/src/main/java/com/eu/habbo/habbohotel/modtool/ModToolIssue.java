@@ -57,6 +57,7 @@ public class ModToolIssue implements ISerialize {
         this.modName = set.getString("mod_username");
         this.type = ModToolTicketType.values()[set.getInt("type") - 1];
         this.category = set.getInt("category");
+        this.roomId = set.getInt("room_id");
         this.groupId = set.getInt("group_id");
         this.threadId = set.getInt("thread_id");
         this.commentId = set.getInt("comment_id");
@@ -106,7 +107,7 @@ public class ModToolIssue implements ISerialize {
         message.appendInt(this.state.getState()); // STATE
         message.appendInt(this.type.getType()); // TYPE
         message.appendInt(this.category); // CATEGORY ID
-        message.appendInt(((Emulator.getIntUnixTimestamp() - this.timestamp))); // TIME IN MS AGO
+        message.appendInt(ageInMilliseconds(Emulator.getIntUnixTimestamp(), this.timestamp)); // TIME IN MS AGO
         message.appendInt(this.priority); // PRIORITY
         message.appendInt(1);
         message.appendInt(this.senderId); // Reporter user ID
@@ -128,6 +129,14 @@ public class ModToolIssue implements ISerialize {
         } else {
             message.appendInt(0);
         }
+    }
+
+    // The window reads the age in milliseconds; the timestamps are in seconds. An issue left
+    // open for more than about 24 days would overflow the int the packet carries.
+    static int ageInMilliseconds(int nowSeconds, int openedSeconds) {
+        long age = Math.max(0L, (long) nowSeconds - openedSeconds) * 1000L;
+
+        return (int) Math.min(age, Integer.MAX_VALUE);
     }
 
     public void updateInDatabase() {

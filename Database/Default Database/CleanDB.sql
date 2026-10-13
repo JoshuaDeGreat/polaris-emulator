@@ -38957,6 +38957,8 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('gamecenter.snowwar.game.start.time', '15', ''),
 	('gamecenter.snowwar.game.text.color', '000000', ''),
 	('gamecenter.snowwar.games.max.concurrent', '1', ''),
+	('gamecenter.snowwar.idle.timeout.seconds', '60', 'Seconds without any action before a SnowWar player is removed from the match (0 = never).'),
+	('gamecenter.snowwar.idle.warning.seconds', '15', 'Seconds before that removal the idle player is warned.'),
 	('gamecenter.snowwar.map.model.1', 'snowstorm_arena_1', ''),
 	('gamecenter.snowwar.players.min', '2', ''),
 	('gamecenter.snowwar.preparing.seconds', '10', ''),

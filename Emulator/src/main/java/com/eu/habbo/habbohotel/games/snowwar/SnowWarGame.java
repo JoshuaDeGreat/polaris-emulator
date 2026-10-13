@@ -19,6 +19,7 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.Game2UserBlockedComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormFullGameStatusComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGameEndedComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormGenericErrorComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormIntializeGameArenaViewComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormLevelDataComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnGameEndingComposer;
@@ -69,15 +70,25 @@ public class SnowWarGame {
     private final int restartSeconds;
     private volatile long endTimeMillis = 0;
     private volatile long restartWindowEndMillis = 0;
+    private final long idleTimeoutMs;
+    private final long idleWarningMs;
+
+    /** All-time saved scores read when the match starts; {@code null} until loaded or if loading failed. */
+    private volatile Map<Integer, Integer> savedTotalsAtStart = null;
 
     public SnowWarGame(int id, int mapId, List<Habbo> participants) {
         this.id = id;
         this.mapId = mapId;
         this.map = SnowWarMapsManager.getMap(mapId);
 
-        this.gameLengthSeconds = Emulator.getConfig().getInt("gamecenter.snowwar.game.length.seconds", 180);
-        this.preparingSeconds = Emulator.getConfig().getInt("gamecenter.snowwar.preparing.seconds", 10);
-        this.restartSeconds = Emulator.getConfig().getInt("gamecenter.snowwar.restart.seconds", 30);
+        this.gameLengthSeconds = setting("gamecenter.snowwar.game.length.seconds", 180);
+        this.preparingSeconds = setting("gamecenter.snowwar.preparing.seconds", 10);
+        this.restartSeconds = setting("gamecenter.snowwar.restart.seconds", 30);
+        // 0 switches idle removal off; the warning comes this long before removal.
+        int idleTimeoutSeconds = setting("gamecenter.snowwar.idle.timeout.seconds", 60);
+        int idleWarningSeconds = setting("gamecenter.snowwar.idle.warning.seconds", 15);
+        this.idleTimeoutMs = idleTimeoutSeconds <= 0 ? 0 : Math.max(20, idleTimeoutSeconds) * 1000L;
+        this.idleWarningMs = Math.min(this.idleTimeoutMs, Math.max(5, idleWarningSeconds) * 1000L);
 
         // Team assignment round-robin at match creation.
         int index = 0;
@@ -103,6 +114,11 @@ public class SnowWarGame {
                         new SnowWarMachineObject(this.nextObjectId(), machinePosition.getX(), machinePosition.getY()));
             }
         }
+    }
+
+    /** All SnowWar match settings come from emulator_settings through here. */
+    private static int setting(String key, int defaultValue) {
+        return Emulator.getConfig().getInt(key, defaultValue);
     }
 
     public int getId() {
@@ -244,6 +260,7 @@ public class SnowWarGame {
 
         this.state = SnowWarGameState.PREPARING;
         this.assignSpawnPoints();
+        this.prefetchSavedTotals();
 
         // LevelData carries a per-recipient editor flag, so it is composed
         // per player instead of broadcast.
@@ -258,6 +275,20 @@ public class SnowWarGame {
         this.broadcast(new SnowStormOnStageStartComposer(this.preparingSeconds));
 
         Emulator.getThreading().run(this::beginRunning, this.preparingSeconds * 1000L);
+    }
+
+    /**
+     * Reads the players' saved totals during the "get ready" countdown, so the
+     * results screen can show skill levels without a database call at the end.
+     */
+    private void prefetchSavedTotals() {
+        List<Integer> userIds = new ArrayList<>();
+        for (SnowWarGamePlayer player : this.getActivePlayers()) {
+            userIds.add(player.getUserId());
+        }
+        Emulator.getThreading()
+                .run(() ->
+                        this.savedTotalsAtStart = SnowWarManager.getInstance().loadSavedTotalScores(userIds));
     }
 
     private void assignSpawnPoints() {
@@ -289,13 +320,19 @@ public class SnowWarGame {
             return;
         }
 
+        // Publish the task before the state, so an action that sees RUNNING
+        // always finds the task it has to lock.
+        this.task = new SnowWarGameTask(this);
+        long now = System.currentTimeMillis();
+        for (SnowWarGamePlayer player : this.getActivePlayers()) {
+            player.markActive(now);
+        }
+        this.endTimeMillis = now + (this.gameLengthSeconds * 1000L);
         this.state = SnowWarGameState.RUNNING;
-        this.endTimeMillis = System.currentTimeMillis() + (this.gameLengthSeconds * 1000L);
 
         this.broadcast(new SnowStormOnStageRunningComposer(this.gameLengthSeconds));
 
-        this.task = new SnowWarGameTask(this);
-        Emulator.getThreading().run(this.task, SnowWarConstants.SERVER_TICK_MS);
+        this.task.start();
     }
 
     public SnowWarGameTask getTask() {
@@ -315,7 +352,13 @@ public class SnowWarGame {
         for (SnowWarGamePlayer player : finalPlayers) {
             finalPlayerIds.add(player.getUserId());
         }
-        Map<Integer, Integer> skillLevels = SnowWarManager.getInstance().getSkillLevels(finalPlayerIds);
+        // Scores were queued just above, so they count as pending on top of
+        // the totals read at the start; only fall back to a database read
+        // when those could not be loaded.
+        Map<Integer, Integer> savedTotals = this.savedTotalsAtStart;
+        Map<Integer, Integer> skillLevels = savedTotals != null
+                ? SnowWarManager.getInstance().skillLevelsFromSavedTotals(finalPlayerIds, savedTotals)
+                : SnowWarManager.getInstance().getSkillLevels(finalPlayerIds);
 
         this.broadcast(new SnowStormOnStageEndingComposer());
         this.broadcast(new SnowStormOnGameEndingComposer(this.restartSeconds, this, skillLevels));
@@ -364,7 +407,7 @@ public class SnowWarGame {
             // AIR Game2UserBlocked (3508): abandoning a live match blocks the
             // play button for a while (GamesMainViewController.changeBlockStatus).
             if (this.state == SnowWarGameState.RUNNING) {
-                int blockSeconds = Math.max(0, Emulator.getConfig().getInt("gamecenter.game.leave.block.seconds", 180));
+                int blockSeconds = Math.max(0, setting("gamecenter.game.leave.block.seconds", 180));
                 if (blockSeconds > 0) {
                     player.getHabbo().getClient().sendResponse(new Game2UserBlockedComposer(blockSeconds));
                 }
@@ -409,14 +452,88 @@ public class SnowWarGame {
     }
 
     // ========================================================================
+    // Idle players (called from the game loop)
+    // ========================================================================
+
+    enum IdleStatus {
+        ACTIVE,
+        WARN,
+        REMOVE
+    }
+
+    /** What to do with a player who has been idle for {@code idleMs}; a timeout of 0 means never. */
+    static IdleStatus idleStatus(long idleMs, boolean warned, long timeoutMs, long warningMs) {
+        if (timeoutMs <= 0) {
+            return IdleStatus.ACTIVE;
+        }
+        if (idleMs >= timeoutMs) {
+            return IdleStatus.REMOVE;
+        }
+        if (!warned && idleMs >= timeoutMs - warningMs) {
+            return IdleStatus.WARN;
+        }
+        return IdleStatus.ACTIVE;
+    }
+
+    /**
+     * Warns players who have done nothing for a while and removes them when
+     * they still do nothing, so an AFK player cannot spoil a match.
+     */
+    void checkIdlePlayers(long now) {
+        for (SnowWarGamePlayer player : this.getActivePlayers()) {
+            IdleStatus status = idleStatus(
+                    now - player.getLastActionTime(), player.isIdleWarned(), this.idleTimeoutMs, this.idleWarningMs);
+            if (status == IdleStatus.WARN) {
+                player.setIdleWarned(true);
+                this.sendTo(player, new SnowStormGenericErrorComposer(SnowWarConstants.ERROR_IDLE_WARNING));
+            } else if (status == IdleStatus.REMOVE) {
+                LOGGER.info("SnowWar game {}: removing idle player {}.", this.id, player.getUserId());
+                this.exitGame(player.getUserId());
+                // After exitGame's "back to the room" packet, so the client
+                // shows it on the game center screen.
+                this.sendTo(player, new SnowStormGenericErrorComposer(SnowWarConstants.ERROR_IDLE_REMOVED));
+                if (this.state != SnowWarGameState.RUNNING) {
+                    return;
+                }
+            }
+        }
+    }
+
+    private void sendTo(SnowWarGamePlayer player, MessageComposer composer) {
+        if (player.getHabbo() != null && player.getHabbo().getClient() != null) {
+            player.getHabbo().getClient().sendResponse(composer);
+        }
+    }
+
+    // ========================================================================
     // Player actions (called from packet handlers)
     // ========================================================================
 
-    public void handleWalk(SnowWarGamePlayer player, int worldX, int worldY) {
-        if (this.state != SnowWarGameState.RUNNING) {
+    /**
+     * Applies a player action under the tick's monitor. Packet handlers run on
+     * network threads; without this an action could change a player's state,
+     * ammo or the snowball list halfway through a tick, so the server would
+     * simulate (and checksum) something different from what it sends.
+     */
+    private void runAction(SnowWarGamePlayer player, Runnable action) {
+        SnowWarGameTask current = this.task;
+        if (this.state != SnowWarGameState.RUNNING || current == null) {
             return;
         }
+        synchronized (current) {
+            // The player may have left between the handler's lookup and here.
+            if (this.state == SnowWarGameState.RUNNING && this.getPlayer(player.getUserId()) == player) {
+                action.run();
+            }
+        }
+    }
 
+    public void handleWalk(SnowWarGamePlayer player, int worldX, int worldY) {
+        player.markActive(System.currentTimeMillis());
+        this.runAction(player, () -> this.applyWalk(player, worldX, worldY));
+    }
+
+    private void applyWalk(SnowWarGamePlayer player, int worldX, int worldY) {
         SnowWarAttributes attr = player.getAttributes();
 
         // AIR's HumanGameObject.changeMoveTarget cancels an in-progress
@@ -445,6 +562,7 @@ public class SnowWarGame {
     }
 
     public void handleThrowAtLocation(SnowWarGamePlayer player, int worldX, int worldY, int trajectory) {
+        player.markActive(System.currentTimeMillis());
         // 0 = quick, 1 = short lob, 2 = long lob, 3 = AIR's adaptive throw.
         if (trajectory < SnowWarConstants.TRAJECTORY_QUICK || trajectory > SnowWarConstants.TRAJECTORY_DEFAULT) {
             return;
@@ -457,24 +575,29 @@ public class SnowWarGame {
         // needs no clamp.
         int maxWorldX = this.map.getSizeX() * SnowWarConstants.TILE_SIZE;
         int maxWorldY = this.map.getSizeY() * SnowWarConstants.TILE_SIZE;
-        worldX = Math.max(0, Math.min(worldX, maxWorldX));
-        worldY = Math.max(0, Math.min(worldY, maxWorldY));
+        int targetX = Math.max(0, Math.min(worldX, maxWorldX));
+        int targetY = Math.max(0, Math.min(worldY, maxWorldY));
 
-        this.throwSnowball(player, worldX, worldY, trajectory);
+        this.runAction(player, () -> this.throwSnowball(player, targetX, targetY, trajectory));
     }
 
     public void handleThrowAtPlayer(SnowWarGamePlayer player, int targetObjectId, int trajectory) {
+        player.markActive(System.currentTimeMillis());
         if (trajectory < SnowWarConstants.TRAJECTORY_QUICK || trajectory > SnowWarConstants.TRAJECTORY_DEFAULT) {
             return;
         }
 
-        SnowWarGamePlayer target = this.getPlayerByObjectId(targetObjectId);
-        if (target == null || !this.isOpponent(player, target)) {
-            return;
-        }
+        this.runAction(player, () -> {
+            // Read the target's position under the lock, so it is the one the
+            // next tick starts from.
+            SnowWarGamePlayer target = this.getPlayerByObjectId(targetObjectId);
+            if (target == null || !this.isOpponent(player, target)) {
+                return;
+            }
 
-        SnowWarPoint targetWorld = target.getAttributes().getWorldPosition();
-        this.throwSnowball(player, targetWorld.getX(), targetWorld.getY(), trajectory);
+            SnowWarPoint targetWorld = target.getAttributes().getWorldPosition();
+            this.throwSnowball(player, targetWorld.getX(), targetWorld.getY(), trajectory);
+        });
     }
 
     /**
@@ -539,10 +662,11 @@ public class SnowWarGame {
     }
 
     public void handleCreateSnowball(SnowWarGamePlayer player) {
-        if (this.state != SnowWarGameState.RUNNING || this.task == null) {
-            return;
-        }
+        player.markActive(System.currentTimeMillis());
+        this.runAction(player, () -> this.applyCreateSnowball(player));
+    }
 
+    private void applyCreateSnowball(SnowWarGamePlayer player) {
         SnowWarAttributes attr = player.getAttributes();
 
         if (attr.getActivityState() != SnowWarActivityState.NORMAL) {
@@ -562,6 +686,7 @@ public class SnowWarGame {
         if (message == null) {
             return;
         }
+        player.markActive(System.currentTimeMillis());
 
         // Anti-flood: chat is broadcast to every player, so rate-limit it.
         SnowWarAttributes chatAttr = player.getAttributes();

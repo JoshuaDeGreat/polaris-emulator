@@ -16,6 +16,8 @@ public class SnowWarGamePlayer {
     private volatile SnowWarAvatarObject avatar;
     private volatile boolean stageReady = false;
     private volatile boolean playAgain = false;
+    private volatile long lastActionTime = System.currentTimeMillis();
+    private volatile boolean idleWarned = false;
 
     public SnowWarGamePlayer(Habbo habbo, int objectId, int teamId) {
         this.habbo = habbo;
@@ -62,6 +64,24 @@ public class SnowWarGamePlayer {
 
     public void setPlayAgain(boolean playAgain) {
         this.playAgain = playAgain;
+    }
+
+    public long getLastActionTime() {
+        return this.lastActionTime;
+    }
+
+    public boolean isIdleWarned() {
+        return this.idleWarned;
+    }
+
+    public void setIdleWarned(boolean idleWarned) {
+        this.idleWarned = idleWarned;
+    }
+
+    /** Any input from the player (walk, throw, make a snowball, chat) counts as activity. */
+    public void markActive(long now) {
+        this.lastActionTime = now;
+        this.idleWarned = false;
     }
 
     public SnowWarAttributes getAttributes() {

@@ -10,6 +10,10 @@ public final class SnowWarConstants {
     // Timing
     public static final int SUBTURNS_PER_TICK = 3;
     public static final int SERVER_TICK_MS = 150;
+    /** Consecutive failed ticks before a match is ended instead of left frozen. */
+    public static final int MAX_TICK_FAILURES = 5;
+
+    public static final long SLOW_TICK_WARNING_INTERVAL_MS = 10_000L;
     public static final int SUBTURN_MS = 50;
 
     // Movement
@@ -100,6 +104,10 @@ public final class SnowWarConstants {
     public static final int ERROR_NOT_ENOUGH_PLAYERS = 3;
     public static final int ERROR_NO_TICKETS = 4;
     public static final int ERROR_INTERNAL = 5;
+    /** Sent to a player who has done nothing for a while: act now or be removed. */
+    public static final int ERROR_IDLE_WARNING = 6;
+    /** Sent to a player after they were removed from a match for being idle. */
+    public static final int ERROR_IDLE_REMOVED = 7;
 
     private SnowWarConstants() {}
 }

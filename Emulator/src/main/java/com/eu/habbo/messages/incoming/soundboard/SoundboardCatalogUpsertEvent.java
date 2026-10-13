@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.soundboard;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogCommand;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
@@ -33,10 +34,20 @@ public class SoundboardCatalogUpsertEvent extends MessageHandler {
         // simply does not send it, and keeps addressing pads by URL.
         String classname = this.packet.bytesAvailable() > 0 ? this.packet.readString() : "";
 
-        SoundboardCatalogCommand command = new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled);
-        SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
+        // Trailing again, after the classname: the pad's own cooldown in seconds. Without it an
+        // update keeps the stored value.
+        int cooldownSeconds =
+                this.packet.bytesAvailable() > 0 ? this.packet.readInt() : SoundboardCatalogCommand.KEEP_COOLDOWN;
+
+        SoundboardCatalogCommand command =
+                new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled, cooldownSeconds);
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        SoundboardManager manager = environment.getSoundboardManager();
         SoundboardCatalogResult result = manager.upsert(habbo.getHabboInfo().getId(), command);
         this.sendResult(result);
+        if (result.successful()) {
+            SoundboardSettingsSender.sendToActiveRooms(manager, environment.getRoomManager());
+        }
     }
 
     private void sendResult(SoundboardCatalogResult result) {

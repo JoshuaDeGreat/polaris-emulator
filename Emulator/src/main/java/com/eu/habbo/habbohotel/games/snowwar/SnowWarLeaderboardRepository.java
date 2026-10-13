@@ -44,26 +44,44 @@ public final class SnowWarLeaderboardRepository {
             int totalListSize,
             int gameTypeId) {}
 
-    public void recordScores(List<SnowWarGamePlayer> players) {
-        if (players.isEmpty()) {
-            return;
+    /** One player's result of a finished match, captured when the match ends. */
+    public record ScoreRow(int userId, int score) {}
+
+    /**
+     * Adds a finished match to the weekly table in one transaction, so a failed
+     * attempt leaves nothing behind and can safely be retried.
+     *
+     * @return {@code true} once the rows are committed
+     */
+    public boolean recordScores(LocalDate weekStart, List<ScoreRow> rows) {
+        if (rows.isEmpty()) {
+            return true;
         }
 
-        LocalDate weekStart = weekStart(0);
         String sql = "INSERT INTO snowwar_scores (user_id, week_start, score, matches) VALUES (?, ?, ?, 1) "
                 + "ON DUPLICATE KEY UPDATE score = score + VALUES(score), matches = matches + 1";
-        try (Connection connection = this.connections.openConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (SnowWarGamePlayer player : players) {
-                statement.setInt(1, player.getUserId());
-                statement.setDate(2, Date.valueOf(weekStart));
-                statement.setInt(
-                        3, Math.max(0, player.getAttributes().getScore().get()));
-                statement.addBatch();
+        try (Connection connection = this.connections.openConnection()) {
+            boolean autoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (ScoreRow row : rows) {
+                    statement.setInt(1, row.userId());
+                    statement.setDate(2, Date.valueOf(weekStart));
+                    statement.setInt(3, Math.max(0, row.score()));
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+                connection.commit();
+                return true;
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(autoCommit);
             }
-            statement.executeBatch();
         } catch (SQLException exception) {
-            LOGGER.error("Unable to persist SnowWar leaderboard scores", exception);
+            LOGGER.warn("Unable to persist SnowWar leaderboard scores: {}", exception.getMessage());
+            return false;
         }
     }
 
@@ -72,6 +90,12 @@ public final class SnowWarLeaderboardRepository {
      * AIR skill level shown in the lobby and on the results screen.
      */
     public Map<Integer, Integer> loadTotalScores(Collection<Integer> userIds) {
+        Map<Integer, Integer> totals = this.tryLoadTotalScores(userIds);
+        return totals != null ? totals : new HashMap<>();
+    }
+
+    /** Like {@link #loadTotalScores}, but {@code null} when the database could not be read. */
+    public Map<Integer, Integer> tryLoadTotalScores(Collection<Integer> userIds) {
         Map<Integer, Integer> totals = new HashMap<>();
         if (userIds.isEmpty()) {
             return totals;
@@ -92,6 +116,7 @@ public final class SnowWarLeaderboardRepository {
             }
         } catch (SQLException exception) {
             LOGGER.error("Unable to load SnowWar total scores", exception);
+            return null;
         }
         return totals;
     }

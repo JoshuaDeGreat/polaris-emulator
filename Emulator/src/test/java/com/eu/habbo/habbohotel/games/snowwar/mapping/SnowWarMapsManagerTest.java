@@ -22,7 +22,8 @@ class SnowWarMapsManagerTest {
     void preservesOfficialMachineAndPileOnlyLayouts() {
         List<SnowWarPoint> arcticMachines = new ArrayList<>();
         assertTrue(SnowWarMapsManager.loadBundledMachines(8, new ArrayList<>(), arcticMachines));
-        assertEquals(2, arcticMachines.size());
+        // Arctic Island has a single machine, in the middle of the island.
+        assertEquals(List.of(new SnowWarPoint(25, 24)), arcticMachines);
 
         for (int mapId : List.of(9, 11)) {
             List<SnowWarPoint> machines = new ArrayList<>();

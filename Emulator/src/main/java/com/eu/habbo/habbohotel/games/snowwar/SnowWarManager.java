@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ public class SnowWarManager {
     private final SnowWarArenaRepository arenas = new SnowWarArenaRepository(this::openConnection);
     private final SnowWarLeaderboardRepository leaderboard = new SnowWarLeaderboardRepository(this::openConnection);
     private final SnowWarTokenOfferRepository tokenOffers = new SnowWarTokenOfferRepository(this::openConnection);
+    private final SnowWarScoreWriter scoreWriter =
+            new SnowWarScoreWriter(this.leaderboard::recordScores, (task, delayMs) -> schedule(task, delayMs) != null);
 
     // Per-user fixed-window packet counter for the generic SnowWar flood cap.
     // Value is [windowStartMillis, countInWindow]; guarded per-entry by the
@@ -81,6 +84,10 @@ public class SnowWarManager {
     private final ConcurrentHashMap<Integer, Integer> editorArenas = new ConcurrentHashMap<>();
 
     private SnowWarManager() {}
+
+    private static ScheduledFuture<?> schedule(Runnable task, long delayMs) {
+        return Emulator.getThreading().run(task, delayMs);
+    }
 
     private Connection openConnection() throws SQLException {
         return Emulator.getDatabase().getDataSource().getConnection();
@@ -138,16 +145,36 @@ public class SnowWarManager {
         return daily + this.tokenOffers.getExtraGames(userId);
     }
 
+    /**
+     * Captures the final scores now and saves them in the background (with
+     * retries), so the end of a match never waits on the database.
+     */
     void recordScores(List<SnowWarGamePlayer> players) {
-        this.leaderboard.recordScores(players);
+        List<SnowWarLeaderboardRepository.ScoreRow> rows = new ArrayList<>();
+        for (SnowWarGamePlayer player : players) {
+            rows.add(new SnowWarLeaderboardRepository.ScoreRow(
+                    player.getUserId(), player.getAttributes().getScore().get()));
+        }
+        this.scoreWriter.submit(SnowWarLeaderboardRepository.weekStart(0), rows);
+    }
+
+    /** All-time scores in the database, or {@code null} when they could not be read. */
+    Map<Integer, Integer> loadSavedTotalScores(Collection<Integer> userIds) {
+        return this.leaderboard.tryLoadTotalScores(userIds);
     }
 
     /** AIR skill level (1..30) per user id, derived from the all-time score. */
     public Map<Integer, Integer> getSkillLevels(Collection<Integer> userIds) {
-        Map<Integer, Integer> totals = this.leaderboard.loadTotalScores(userIds);
+        return this.skillLevelsFromSavedTotals(userIds, this.leaderboard.loadTotalScores(userIds));
+    }
+
+    /** Skill levels from saved totals plus the scores still waiting to be saved. */
+    Map<Integer, Integer> skillLevelsFromSavedTotals(Collection<Integer> userIds, Map<Integer, Integer> savedTotals) {
+        Map<Integer, Integer> pending = this.scoreWriter.pendingScores(userIds);
         Map<Integer, Integer> levels = new HashMap<>();
         for (Integer userId : userIds) {
-            levels.put(userId, SnowWarSkillLevel.fromTotalScore(totals.getOrDefault(userId, 0)));
+            long total = (long) savedTotals.getOrDefault(userId, 0) + pending.getOrDefault(userId, 0);
+            levels.put(userId, SnowWarSkillLevel.fromTotalScore((int) Math.min(Integer.MAX_VALUE, total)));
         }
         return levels;
     }
@@ -378,7 +405,7 @@ public class SnowWarManager {
 
         this.broadcastToQueue(new SnowStormStartLobbyCounterComposer(this.countdownSeconds));
 
-        Emulator.getThreading().run(this::countdownTick, 1000);
+        schedule(this::countdownTick, 1000);
     }
 
     private void countdownTick() {
@@ -417,7 +444,7 @@ public class SnowWarManager {
         // Re-send the (possibly changed) line-up each tick so a player who
         // joined/left the queue during the countdown is reflected live.
         this.broadcastLobbyTeams();
-        Emulator.getThreading().run(this::countdownTick, 1000);
+        schedule(this::countdownTick, 1000);
     }
 
     /**

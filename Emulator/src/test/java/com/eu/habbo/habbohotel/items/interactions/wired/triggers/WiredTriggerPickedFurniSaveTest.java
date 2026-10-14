@@ -46,5 +46,20 @@ class WiredTriggerPickedFurniSaveTest {
         String saved = trigger.getWiredData();
         assertTrue(saved.contains("1234"), saved);
         assertTrue(saved.contains("100"), saved);
+
+        // Walking onto the picked rug fires it; walking onto another furni does not.
+        HabboItem chair = mock(HabboItem.class);
+        when(chair.getId()).thenReturn(99);
+        when(room.getItemsAt(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(java.util.Set.of());
+        assertTrue(trigger.matches(trigger, walkOn(room, rug)));
+        org.junit.jupiter.api.Assertions.assertFalse(trigger.matches(trigger, walkOn(room, chair)));
+    }
+
+    private static com.eu.habbo.habbohotel.wired.core.WiredEvent walkOn(Room room, HabboItem item) {
+        return com.eu.habbo.habbohotel.wired.core.WiredEvent.builder(
+                        com.eu.habbo.habbohotel.wired.core.WiredEvent.Type.USER_WALKS_ON, room)
+                .sourceItem(item)
+                .build();
     }
 }

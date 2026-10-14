@@ -8,8 +8,16 @@ public final class WiredInputGuard {
     public static final int MAX_INT_PARAMS = 100;
     public static final int MAX_STRING_PARAM_LENGTH = 1024;
     public static final int MAX_ABSOLUTE_FURNI_IDS = 100;
-    public static final int DEFAULT_MAX_DELAY = 20;
+    /** The official editor's action delay: 0 to 120 pulses of 0.5 s. */
+    public static final int DEFAULT_MAX_DELAY = 120;
+
     public static final int MAX_ABSOLUTE_DELAY = 3600;
+    /** Source types a box may send per selection kind (the official editor sends one per slot). */
+    public static final int MAX_SOURCE_TYPES = 10;
+    /** Variables a box may reference. */
+    public static final int MAX_VARIABLE_IDS = 20;
+
+    public static final int MAX_VARIABLE_ID_LENGTH = 100;
     public static final int MIN_STUFF_SELECTION_CODE = -1;
     public static final int MAX_STUFF_SELECTION_CODE = 2;
 
@@ -62,6 +70,39 @@ public final class WiredInputGuard {
         }
 
         return accepted == values.length ? values : Arrays.copyOf(values, accepted);
+    }
+
+    /** A furni or user source type list from the official save packet. */
+    public static int[] readSourceTypes(ClientMessage packet) {
+        int count = packet.readInt();
+        if (count < 0 || count > MAX_SOURCE_TYPES) {
+            throw new IllegalArgumentException("Invalid wired source type count");
+        }
+
+        int[] values = new int[count];
+        for (int i = 0; i < count; i++) {
+            values[i] = packet.readInt();
+        }
+        return values;
+    }
+
+    /** The variable ids from the official save packet. */
+    public static String[] readVariableIds(ClientMessage packet) {
+        int count = packet.readInt();
+        if (count < 0 || count > MAX_VARIABLE_IDS) {
+            throw new IllegalArgumentException("Invalid wired variable id count");
+        }
+
+        String[] values = new String[count];
+        for (int i = 0; i < count; i++) {
+            String value = packet.readString();
+            if (value == null) value = "";
+            if (value.length() > MAX_VARIABLE_ID_LENGTH) {
+                throw new IllegalArgumentException("Wired variable id exceeds the allowed length");
+            }
+            values[i] = value;
+        }
+        return values;
     }
 
     public static int normalizeDelay(int delay) {

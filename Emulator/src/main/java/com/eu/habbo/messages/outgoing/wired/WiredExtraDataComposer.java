@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -27,11 +28,14 @@ public class WiredExtraDataComposer extends MessageComposer implements SecretBea
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.WiredEffectDataComposer);
+        // Each box still writes the legacy layout; it goes out in the official one.
+        ServerMessage legacy = new ServerMessage(Outgoing.WiredEffectDataComposer);
         if (this.viewer != null) {
-            this.extra.serializeWiredDataFor(this.response, this.room, this.viewer);
+            this.extra.serializeWiredDataFor(legacy, this.room, this.viewer);
         } else {
-            this.extra.serializeWiredData(this.response, this.room);
+            this.extra.serializeWiredData(legacy, this.room);
         }
+        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.ACTION, this.response);
         this.extra.needsUpdate(true);
         return this.response;
     }

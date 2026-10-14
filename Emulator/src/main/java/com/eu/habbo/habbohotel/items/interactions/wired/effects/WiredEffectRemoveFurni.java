@@ -80,26 +80,18 @@ public class WiredEffectRemoveFurni extends InteractionWiredEffect {
             if (target.getRoomId() != room.getId()) continue; // only items currently in this room
             if (removed >= MAX_REMOVE_PER_FIRE) break;
 
-            if (this.mode == MODE_DELETE) {
-                // Deleting is for good. A guest's furni standing in the room is not the owner's to
-                // destroy, so it stays; the return mode below hands it back to whoever owns it.
-                if (target.getUserId() != room.getOwnerId()) continue;
+            // Habbo's remove furni never destroys anything: both modes hand the furni back to whoever owns
+            // it, so a wired builder with modify rights cannot wipe the room owner's furni for good.
+            int ownerId = target.getUserId();
+            Habbo ownerHabbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(ownerId);
+            boolean tracked = BuildersClubRoomSupport.isTrackedItem(target.getId());
 
-                room.pickUpItem(target, null);
-                Emulator.getGameEnvironment().getItemManager().deleteItem(target);
-            } else {
-                int ownerId = target.getUserId();
-                Habbo ownerHabbo =
-                        Emulator.getGameEnvironment().getHabboManager().getHabbo(ownerId);
-                boolean tracked = BuildersClubRoomSupport.isTrackedItem(target.getId());
+            room.pickUpItem(target, ownerHabbo);
 
-                room.pickUpItem(target, ownerHabbo);
-
-                if (ownerHabbo != null && ownerHabbo.getClient() != null && !tracked) {
-                    ownerHabbo.getInventory().getItemsComponent().addItem(target);
-                    ownerHabbo.getClient().sendResponse(new AddHabboItemComposer(target));
-                    ownerHabbo.getClient().sendResponse(new InventoryRefreshComposer());
-                }
+            if (ownerHabbo != null && ownerHabbo.getClient() != null && !tracked) {
+                ownerHabbo.getInventory().getItemsComponent().addItem(target);
+                ownerHabbo.getClient().sendResponse(new AddHabboItemComposer(target));
+                ownerHabbo.getClient().sendResponse(new InventoryRefreshComposer());
             }
 
             removed++;

@@ -43,7 +43,8 @@ class WiredEffectLogTest {
         ByteBuf packet = new WiredEffectDataComposer(box, room).compose().get();
         try {
             packet.skipBytes(6);
-            packet.readBoolean();
+            // official layout: furniLimit, stuffIds, stuffIds2, spriteId, id
+            packet.readInt();
             packet.readInt();
             packet.readInt();
             packet.readInt();
@@ -52,7 +53,9 @@ class WiredEffectLogTest {
             packet.readBytes(text);
             int[] params = new int[packet.readInt()];
             for (int i = 0; i < params.length; i++) params[i] = packet.readInt();
-            packet.readInt();
+            packet.readInt(); // variableIds
+            packet.readInt(); // furni sources
+            packet.readInt(); // user sources
             return new Body(new String(text, java.nio.charset.StandardCharsets.UTF_8), params, packet.readInt());
         } finally {
             packet.release();

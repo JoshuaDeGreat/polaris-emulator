@@ -234,17 +234,39 @@ public abstract class InteractionWired extends InteractionDefault {
     }
 
     public static WiredSettings readSettings(ClientMessage packet, boolean isEffect, int maximumStringLength) {
+        return readSettings(packet, isEffect ? SaveKind.ACTION : SaveKind.TRIGGER, maximumStringLength);
+    }
+
+    /** Which official save packet is being read; only the slot after the furni picks differs. */
+    public enum SaveKind {
+        TRIGGER,
+        ACTION,
+        CONDITION
+    }
+
+    /**
+     * Reads the official AIR save layout (build WIN63-202610131318), after the wired id: {@code int[]
+     * intParams, String stringParam, int[] stuffIds}, the kind's slot (action {@code int delay}, condition
+     * {@code int quantifierCode}), then {@code int[] furniSources, int[] userSources, String[] variableIds,
+     * int[] stuffIds2}.
+     */
+    public static WiredSettings readSettings(ClientMessage packet, SaveKind kind, int maximumStringLength) {
         int[] intParams = WiredInputGuard.readIntParams(packet);
         String stringParam = WiredInputGuard.readStringParam(packet, maximumStringLength);
         int[] itemIds = WiredInputGuard.readFurniIds(packet);
 
         WiredSettings settings = new WiredSettings(intParams, stringParam, itemIds, -1);
 
-        if (isEffect) {
-            settings.setDelay(WiredInputGuard.normalizeDelay(packet.readInt()));
+        switch (kind) {
+            case ACTION -> settings.setDelay(WiredInputGuard.normalizeDelay(packet.readInt()));
+            case CONDITION -> settings.setQuantifierCode(packet.readInt());
+            case TRIGGER -> {}
         }
 
-        settings.setStuffTypeSelectionCode(WiredInputGuard.normalizeStuffSelectionCode(packet.readInt()));
+        settings.setFurniSourceTypes(WiredInputGuard.readSourceTypes(packet));
+        settings.setUserSourceTypes(WiredInputGuard.readSourceTypes(packet));
+        settings.setVariableIds(WiredInputGuard.readVariableIds(packet));
+        settings.setFurniIds2(WiredInputGuard.readFurniIds(packet));
         return settings;
     }
 }

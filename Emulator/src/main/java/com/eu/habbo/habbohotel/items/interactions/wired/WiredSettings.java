@@ -9,6 +9,12 @@ public class WiredSettings {
     private int stuffTypeSelectionCode;
     private int delay;
     private Room room;
+    // Official AIR save fields (build WIN63-202610131318); empty until a box reads them.
+    private int[] furniSourceTypes = new int[0];
+    private int[] userSourceTypes = new int[0];
+    private String[] variableIds = new String[0];
+    private int[] furniIds2 = new int[0];
+    private int quantifierCode;
 
     public WiredSettings(int[] intParams, String stringParam, int[] furniIds, int stuffTypeSelectionCode, int delay) {
         this.furniIds = furniIds;
@@ -68,5 +74,47 @@ public class WiredSettings {
 
     public void setRoom(Room room) {
         this.room = room;
+    }
+
+    public int[] getFurniSourceTypes() {
+        return this.furniSourceTypes;
+    }
+
+    public void setFurniSourceTypes(int[] furniSourceTypes) {
+        this.furniSourceTypes = (furniSourceTypes != null) ? furniSourceTypes : new int[0];
+    }
+
+    public int[] getUserSourceTypes() {
+        return this.userSourceTypes;
+    }
+
+    public void setUserSourceTypes(int[] userSourceTypes) {
+        this.userSourceTypes = (userSourceTypes != null) ? userSourceTypes : new int[0];
+    }
+
+    public String[] getVariableIds() {
+        return this.variableIds;
+    }
+
+    public void setVariableIds(String[] variableIds) {
+        this.variableIds = (variableIds != null) ? variableIds : new String[0];
+    }
+
+    /** The second furni pick list (official dual picking). */
+    public int[] getFurniIds2() {
+        return this.furniIds2;
+    }
+
+    public void setFurniIds2(int[] furniIds2) {
+        this.furniIds2 = (furniIds2 != null) ? furniIds2 : new int[0];
+    }
+
+    /** A condition's all/any quantifier code. */
+    public int getQuantifierCode() {
+        return this.quantifierCode;
+    }
+
+    public void setQuantifierCode(int quantifierCode) {
+        this.quantifierCode = quantifierCode;
     }
 }

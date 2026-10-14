@@ -1,7 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -12,8 +12,10 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.ItemManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredServices;
@@ -23,13 +25,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 /**
- * DELETE mode destroys furni for good. The room owner may do that to their own furni; a guest's
- * furni standing in the room is not theirs to destroy, so it is left where it is.
+ * Habbo's remove furni never destroys anything. Even the old DELETE mode hands every furni back to
+ * whoever owns it, so a wired builder with modify rights cannot wipe the room owner's furni for good.
  */
 class WiredEffectRemoveFurniTest {
 
     @Test
-    void deleteModeOnlyDestroysTheRoomOwnersOwnFurni() throws Exception {
+    void deleteModeReturnsFurniToTheirOwnersInsteadOfDestroyingThem() throws Exception {
         Room room = mock(Room.class);
         when(room.getId()).thenReturn(1);
         when(room.getOwnerId()).thenReturn(10);
@@ -45,17 +47,21 @@ class WiredEffectRemoveFurniTest {
         ItemManager items = mock(ItemManager.class);
         GameEnvironment environment = mock(GameEnvironment.class);
         when(environment.getItemManager()).thenReturn(items);
+        when(environment.getHabboManager()).thenReturn(mock(HabboManager.class));
 
-        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class);
+                MockedStatic<BuildersClubRoomSupport> buildersClub = mockStatic(BuildersClubRoomSupport.class)) {
             emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
+            buildersClub
+                    .when(() -> BuildersClubRoomSupport.isTrackedItem(anyInt()))
+                    .thenReturn(false);
 
             box.execute(context(room));
         }
 
         verify(room).pickUpItem(owners, null);
-        verify(items).deleteItem(owners);
-        verify(room, never()).pickUpItem(eq(guests), any());
-        verify(items, never()).deleteItem(guests);
+        verify(room).pickUpItem(guests, null);
+        verify(items, never()).deleteItem(any());
     }
 
     private static HabboItem furni(Room room, int id, int userId) {

@@ -56,7 +56,8 @@ class WiredEffectWhisperTypeCodeTest {
         ByteBuf packet = new WiredEffectDataComposer(effect, room).compose().get();
         try {
             packet.skipBytes(6); // frame length and header
-            packet.readBoolean();
+            // official layout: furniLimit, stuffIds, stuffIds2, spriteId, id
+            packet.readInt();
             packet.readInt();
             packet.readInt();
             packet.readInt();
@@ -66,7 +67,9 @@ class WiredEffectWhisperTypeCodeTest {
             for (int i = 0; i < count; i++) {
                 packet.readInt();
             }
-            packet.readInt(); // the selection code slot
+            packet.readInt(); // variableIds
+            packet.readInt(); // furni sources
+            packet.readInt(); // user sources
             return packet.readInt();
         } finally {
             packet.release();

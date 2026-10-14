@@ -35,7 +35,8 @@ class WiredEffectMoveUserTilesTest {
         ByteBuf packet = new WiredEffectDataComposer(box, room).compose().get();
         try {
             packet.skipBytes(6); // frame length and header
-            packet.readBoolean();
+            // official layout: furniLimit, stuffIds, stuffIds2, spriteId, id
+            packet.readInt();
             packet.readInt();
             packet.readInt();
             packet.readInt();

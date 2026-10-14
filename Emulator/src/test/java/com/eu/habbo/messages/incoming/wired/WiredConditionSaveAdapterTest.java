@@ -39,7 +39,11 @@ class WiredConditionSaveAdapterTest {
                         .writeInt(73)
                         .writeShort(0)
                         .writeInt(0)
-                        .writeInt(-1));
+                        .writeInt(0) // quantifier code
+                        .writeInt(0) // furni sources
+                        .writeInt(0) // user sources
+                        .writeInt(0) // variable ids
+                        .writeInt(0)); // second furni picks
 
         assertTrue(this.adapter.save(condition, packet));
         assertEquals(73, condition.savedValue);

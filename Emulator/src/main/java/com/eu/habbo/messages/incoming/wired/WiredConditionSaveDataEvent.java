@@ -34,8 +34,8 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                                     int maximumStringLength = condition instanceof WiredLargePayload
                                             ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
                                             : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
-                                    WiredSettings settings =
-                                            InteractionWired.readSettings(this.packet, false, maximumStringLength);
+                                    WiredSettings settings = InteractionWired.readSettings(
+                                            this.packet, InteractionWired.SaveKind.CONDITION, maximumStringLength);
                                     settings.setRoom(room);
                                     return settings;
                                 },

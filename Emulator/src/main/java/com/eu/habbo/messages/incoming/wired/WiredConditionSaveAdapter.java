@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.messages.ClientMessage;
 import java.lang.reflect.Method;
@@ -33,7 +34,11 @@ final class WiredConditionSaveAdapter {
 
     boolean save(InteractionWiredCondition condition, ClientMessage packet) {
         Objects.requireNonNull(packet, "packet");
-        return save(condition, () -> InteractionWired.readSettings(packet, false), () -> packet);
+        return save(
+                condition,
+                () -> InteractionWired.readSettings(
+                        packet, InteractionWired.SaveKind.CONDITION, WiredInputGuard.MAX_STRING_PARAM_LENGTH),
+                () -> packet);
     }
 
     boolean save(

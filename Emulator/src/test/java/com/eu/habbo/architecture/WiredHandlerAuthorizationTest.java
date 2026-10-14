@@ -99,6 +99,14 @@ class WiredHandlerAuthorizationTest {
             }
         }
 
+        // A handler that keeps its parent's handle() (it only tweaks a hook) inherits the parent's gate.
+        java.util.regex.Matcher parent =
+                java.util.regex.Pattern.compile("\\bextends (\\w+)").matcher(source);
+        if (!source.contains("void handle(") && parent.find()) {
+            Path target = findSource(parent.group(1));
+            return target != null && reachesGate(target);
+        }
+
         return false;
     }
 

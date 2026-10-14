@@ -26,7 +26,18 @@ public final class WiredDefinitionWire {
     public enum Holder {
         TRIGGER,
         ACTION,
-        CONDITION
+        CONDITION,
+        /** Official addon definition (2168); legacy-wise an extra box, written like an action. */
+        ADDON,
+        /** Official selector definition (2509); legacy-wise an effect box. */
+        SELECTOR,
+        /** Official variable definition (2955); legacy-wise an extra box. */
+        VARIABLE;
+
+        /** Addons, selectors and variables still write the legacy action layout. */
+        boolean writesLegacyAction() {
+            return this == ACTION || this == ADDON || this == SELECTOR || this == VARIABLE;
+        }
     }
 
     /** Legacy definitions longer than this are not trusted. */
@@ -77,17 +88,15 @@ public final class WiredDefinitionWire {
         in.readInt(); // selection code
         definition.code = in.readInt();
 
-        switch (holder) {
-            case TRIGGER -> readInts(in); // conflicting actions
-            case ACTION -> {
-                definition.delay = in.readInt();
-                readInts(in); // conflicting triggers
-                if (in.isReadable()) {
-                    definition.contexts = new byte[in.readableBytes()];
-                    in.readBytes(definition.contexts);
-                }
+        if (holder == Holder.TRIGGER) {
+            readInts(in); // conflicting actions
+        } else if (holder.writesLegacyAction()) {
+            definition.delay = in.readInt();
+            readInts(in); // conflicting triggers
+            if (in.isReadable()) {
+                definition.contexts = new byte[in.readableBytes()];
+                in.readBytes(definition.contexts);
             }
-            case CONDITION -> {}
         }
         // Whatever a legacy box wrote after its known fields (two unused ints on conditions) is dropped.
         definition.leftover = in.readableBytes();
@@ -111,7 +120,11 @@ public final class WiredDefinitionWire {
         switch (holder) {
             case ACTION -> out.appendInt(definition.delay);
             case CONDITION -> out.appendInt(0); // quantifier code
-            case TRIGGER -> {}
+            case SELECTOR -> {
+                out.appendBoolean(false); // filter
+                out.appendBoolean(false); // invert
+            }
+            default -> {}
         }
 
         out.appendBoolean(false); // advanced mode

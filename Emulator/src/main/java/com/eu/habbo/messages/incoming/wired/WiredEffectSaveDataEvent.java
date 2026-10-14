@@ -37,7 +37,7 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                                 effect instanceof WiredLargePayload || extra instanceof WiredLargePayload
                                         ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
                                         : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
-                        settings = InteractionWired.readSettings(this.packet, true, maximumStringLength);
+                        settings = InteractionWired.readSettings(this.packet, this.saveKind(), maximumStringLength);
                         settings.setRoom(room);
                     } catch (IllegalArgumentException e) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired effect settings"));
@@ -84,6 +84,14 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                 }
             }
         }
+    }
+
+    /**
+     * Which official save packet this is. Effects and extras share this handler; the official addon,
+     * selector and variable saves only differ in the slot after the furni picks.
+     */
+    protected InteractionWired.SaveKind saveKind() {
+        return InteractionWired.SaveKind.ACTION;
     }
 
     /** One shared cooldown for every wired save, so alternating box types cannot multiply it. */

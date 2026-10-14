@@ -241,13 +241,16 @@ public abstract class InteractionWired extends InteractionDefault {
     public enum SaveKind {
         TRIGGER,
         ACTION,
-        CONDITION
+        CONDITION,
+        ADDON,
+        SELECTOR,
+        VARIABLE
     }
 
     /**
      * Reads the official AIR save layout (build WIN63-202610131318), after the wired id: {@code int[]
      * intParams, String stringParam, int[] stuffIds}, the kind's slot (action {@code int delay}, condition
-     * {@code int quantifierCode}), then {@code int[] furniSources, int[] userSources, String[] variableIds,
+     * {@code int quantifierCode}, selector {@code bool filter, bool invert}), then {@code int[] furniSources, int[] userSources, String[] variableIds,
      * int[] stuffIds2}.
      */
     public static WiredSettings readSettings(ClientMessage packet, SaveKind kind, int maximumStringLength) {
@@ -260,7 +263,11 @@ public abstract class InteractionWired extends InteractionDefault {
         switch (kind) {
             case ACTION -> settings.setDelay(WiredInputGuard.normalizeDelay(packet.readInt()));
             case CONDITION -> settings.setQuantifierCode(packet.readInt());
-            case TRIGGER -> {}
+            case SELECTOR -> {
+                settings.setSelectorFilter(packet.readBoolean());
+                settings.setSelectorInvert(packet.readBoolean());
+            }
+            default -> {}
         }
 
         settings.setFurniSourceTypes(WiredInputGuard.readSourceTypes(packet));

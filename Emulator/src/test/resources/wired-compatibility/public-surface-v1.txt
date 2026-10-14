@@ -163,6 +163,8 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#get
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#getStuffTypeSelectionCode(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#getUserSourceTypes(-):int[] throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#getVariableIds(-):java.lang.String[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#isSelectorFilter(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#isSelectorInvert(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setDelay(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setFurniIds(int[]):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setFurniIds2(int[]):void throws -
@@ -170,6 +172,8 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#set
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setIntParams(int[]):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setQuantifierCode(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setRoom(com.eu.habbo.habbohotel.rooms.Room):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setSelectorFilter(boolean):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setSelectorInvert(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setStringParam(java.lang.String):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setStuffTypeSelectionCode(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings#setUserSourceTypes(int[]):void throws -
@@ -8125,11 +8129,21 @@ TYPE public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionW
 ENUM com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder 0 TRIGGER
 ENUM com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder 1 ACTION
 ENUM com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder 2 CONDITION
+ENUM com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder 3 ADDON
+ENUM com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder 4 SELECTOR
+ENUM com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder 5 VARIABLE
 FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#ACTION:com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#ADDON:com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder
 FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#CONDITION:com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#SELECTOR:com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder
 FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#TRIGGER:com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#VARIABLE:com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#valueOf(java.lang.String):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder throws -
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder#values(-):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder[] throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredHolders extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#isVariable(com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#of(com.eu.habbo.habbohotel.items.interactions.InteractionWired):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.tick.WiredTickService extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#DEFAULT_TICK_INTERVAL_MS:int
@@ -8321,6 +8335,10 @@ METHOD public com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxViewer$Bat
 METHOD public final com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxViewer$Batch#toString(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxViewer$Batch#updates(-):java.util.List<com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxStatus> throws -
 
+TYPE public com.eu.habbo.messages.incoming.wired.WiredAddonSaveDataEvent extends com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredAddonSaveDataEvent(-) throws -
+METHOD protected com.eu.habbo.messages.incoming.wired.WiredAddonSaveDataEvent#saveKind(-):com.eu.habbo.habbohotel.items.interactions.InteractionWired$SaveKind throws -
+
 TYPE public com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent#getRatelimit(-):int throws -
@@ -8352,6 +8370,7 @@ CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent
 METHOD public com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent#getRatelimit(-):int throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent#getRatelimitGroup(-):java.lang.String throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent#handle(-):void throws java.lang.Exception
+METHOD protected com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent#saveKind(-):com.eu.habbo.habbohotel.items.interactions.InteractionWired$SaveKind throws -
 
 TYPE public com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent(-) throws -
@@ -8421,6 +8440,10 @@ TYPE public com.eu.habbo.messages.incoming.wired.WiredSaveException extends java
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredSaveException(java.lang.String) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredSaveException#getMessage(-):java.lang.String throws -
 
+TYPE public com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent extends com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent(-) throws -
+METHOD protected com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent#saveKind(-):com.eu.habbo.habbohotel.items.interactions.InteractionWired$SaveKind throws -
+
 TYPE public com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent#getRatelimit(-):int throws -
@@ -8469,6 +8492,10 @@ TYPE public com.eu.habbo.messages.incoming.wired.WiredVariableHoldersRequestEven
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredVariableHoldersRequestEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredVariableHoldersRequestEvent#getRatelimit(-):int throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredVariableHoldersRequestEvent#handle(-):void throws java.lang.Exception
+
+TYPE public com.eu.habbo.messages.incoming.wired.WiredVariableSaveDataEvent extends com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredVariableSaveDataEvent(-) throws -
+METHOD protected com.eu.habbo.messages.incoming.wired.WiredVariableSaveDataEvent#saveKind(-):com.eu.habbo.habbohotel.items.interactions.InteractionWired$SaveKind throws -
 
 TYPE public com.eu.habbo.messages.outgoing.rooms.WiredFurniOpacityComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 FIELD public static final com.eu.habbo.messages.outgoing.rooms.WiredFurniOpacityComposer#PROTOCOL_VERSION:int

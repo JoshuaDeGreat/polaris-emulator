@@ -18,11 +18,16 @@ public class WiredEffectDataComposer extends MessageComposer {
 
     @Override
     protected ServerMessage composeInternal() {
-        this.response.init(Outgoing.WiredEffectDataComposer);
+        // Selectors have their own official definition packet.
+        boolean selector = this.effect.isSelector();
+        this.response.init(selector ? Outgoing.WiredSelectorDataComposer : Outgoing.WiredEffectDataComposer);
         // Each box still writes the legacy layout; it goes out in the official one.
         ServerMessage legacy = new ServerMessage(Outgoing.WiredEffectDataComposer);
         this.effect.serializeWiredData(legacy, this.room);
-        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.ACTION, this.response);
+        WiredDefinitionWire.writeOfficial(
+                legacy,
+                selector ? WiredDefinitionWire.Holder.SELECTOR : WiredDefinitionWire.Holder.ACTION,
+                this.response);
         this.effect.needsUpdate(true);
         return this.response;
     }

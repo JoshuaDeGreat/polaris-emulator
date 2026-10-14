@@ -215,6 +215,10 @@ public class Incoming {
     public static final int RequestInventoryItemsEvent = 3150;
     public static final int ModToolRoomAlertEvent = 3842;
     public static final int WiredEffectSaveDataEvent = 2281;
+    // Official AIR wired addon, selector and variable saves (build WIN63-202610131318).
+    public static final int WiredAddonSaveDataEvent = 1883;
+    public static final int WiredSelectorSaveDataEvent = 3883;
+    public static final int WiredVariableSaveDataEvent = 2310;
     public static final int WiredApplySetConditionsEvent = 3373;
     public static final int CheckPetNameEvent = 2109;
     public static final int SecureLoginEvent = 2419;

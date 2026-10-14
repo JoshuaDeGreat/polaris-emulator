@@ -15,6 +15,8 @@ public class WiredSettings {
     private String[] variableIds = new String[0];
     private int[] furniIds2 = new int[0];
     private int quantifierCode;
+    private boolean selectorFilter;
+    private boolean selectorInvert;
 
     public WiredSettings(int[] intParams, String stringParam, int[] furniIds, int stuffTypeSelectionCode, int delay) {
         this.furniIds = furniIds;
@@ -116,5 +118,23 @@ public class WiredSettings {
 
     public void setQuantifierCode(int quantifierCode) {
         this.quantifierCode = quantifierCode;
+    }
+
+    /** A selector's official "filter" switch. */
+    public boolean isSelectorFilter() {
+        return this.selectorFilter;
+    }
+
+    public void setSelectorFilter(boolean selectorFilter) {
+        this.selectorFilter = selectorFilter;
+    }
+
+    /** A selector's official "invert" switch. */
+    public boolean isSelectorInvert() {
+        return this.selectorInvert;
+    }
+
+    public void setSelectorInvert(boolean selectorInvert) {
+        this.selectorInvert = selectorInvert;
     }
 }

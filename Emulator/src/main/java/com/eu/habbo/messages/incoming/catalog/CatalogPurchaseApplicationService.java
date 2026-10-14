@@ -45,8 +45,11 @@ import com.eu.habbo.threading.ThreadPooling;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class CatalogPurchaseApplicationService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPurchaseApplicationService.class);
 
     private final GameClient client;
     private final GameEnvironment environment;
@@ -183,6 +186,16 @@ final class CatalogPurchaseApplicationService {
         }
 
         if (page == null) {
+            CatalogPage requested = catalogManager.getCatalogPage(pageId);
+            LOGGER.warn(
+                    "Purchase refused for user {}: catalog page {} (offer {}) {}",
+                    this.buyerId(),
+                    pageId,
+                    itemId,
+                    requested == null
+                            ? "does not exist"
+                            : "is not open to them (enabled=" + requested.isEnabled() + ", min_rank="
+                                    + requested.getRank() + ", club_only=" + requested.isClubOnly() + ")");
             this.client.sendResponse(
                     new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
             return;
@@ -297,6 +310,15 @@ final class CatalogPurchaseApplicationService {
             }
         }
 
+        if (item == null) {
+            LOGGER.warn(
+                    "Purchase refused for user {}: offer {} is not on catalog page {} ({})",
+                    this.buyerId(),
+                    itemId,
+                    page.getId(),
+                    page.getCaption());
+        }
+
         boolean itemHasBot = false;
         boolean itemHasPet = false;
 
@@ -379,5 +401,12 @@ final class CatalogPurchaseApplicationService {
         }
 
         return ClubOffer.WINDOW_HABBO_CLUB;
+    }
+
+    /** For refusal logs only; never throws on a half-initialised client. */
+    private int buyerId() {
+        return this.client.getHabbo() != null && this.client.getHabbo().getHabboInfo() != null
+                ? this.client.getHabbo().getHabboInfo().getId()
+                : 0;
     }
 }

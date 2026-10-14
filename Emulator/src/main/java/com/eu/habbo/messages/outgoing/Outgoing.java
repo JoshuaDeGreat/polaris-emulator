@@ -42,6 +42,10 @@ public class Outgoing {
     public static final int InventoryPetsComposer = 3522;
     public static final int UserCreditsComposer = 3475;
     public static final int WiredTriggerDataComposer = 383;
+    // Official AIR wired addon, selector and variable definitions (build WIN63-202610131318).
+    public static final int WiredAddonDataComposer = 2168;
+    public static final int WiredSelectorDataComposer = 2509;
+    public static final int WiredVariableDataComposer = 2955;
     public static final int TradeStoppedComposer = 1373;
     public static final int ModToolUserChatlogComposer = 3377;
     public static final int GuildInfoComposer = 1702;

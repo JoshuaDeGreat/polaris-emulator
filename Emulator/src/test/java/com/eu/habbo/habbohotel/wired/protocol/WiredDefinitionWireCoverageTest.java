@@ -10,8 +10,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.items.WiredInteractionRegistryFixture;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
 import io.netty.buffer.ByteBuf;
@@ -42,9 +40,9 @@ class WiredDefinitionWireCoverageTest {
             for (Class<? extends InteractionWired> type : WiredInteractionRegistryFixture.wiredTypes().stream()
                     .sorted(Comparator.comparing(Class::getName))
                     .toList()) {
-                WiredDefinitionWire.Holder holder = holderOf(type);
                 try {
                     InteractionWired item = WiredInteractionRegistryFixture.instantiate(type);
+                    WiredDefinitionWire.Holder holder = WiredHolders.of(item);
                     ServerMessage legacy = new ServerMessage(1);
                     item.serializeWiredData(legacy, mock(Room.class, Answers.RETURNS_DEEP_STUBS));
 
@@ -55,7 +53,7 @@ class WiredDefinitionWireCoverageTest {
 
                     boolean expectedLeftover =
                             switch (holder) {
-                                case ACTION -> definition.leftover == 0;
+                                case ACTION, ADDON, SELECTOR, VARIABLE -> definition.leftover == 0;
                                 case CONDITION -> definition.leftover == 8;
                                 case TRIGGER -> TRIGGER_LEFTOVERS.contains(definition.leftover);
                             };
@@ -75,6 +73,27 @@ class WiredDefinitionWireCoverageTest {
         }
 
         assertTrue(failures.isEmpty(), String.join("\n", failures));
+    }
+
+    @Test
+    void boxesGoToTheOfficialHolderTheyBelongTo() throws Exception {
+        java.util.Map<WiredDefinitionWire.Holder, Integer> counts =
+                new java.util.EnumMap<>(WiredDefinitionWire.Holder.class);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment)
+                    .thenReturn(mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS));
+
+            for (Class<? extends InteractionWired> type : WiredInteractionRegistryFixture.wiredTypes()) {
+                InteractionWired item = WiredInteractionRegistryFixture.instantiate(type);
+                counts.merge(WiredHolders.of(item), 1, Integer::sum);
+            }
+        }
+
+        for (WiredDefinitionWire.Holder holder : WiredDefinitionWire.Holder.values()) {
+            assertTrue(counts.getOrDefault(holder, 0) > 0, "no box uses " + holder + ": " + counts);
+        }
+        assertEquals(9, counts.get(WiredDefinitionWire.Holder.VARIABLE), counts.toString());
     }
 
     @Test
@@ -113,12 +132,6 @@ class WiredDefinitionWireCoverageTest {
         in.release();
     }
 
-    private static WiredDefinitionWire.Holder holderOf(Class<? extends InteractionWired> type) {
-        if (InteractionWiredTrigger.class.isAssignableFrom(type)) return WiredDefinitionWire.Holder.TRIGGER;
-        if (InteractionWiredCondition.class.isAssignableFrom(type)) return WiredDefinitionWire.Holder.CONDITION;
-        return WiredDefinitionWire.Holder.ACTION;
-    }
-
     /** The official client's read order (AS3 §_-lk§ and its holder subclasses). */
     static final class OfficialReader {
         static void read(ByteBuf in, WiredDefinitionWire.Holder holder) {
@@ -134,7 +147,14 @@ class WiredDefinitionWireCoverageTest {
             ints(in);
             ints(in);
             in.readInt();
-            if (holder != WiredDefinitionWire.Holder.TRIGGER) in.readInt();
+            switch (holder) {
+                case ACTION, CONDITION -> in.readInt();
+                case SELECTOR -> {
+                    in.readBoolean();
+                    in.readBoolean();
+                }
+                default -> {}
+            }
             in.readBoolean();
             for (int slot = 0; slot < 2; slot++) {
                 int lists = in.readInt();

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariable
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire;
+import com.eu.habbo.habbohotel.wired.protocol.WiredHolders;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -27,7 +28,9 @@ public class WiredExtraDataComposer extends MessageComposer implements SecretBea
 
     @Override
     protected ServerMessage composeInternal() {
-        this.response.init(Outgoing.WiredEffectDataComposer);
+        // Variable definitions and addons have their own official definition packets.
+        boolean variable = WiredHolders.isVariable(this.extra);
+        this.response.init(variable ? Outgoing.WiredVariableDataComposer : Outgoing.WiredAddonDataComposer);
         // Each box still writes the legacy layout; it goes out in the official one.
         ServerMessage legacy = new ServerMessage(Outgoing.WiredEffectDataComposer);
         if (this.viewer != null) {
@@ -35,7 +38,10 @@ public class WiredExtraDataComposer extends MessageComposer implements SecretBea
         } else {
             this.extra.serializeWiredData(legacy, this.room);
         }
-        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.ACTION, this.response);
+        WiredDefinitionWire.writeOfficial(
+                legacy,
+                variable ? WiredDefinitionWire.Holder.VARIABLE : WiredDefinitionWire.Holder.ADDON,
+                this.response);
         this.extra.needsUpdate(true);
         return this.response;
     }

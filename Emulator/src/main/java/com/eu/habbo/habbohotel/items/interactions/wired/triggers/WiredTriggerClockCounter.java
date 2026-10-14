@@ -117,6 +117,11 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
 
         this.items.clear();
 
+        // Picked furni mean the picks, as in the official editor, which has no furni source on a trigger.
+        if (this.furniSource == WiredSourceUtil.SOURCE_TRIGGER && settings.getFurniIds().length > 0) {
+            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
+        }
+
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
             return true;
         }

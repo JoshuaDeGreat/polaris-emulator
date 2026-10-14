@@ -122,6 +122,11 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
         this.botSource = (params.length > 1) ? this.normalizeBotSource(params[1]) : BOT_SOURCE_NAME;
 
         this.items.clear();
+        // Picked furni mean the picks, as in the official editor, which has no furni source on a trigger.
+        if (this.furniSource == WiredSourceUtil.SOURCE_TRIGGER && settings.getFurniIds().length > 0) {
+            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
+        }
+
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
             return true;
         }

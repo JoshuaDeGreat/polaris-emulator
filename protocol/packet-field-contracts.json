@@ -5868,6 +5868,48 @@
       ]
     },
     {
+      "name": "RECOLOR_FURNI",
+      "direction": "client_to_server",
+      "header": 2852,
+      "java": {
+        "symbol": "RecolorFurniEvent",
+        "className": "RecolorFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/RecolorFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "RECOLOR_FURNI",
+        "className": "RecolorFurniComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/RecolorFurniComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "furniId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "scope"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "red"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "green"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "blue"
+        }
+      ]
+    },
+    {
       "name": "GROUP_UNBLOCK_MEMBER",
       "direction": "client_to_server",
       "header": 2864,
@@ -11615,38 +11657,6 @@
           "kind": "scalar",
           "type": "int",
           "name": "id"
-        }
-      ]
-    },
-    {
-      "name": "BUILDERS_CLUB_RECOLOR_FURNI",
-      "direction": "client_to_server",
-      "header": 9480,
-      "java": {
-        "symbol": "BuildersClubRecolorFurniEvent",
-        "className": "BuildersClubRecolorFurniEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/BuildersClubRecolorFurniEvent.java"
-      },
-      "typescript": {
-        "symbol": "BUILDERS_CLUB_RECOLOR_FURNI",
-        "className": "BuildersClubRecolorFurniMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/BuildersClubRecolorFurniMessageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "itemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "colorIndex"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "scope"
         }
       ]
     },
@@ -24491,6 +24501,22 @@
         "symbol": "USER_FAVORITE_ROOM_COUNT",
         "className": "FavouritesMessageParser",
         "path": "packages/communication/src/messages/parser/navigator/FavouritesMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "RECOLOR_FURNI_UPDATE",
+      "direction": "server_to_client",
+      "header": 181,
+      "java": {
+        "symbol": "RecolorFurniUpdateComposer",
+        "className": "RecolorFurniUpdateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/RecolorFurniUpdateComposer.java"
+      },
+      "typescript": {
+        "symbol": "RECOLOR_FURNI_UPDATE",
+        "className": "RecolorFurniUpdateParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/RecolorFurniUpdateParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },

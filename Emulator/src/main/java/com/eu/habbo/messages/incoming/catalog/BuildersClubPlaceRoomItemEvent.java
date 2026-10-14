@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRecolorable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
@@ -91,7 +92,7 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
                         baseItem,
                         0,
                         0,
-                        (extraData != null && !extraData.isEmpty()) ? extraData : catalogItem.getExtradata());
+                        InteractionRecolorable.placementExtradata(baseItem, extraData, catalogItem.getExtradata()));
 
         if (item == null) {
             this.client.sendResponse(new BubbleAlertComposer(

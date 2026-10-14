@@ -60,6 +60,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionPuzzleBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPyramid;
 import com.eu.habbo.habbohotel.items.interactions.InteractionQueueSpeedControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRandomState;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRecolorable;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRedeemableSubscriptionBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRentableSpace;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
@@ -1186,6 +1187,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_room_linker", InteractionWiredRoomLinker.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_leaderboard", WiredExtraVariableLeaderboard.class));
         this.interactionsList.add(new ItemInteraction("wf_label", WiredExtraLabel.class));
+        this.interactionsList.add(new ItemInteraction("recolorable", InteractionRecolorable.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {
@@ -1386,6 +1388,10 @@ public class ItemManager {
         }
 
         extraData = ItemDataGuard.normalizeExtraData(extraData);
+        // A recolourable furni only ever starts in a colour of its palette, whatever the client asked for.
+        if (InteractionRecolorable.isRecolorable(item)) {
+            extraData = InteractionRecolorable.placementExtradata(item, extraData, "0");
+        }
 
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO items (user_id, item_id, extra_data, limited_data) VALUES (?, ?, ?, ?)",

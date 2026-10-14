@@ -799,8 +799,7 @@ public class PacketManager {
         this.registerHandler(Incoming.BuildersClubQueryFurniCountEvent, BuildersClubQueryFurniCountEvent.class);
         this.registerHandler(Incoming.BuildersClubPlaceRoomItemEvent, BuildersClubPlaceRoomItemEvent.class);
         this.registerHandler(
-                Incoming.BuildersClubRecolorFurniEvent,
-                com.eu.habbo.messages.incoming.catalog.BuildersClubRecolorFurniEvent.class);
+                Incoming.RecolorFurniEvent, com.eu.habbo.messages.incoming.rooms.items.RecolorFurniEvent.class);
         this.registerHandler(Incoming.BuildersClubPlaceWallItemEvent, BuildersClubPlaceWallItemEvent.class);
         this.registerHandler(Incoming.RequestCatalogPageEvent, RequestCatalogPageEvent.class);
         this.registerHandler(Incoming.CatalogProductMetadataEvent, CatalogProductMetadataEvent.class);

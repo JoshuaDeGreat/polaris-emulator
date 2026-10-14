@@ -34,6 +34,7 @@ import com.eu.habbo.habbohotel.catalog.layouts.Pets3Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.PetsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ProductPage1Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecentPurchasesLayout;
+import com.eu.habbo.habbohotel.catalog.layouts.RecolorableFurnitureLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerInfoLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerPrizesLayout;
@@ -211,6 +212,9 @@ public class CatalogManager {
                                 break;
                             case default_3x3_color_grouping:
                                 this.put(layout.name().toLowerCase(), ColorGroupingLayout.class);
+                                break;
+                            case recolorable_furniture:
+                                this.put(layout.name().toLowerCase(), RecolorableFurnitureLayout.class);
                                 break;
                             case recent_purchases:
                                 this.put(layout.name().toLowerCase(), RecentPurchasesLayout.class);

@@ -12,17 +12,19 @@ import com.eu.habbo.habbohotel.wired.WiredUserActionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class WiredEffectUsersByAction extends InteractionWiredEffect {
+public class WiredEffectUsersByAction extends InteractionWiredEffect implements WiredOfficialSelector {
     private static final String CACHE_LAST_ACTION_ID = "wired.last_user_action.id";
     private static final String CACHE_LAST_ACTION_PARAMETER = "wired.last_user_action.parameter";
     private static final String CACHE_LAST_ACTION_TIMESTAMP = "wired.last_user_action.timestamp";
     private static final long TRANSIENT_ACTION_WINDOW_MS = 5_000L;
+    static final int OFFICIAL_ACTION_IDS = 2;
     private static final int DEFAULT_ACTION = WiredUserActionType.WAVE;
 
     public static final WiredEffectType type = WiredEffectType.USERS_BY_ACTION_SELECTOR;
@@ -72,15 +74,42 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
         this.onPickUp();
 
         if (params.length > 0) this.selectedAction = this.normalizeAction(params[0]);
-        if (params.length > 1) this.signFilterEnabled = (params[1] == 1);
-        if (params.length > 2) this.signId = this.normalizeSignId(params[2]);
-        if (params.length > 3) this.danceFilterEnabled = (params[3] == 1);
-        if (params.length > 4) this.danceId = this.normalizeDanceId(params[4]);
-        if (params.length > 5) this.filterExisting = (params[5] == 1);
-        if (params.length > 6) this.invert = (params[6] == 1);
+        // Official: [action], the sign or dance extra in the string param, filter and invert in the
+        // selector switches.
+        int extra = WiredUserActionType.extraCode(this.selectedAction, settings.getStringParam());
+        if (this.selectedAction == WiredUserActionType.SIGN && extra >= 0) {
+            this.signFilterEnabled = true;
+            this.signId = extra;
+        }
+        if (this.selectedAction == WiredUserActionType.DANCE && extra >= 0) {
+            this.danceFilterEnabled = true;
+            this.danceId = extra;
+        }
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
 
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
     }
 
     @Override
@@ -126,7 +155,10 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
             return;
         }
 
-        this.selectedAction = this.normalizeAction(data.selectedAction);
+        this.selectedAction = this.normalizeAction(
+                data.actionIds >= OFFICIAL_ACTION_IDS
+                        ? data.selectedAction
+                        : WiredUserActionType.fromLegacy(data.selectedAction));
         this.signFilterEnabled = data.signFilterEnabled;
         this.signId = this.normalizeSignId(data.signId);
         this.danceFilterEnabled = data.danceFilterEnabled;
@@ -155,15 +187,10 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
-        message.appendInt(7);
+        message.appendString(WiredUserActionType.extraString(
+                this.selectedAction, this.signFilterEnabled, this.signId, this.danceFilterEnabled, this.danceId));
+        message.appendInt(1);
         message.appendInt(this.selectedAction);
-        message.appendInt(this.signFilterEnabled ? 1 : 0);
-        message.appendInt(this.signId);
-        message.appendInt(this.danceFilterEnabled ? 1 : 0);
-        message.appendInt(this.danceId);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -176,22 +203,7 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
     }
 
     private int normalizeAction(int action) {
-        switch (action) {
-            case WiredUserActionType.WAVE:
-            case WiredUserActionType.BLOW_KISS:
-            case WiredUserActionType.LAUGH:
-            case WiredUserActionType.AWAKE:
-            case WiredUserActionType.RELAX:
-            case WiredUserActionType.SIT:
-            case WiredUserActionType.STAND:
-            case WiredUserActionType.LAY:
-            case WiredUserActionType.SIGN:
-            case WiredUserActionType.DANCE:
-            case WiredUserActionType.THUMB_UP:
-                return action;
-            default:
-                return DEFAULT_ACTION;
-        }
+        return WiredUserActionType.isAction(action) ? action : DEFAULT_ACTION;
     }
 
     private int normalizeSignId(int value) {
@@ -317,6 +329,9 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
     }
 
     static class JsonData {
+        /** 2: the official action ids; rows saved before have none and use the old ids. */
+        int actionIds = OFFICIAL_ACTION_IDS;
+
         int selectedAction;
         boolean signFilterEnabled;
         int signId;

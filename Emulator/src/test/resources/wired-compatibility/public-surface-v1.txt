@@ -4957,7 +4957,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersArea#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersArea#usesExistingSelectorTargets(-):boolean throws -
 
-TYPE public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#type:com.eu.habbo.habbohotel.wired.WiredEffectType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
@@ -4967,8 +4967,12 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#isSelector(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#officialFurniSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#officialUserSources(-):int[] throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#selectorFilter(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#selectorInvert(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersByAction#usesExistingSelectorTargets(-):boolean throws -
 
@@ -6196,12 +6200,20 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#BLOW
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#DANCE:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#LAUGH:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#LAY:int
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#MAX_DANCE:int
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#MAX_SIGN:int
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#NONE:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#RELAX:int
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#RESPECT:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#SIGN:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#SIT:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#STAND:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#THUMB_UP:int
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredUserActionType#WAVE:int
+METHOD public static com.eu.habbo.habbohotel.wired.WiredUserActionType#extraCode(int,java.lang.String):int throws -
+METHOD public static com.eu.habbo.habbohotel.wired.WiredUserActionType#extraString(int,boolean,int,boolean,int):java.lang.String throws -
+METHOD public static com.eu.habbo.habbohotel.wired.WiredUserActionType#fromLegacy(int):int throws -
+METHOD public static com.eu.habbo.habbohotel.wired.WiredUserActionType#isAction(int):boolean throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin#CREATOR_TOOLS:int

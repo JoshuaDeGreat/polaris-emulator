@@ -24,7 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Move-furni-as-group effect (furni classname {@code wf_act_move_furni_as_group}). Shifts the
+ * Our "move group one step" effect (furni classname {@code wf_act_move_group_step}; the official
+ * "move as group" is {@link WiredEffectMoveAsGroup}). Shifts the
  * selected furni one tile in a configured direction by the same vector. Unlike
  * {@link WiredEffectMoveFurniTo} (which moves the triggering item toward selected targets), this
  * moves the selected items themselves.
@@ -38,7 +39,8 @@ import java.util.List;
  * abort packed groups, whose members' destinations are each other's still-occupied tiles.)</p>
  */
 public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.MOVE_FURNI_AS_GROUP;
+    // Ours (wf_act_move_group_step): the official "move as group" is WiredEffectMoveAsGroup.
+    public static final WiredEffectType type = WiredEffectType.MOVE_FURNI_GROUP_STEP;
 
     private final List<HabboItem> items = new ArrayList<>();
     private int direction;

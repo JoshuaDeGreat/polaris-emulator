@@ -63,14 +63,16 @@ public final class WiredDefinitionWire {
         try {
             body.skipBytes(FRAME_BYTES);
             Definition definition = readLegacy(body, holder);
-            if (box instanceof WiredOfficialSelector selector) {
-                definition.furniSources = selector.officialFurniSources();
-                definition.userSources = selector.officialUserSources();
-                definition.selectorFilter = selector.selectorFilter();
-                definition.selectorInvert = selector.selectorInvert();
+            if (box instanceof WiredOfficialSources sources) {
+                definition.furniSources = sources.officialFurniSources();
+                definition.userSources = sources.officialUserSources();
             } else {
                 definition.furniSources = WiredSourceFields.furniSources(box);
                 definition.userSources = WiredSourceFields.userSources(box);
+            }
+            if (box instanceof WiredOfficialSelector selector) {
+                definition.selectorFilter = selector.selectorFilter();
+                definition.selectorInvert = selector.selectorInvert();
             }
             writeOfficial(definition, holder, target);
         } finally {

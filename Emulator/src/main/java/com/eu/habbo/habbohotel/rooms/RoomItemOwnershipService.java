@@ -288,7 +288,8 @@ final class RoomItemOwnershipService {
     }
 
     private static boolean isDestroyedOnPickup(HabboItem item) {
-        return item instanceof InteractionPlant && ((InteractionPlant) item).isDead();
+        // A temporary furni (wired "place furni") has nobody to go back to: picking it up removes it.
+        return item.isTemporary() || (item instanceof InteractionPlant && ((InteractionPlant) item).isDead());
     }
 
     private void addOwnerName(HabboItem item, boolean trackedBuildersClub, boolean lookUp) {

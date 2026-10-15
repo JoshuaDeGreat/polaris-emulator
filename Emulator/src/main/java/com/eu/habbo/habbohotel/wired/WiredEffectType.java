@@ -69,8 +69,12 @@ public enum WiredEffectType {
     INIT_TRANSACTION(104),
     CANCEL_TRANSACTION(105),
     PLACE_FURNI(106),
+    /** Ours: mint a new furni by base item id (formerly "place furni"); the official one places copies. */
+    SPAWN_FURNI(155),
     REMOVE_FURNI(107),
     MOVE_FURNI_AS_GROUP(95),
+    /** Ours: the selected furni step one tile in a compass direction (formerly "move as group"). */
+    MOVE_FURNI_GROUP_STEP(154),
     REMOTE_SELECTOR(96),
     // Negative-branch effect that reuses the SHOW_MESSAGE(7) client dialog (text). A distinct enum
     // constant so WiredEffectPlanner.isNegativeConditionEffect runs it only when conditions FAIL.

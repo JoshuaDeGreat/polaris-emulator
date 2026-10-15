@@ -1,0 +1,107 @@
+package com.eu.habbo.habbohotel.items.interactions.wired.effects;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.ItemInteraction;
+import com.eu.habbo.habbohotel.items.ItemManager;
+import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
+import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+import org.mockito.MockedStatic;
+
+/** The official "place furni": snapshot of the picks, sources, and temporary furni with no rows. */
+class WiredEffectPlaceTemporaryFurniTest {
+
+    @Test
+    void aTemporaryFurniHasNoOwnerNoRowAndAHighId() {
+        Item base = mock(Item.class);
+        ItemInteraction interaction = mock(ItemInteraction.class);
+        when(interaction.getType()).thenAnswer(invocation -> InteractionDefault.class);
+        when(base.getInteractionType()).thenReturn(interaction);
+
+        HabboItem item = new ItemManager().createTemporaryItem(base, "1");
+
+        assertTrue(item.isTemporary());
+        assertEquals(0, item.getUserId());
+        assertTrue(item.getId() >= 2_050_000_000, "far above database ids: " + item.getId());
+        item.needsUpdate(true);
+        item.run(); // must not reach the database
+        assertFalse(item.needsUpdate());
+    }
+
+    @Test
+    void itSnapshotsThePicksButNotWiredBoxes() throws Exception {
+        Room room = mock(Room.class);
+        HabboItem chair = floorItem(11, 501, 3, 4, 1.5, 2, "1");
+        HabboItem wiredBox = mock(WiredEffectPlaceTemporaryFurni.class);
+        when(room.getHabboItem(anyInt())).thenReturn(null);
+        when(room.getHabboItem(11)).thenReturn(chair);
+        when(room.getHabboItem(12)).thenReturn(wiredBox);
+
+        WiredEffectPlaceTemporaryFurni box = new WiredEffectPlaceTemporaryFurni(1, 1, mock(Item.class), "", 0, 0);
+        box.setRoomId(7);
+        GameEnvironment environment = mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS);
+        when(environment.getRoomManager().getRoom(7)).thenReturn(room);
+
+        WiredSettings settings =
+                new WiredSettings(new int[] {1, 1, 2, 3, -2, 150, 0, 0, 0, 0}, "", new int[] {11, 12}, -1);
+        settings.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SIGNAL});
+        settings.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_CLICKED_USER});
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class)) {
+            platform.when(WiredPlatform::gameEnvironment).thenReturn(environment);
+            assertTrue(box.saveData(settings, null));
+        }
+
+        String saved = box.getWiredData();
+        assertTrue(saved.contains("\"baseItemId\":501"), saved);
+        assertFalse(saved.contains("\"itemId\":12"), "wired boxes are not copied: " + saved);
+        assertTrue(saved.contains("\"offsetAltitude\":150"), saved);
+        assertArrayEquals(
+                new int[] {
+                    WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER
+                },
+                box.officialFurniSources());
+        assertArrayEquals(
+                new int[] {WiredSourceUtil.SOURCE_CLICKED_USER, WiredSourceUtil.SOURCE_TRIGGER},
+                box.officialUserSources());
+    }
+
+    @Test
+    void theOfficialBoxIs55AndOurSpawnBoxIsCustom() {
+        assertEquals(55, WiredActionCodes.official(WiredEffectType.PLACE_FURNI.code));
+        assertEquals(1155, WiredActionCodes.official(WiredEffectType.SPAWN_FURNI.code));
+        assertEquals(WiredEffectType.SPAWN_FURNI, WiredEffectPlaceFurni.type);
+    }
+
+    private static HabboItem floorItem(int id, int baseId, int x, int y, double z, int rotation, String extradata) {
+        Item base = mock(Item.class);
+        when(base.getId()).thenReturn(baseId);
+        when(base.getType()).thenReturn(FurnitureType.FLOOR);
+        HabboItem item = mock(HabboItem.class);
+        when(item.getId()).thenReturn(id);
+        when(item.getBaseItem()).thenReturn(base);
+        when(item.getX()).thenReturn((short) x);
+        when(item.getY()).thenReturn((short) y);
+        when(item.getZ()).thenReturn(z);
+        when(item.getRotation()).thenReturn(rotation);
+        when(item.getExtradata()).thenReturn(extradata);
+        return item;
+    }
+}

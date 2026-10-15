@@ -2952,6 +2952,23 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffe
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectModifyArray#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectModifyArray#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#type:com.eu.habbo.habbohotel.wired.WiredEffectType
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD-ANNOTATION com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws - java.lang.Deprecated[forRemoval=false, since=]
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#officialFurniSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#officialUserSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#onPickUp(-):void throws -
+METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#requiredCooldown(-):long throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAsGroup extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAsGroup#type:com.eu.habbo.habbohotel.wired.WiredEffectType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAsGroup(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
@@ -3153,6 +3170,22 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffe
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#type:com.eu.habbo.habbohotel.wired.WiredEffectType
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD-ANNOTATION com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws - java.lang.Deprecated[forRemoval=false, since=]
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#officialFurniSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#officialUserSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#onPickUp(-):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlayYoutube extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlayYoutube#type:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -5944,37 +5977,39 @@ ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 63 SCAN_CHEST_FURNI_BY_TYPE
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 64 INIT_TRANSACTION
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 65 CANCEL_TRANSACTION
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 66 PLACE_FURNI
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 67 REMOVE_FURNI
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 68 MOVE_FURNI_AS_GROUP
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 69 REMOTE_SELECTOR
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 70 NEG_SHOW_MESSAGE
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 71 NEG_LOG
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 72 SET_ROLLER_SPEED
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 73 BOT_DANCE
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 74 GIVE_POINTS_TYPE
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 75 GIVE_OR_TAKE_FURNI
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 76 PLAY_YOUTUBE
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 77 QUICK_BOPPER
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 78 SET_ROOM_AD
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 79 CHANGE_OPACITY
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 80 WALK_TO_FURNI
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 81 USER_TARGET
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 82 MOVE_USER_TILES
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 83 EFFECT_AMOUNT
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 84 EFFECT_BADGE
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 85 EFFECT_TAG
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 86 EFFECT_ID
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 87 EFFECT_MESSAGE
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 88 EFFECT_TEXT
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 89 ALL_USERS_LEAVE_TEAM
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 90 OVERRIDE_HEIGHT
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 91 MODIFY_ARRAY
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 92 CLICK_SETTINGS
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 93 WRITE_TO_LOGS
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 94 TELEPORT_TO_ROOM
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 95 PROGRESS_ACHIEVEMENT
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 96 PROGRESS_REWARD_TRACK
-ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 97 RESET_REWARD_TRACK
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 67 SPAWN_FURNI
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 68 REMOVE_FURNI
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 69 MOVE_FURNI_AS_GROUP
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 70 MOVE_FURNI_GROUP_STEP
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 71 REMOTE_SELECTOR
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 72 NEG_SHOW_MESSAGE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 73 NEG_LOG
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 74 SET_ROLLER_SPEED
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 75 BOT_DANCE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 76 GIVE_POINTS_TYPE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 77 GIVE_OR_TAKE_FURNI
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 78 PLAY_YOUTUBE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 79 QUICK_BOPPER
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 80 SET_ROOM_AD
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 81 CHANGE_OPACITY
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 82 WALK_TO_FURNI
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 83 USER_TARGET
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 84 MOVE_USER_TILES
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 85 EFFECT_AMOUNT
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 86 EFFECT_BADGE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 87 EFFECT_TAG
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 88 EFFECT_ID
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 89 EFFECT_MESSAGE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 90 EFFECT_TEXT
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 91 ALL_USERS_LEAVE_TEAM
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 92 OVERRIDE_HEIGHT
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 93 MODIFY_ARRAY
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 94 CLICK_SETTINGS
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 95 WRITE_TO_LOGS
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 96 TELEPORT_TO_ROOM
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 97 PROGRESS_ACHIEVEMENT
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 98 PROGRESS_REWARD_TRACK
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 99 RESET_REWARD_TRACK
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ADJUST_CLOCK:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ALL_USERS_LEAVE_TEAM:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_CLOTHES:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -6026,6 +6061,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MATCH_SS
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MODIFY_ARRAY:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MOVE_DIRECTION:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MOVE_FURNI_AS_GROUP:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MOVE_FURNI_GROUP_STEP:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MOVE_FURNI_TO:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MOVE_ROTATE:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#MOVE_ROTATE_USER:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -6054,6 +6090,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_ALTI
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_ROLLER_SPEED:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_ROOM_AD:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SHOW_MESSAGE:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SPAWN_FURNI:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#TELEPORT:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#TELEPORT_TO_ROOM:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#TOGGLE_RANDOM:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -8186,11 +8223,13 @@ TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredHolders extends ja
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#isVariable(com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#of(com.eu.habbo.habbohotel.items.interactions.InteractionWired):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder throws -
 
-TYPE public abstract interface com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector
-METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#officialFurniSources(-):int[] throws -
-METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#officialUserSources(-):int[] throws -
+TYPE public abstract interface com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources
 METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#selectorFilter(-):boolean throws -
 METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#selectorInvert(-):boolean throws -
+
+TYPE public abstract interface com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources
+METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources#officialFurniSources(-):int[] throws -
+METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources#officialUserSources(-):int[] throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes#SCAN_CHEST_FURNI_BY_TYPE:int

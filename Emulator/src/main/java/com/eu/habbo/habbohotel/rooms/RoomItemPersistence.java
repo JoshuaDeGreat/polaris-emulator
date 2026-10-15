@@ -27,10 +27,12 @@ final class RoomItemPersistence {
             return;
         }
 
-        List<HabboItem> deletedItems =
-                items.stream().filter(HabboItem::needsDelete).toList();
+        // Temporary furni (wired "place furni") have no rows.
+        List<HabboItem> deletedItems = items.stream()
+                .filter(item -> !item.isTemporary() && item.needsDelete())
+                .toList();
         List<HabboItem> updatedItems = items.stream()
-                .filter(item -> !item.needsDelete() && item.needsUpdate())
+                .filter(item -> !item.isTemporary() && !item.needsDelete() && item.needsUpdate())
                 .toList();
 
         try (Connection connection = this.database.openConnection()) {

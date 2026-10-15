@@ -60,6 +60,8 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
     /** Copies one firing may place, over and above the room's furniture ceiling. */
     static final int MAX_SNAPSHOT = 20;
 
+    private static final double HEIGHT_EPSILON = 0.001;
+
     private List<Snapshot> snapshot = new ArrayList<>();
     private boolean targetIsUser = false;
     private int location = LOCATION_SOURCE;
@@ -211,7 +213,8 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
                         default -> copy.getZ();
                     };
             z += altitudeOffset;
-            if (z != copy.getZ()) {
+            // Heights are hundredths of a tile; anything closer than that is the same height.
+            if (Math.abs(z - copy.getZ()) >= HEIGHT_EPSILON) {
                 room.moveFurniTo(copy, tile, source.rotation, Math.max(0, z), null, true);
             }
 

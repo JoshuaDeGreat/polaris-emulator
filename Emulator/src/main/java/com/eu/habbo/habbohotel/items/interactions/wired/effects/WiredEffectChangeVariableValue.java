@@ -833,8 +833,9 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
                         : clamp(Math.round(Math.pow(currentValue, referenceValue)));
             case OP_MOD ->
                 (referenceValue == null || referenceValue == 0) ? currentValue : (currentValue % referenceValue);
-            case OP_MIN -> (referenceValue != null) ? Math.min(currentValue, referenceValue) : currentValue;
-            case OP_MAX -> (referenceValue != null) ? Math.max(currentValue, referenceValue) : currentValue;
+            // "Set minimum" is a floor and "set maximum" a ceiling, as in the official client.
+            case OP_MIN -> (referenceValue != null) ? Math.max(currentValue, referenceValue) : currentValue;
+            case OP_MAX -> (referenceValue != null) ? Math.min(currentValue, referenceValue) : currentValue;
             case OP_RANDOM ->
                 (referenceValue == null || referenceValue <= 0)
                         ? 0
@@ -845,7 +846,8 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             case OP_XOR -> (referenceValue != null) ? (currentValue ^ referenceValue) : currentValue;
             case OP_NOT -> ~currentValue;
             case OP_LSHIFT -> currentValue << shift(referenceValue);
-            case OP_RSHIFT -> currentValue >> shift(referenceValue);
+            // A logical shift: the sign bit is not copied in, as in the official client.
+            case OP_RSHIFT -> currentValue >>> shift(referenceValue);
             case OP_BIT_COUNT -> Integer.bitCount(currentValue);
             case OP_GET_BIT -> isBitPosition(referenceValue) ? ((currentValue >>> referenceValue) & 1) : 0;
             case OP_SET_BIT -> isBitPosition(referenceValue) ? (currentValue | (1 << referenceValue)) : currentValue;

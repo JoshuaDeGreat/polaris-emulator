@@ -4836,7 +4836,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniByType#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniByType#usesExistingSelectorTargets(-):boolean throws -
 
-TYPE public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#type:com.eu.habbo.habbohotel.wired.WiredEffectType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
@@ -4847,8 +4847,12 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#hasRequiredSelectorTargets(com.eu.habbo.habbohotel.wired.core.WiredContext):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#isSelector(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#officialFurniSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#officialUserSources(-):int[] throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#selectorFilter(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#selectorInvert(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniNeighborhood#usesExistingSelectorTargets(-):boolean throws -
 
@@ -5028,7 +5032,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersHandItem#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersHandItem#usesExistingSelectorTargets(-):boolean throws -
 
-TYPE public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#type:com.eu.habbo.habbohotel.wired.WiredEffectType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
@@ -5039,8 +5043,12 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#hasRequiredSelectorTargets(com.eu.habbo.habbohotel.wired.core.WiredContext):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#isSelector(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#officialFurniSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#officialUserSources(-):int[] throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#selectorFilter(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#selectorInvert(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectUsersNeighborhood#usesExistingSelectorTargets(-):boolean throws -
 
@@ -5141,6 +5149,17 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEff
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectVariableSelectorBase#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectVariableSelectorBase#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectVariableSelectorBase#usesExistingSelectorTargets(-):boolean throws -
+
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#MASK_INTS:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#MAX_ROOT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#RADIUS:int
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#clampRoot(int):int throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#decode(int[],int):java.util.List<int[]> throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#encode(java.util.List<int[]>):int[] throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#isUserSource(int):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#officialSource(int):int throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredNeighborhoodWire#privateSource(boolean,int):int throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerAtSetTime extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger implements com.eu.habbo.habbohotel.wired.tick.WiredTickable,com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset
 FIELD public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerAtSetTime#executeTime:int
@@ -8154,6 +8173,12 @@ METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredHolders extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#isVariable(com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#of(com.eu.habbo.habbohotel.items.interactions.InteractionWired):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder throws -
+
+TYPE public abstract interface com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector
+METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#officialFurniSources(-):int[] throws -
+METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#officialUserSources(-):int[] throws -
+METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#selectorFilter(-):boolean throws -
+METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector#selectorInvert(-):boolean throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes#SCAN_CHEST_FURNI_BY_TYPE:int

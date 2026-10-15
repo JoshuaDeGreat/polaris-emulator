@@ -63,8 +63,15 @@ public final class WiredDefinitionWire {
         try {
             body.skipBytes(FRAME_BYTES);
             Definition definition = readLegacy(body, holder);
-            definition.furniSources = WiredSourceFields.furniSources(box);
-            definition.userSources = WiredSourceFields.userSources(box);
+            if (box instanceof WiredOfficialSelector selector) {
+                definition.furniSources = selector.officialFurniSources();
+                definition.userSources = selector.officialUserSources();
+                definition.selectorFilter = selector.selectorFilter();
+                definition.selectorInvert = selector.selectorInvert();
+            } else {
+                definition.furniSources = WiredSourceFields.furniSources(box);
+                definition.userSources = WiredSourceFields.userSources(box);
+            }
             writeOfficial(definition, holder, target);
         } finally {
             body.release();
@@ -81,6 +88,8 @@ public final class WiredDefinitionWire {
         int[] intParams = new int[0];
         int[] furniSources = new int[0];
         int[] userSources = new int[0];
+        boolean selectorFilter;
+        boolean selectorInvert;
         int code;
         int delay;
         /** An action's legacy context block (count and entries), passed on unchanged. */
@@ -134,8 +143,8 @@ public final class WiredDefinitionWire {
             case ACTION -> out.appendInt(definition.delay);
             case CONDITION -> out.appendInt(0); // quantifier code
             case SELECTOR -> {
-                out.appendBoolean(false); // filter
-                out.appendBoolean(false); // invert
+                out.appendBoolean(definition.selectorFilter);
+                out.appendBoolean(definition.selectorInvert);
             }
             default -> {}
         }

@@ -72,6 +72,8 @@ public enum WiredEffectType {
     /** Ours: mint a new furni by base item id (formerly "place furni"); the official one places copies. */
     SPAWN_FURNI(155),
     REMOVE_FURNI(107),
+    /** Ours: pick the furni up into its owner's inventory (formerly "remove furni"); the official one removes copies. */
+    PICKUP_FURNI(156),
     MOVE_FURNI_AS_GROUP(95),
     /** Ours: the selected furni step one tile in a compass direction (formerly "move as group"). */
     MOVE_FURNI_GROUP_STEP(154),

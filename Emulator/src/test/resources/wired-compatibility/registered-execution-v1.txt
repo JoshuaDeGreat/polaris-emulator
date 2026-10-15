@@ -168,8 +168,9 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectProgressRewa
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectQuickBopper | EFFECT | type=QUICK_BOPPER | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRelativeMove | EFFECT | type=RELATIVE_MOVE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveBadge | EFFECT | type=EFFECT_BADGE | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni | EFFECT | type=REMOVE_FURNI | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni | EFFECT | type=PICKUP_FURNI | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTag | EFFECT | type=EFFECT_TAG | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTemporaryFurni | EFFECT | type=REMOVE_FURNI | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveVariable | EFFECT | type=REMOVE_VAR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetHighscores | EFFECT | type=RESET_TIMERS | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetRewardTrack | EFFECT | type=RESET_REWARD_TRACK | actor=true | execute=OK

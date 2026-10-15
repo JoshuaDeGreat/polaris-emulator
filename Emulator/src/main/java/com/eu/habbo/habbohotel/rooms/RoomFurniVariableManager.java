@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
@@ -1025,6 +1026,9 @@ public class RoomFurniVariableManager {
     }
 
     private void upsertPersistentAssignment(int furniId, int definitionItemId, VariableAssignment assignment) {
+        // A temporary furni (placed by wired) has no row, so neither do its variables.
+        if (ItemManager.isTemporaryItemId(furniId)) return;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO room_furni_wired_variables (room_id, furni_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
@@ -1088,6 +1092,8 @@ public class RoomFurniVariableManager {
     }
 
     private void deletePersistentAssignmentsForFurni(int furniId) {
+        if (ItemManager.isTemporaryItemId(furniId)) return;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "DELETE FROM room_furni_wired_variables WHERE room_id = ? AND furni_id = ?")) {

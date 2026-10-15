@@ -21,7 +21,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredHotelProgressPolicy;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredProgressLimiter;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,9 +39,13 @@ import java.util.Set;
  * enabler in the same room also names, for users still in the room, and within each user's
  * allowance per window. Saving it needs the value-granting wired permission.
  *
- * <p>String param: the achievement name. Int params: {@code [mode, amount, user source]}.
+ * <p>Official layout (AIR code 45). String param: the achievement name, then, after a tab, the id of the
+ * variable the amount may come from. Int params {@code [mode, valueIsVariable, value, valueTarget]}:
+ * the amount is the number, or that variable read once on the first holder of its target (0 furni,
+ * read on the furni slot; 1 user, read on the second user slot; -10 global; -20 context). User slot 0
+ * is who is progressed.
  */
-public class WiredEffectProgressAchievement extends InteractionWiredEffect {
+public class WiredEffectProgressAchievement extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.PROGRESS_ACHIEVEMENT;
     public static final int MAX_NAME_LENGTH = WiredExtraAchievementEnabler.MAX_NAME_LENGTH;
 
@@ -47,6 +53,11 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
     private int mode = WiredHotelProgress.MODE_ADD;
     private int amount = 1;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private boolean valueIsVariable = false;
+    private int valueVariableId = 0;
+    private int valueTarget = WiredValueVariable.TARGET_FURNI;
+    private int valueFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int valueUserSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectProgressAchievement(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -64,11 +75,12 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.achievement);
-        message.appendInt(3);
+        message.appendString(this.achievement + "\t" + this.valueVariableId);
+        message.appendInt(4);
         message.appendInt(this.mode);
+        message.appendInt(this.valueIsVariable ? 1 : 0);
         message.appendInt(this.amount);
-        message.appendInt(this.userSource);
+        message.appendInt(this.valueTarget);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -81,17 +93,33 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
             return false;
         }
 
-        String name = normalizeName(settings.getStringParam());
+        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+        int tab = text.indexOf('\t');
+        String name = normalizeName(tab < 0 ? text : text.substring(0, tab));
         if (name.isEmpty()) {
             return false;
         }
 
         int[] params = settings.getIntParams();
+        boolean isVariable = params.length > 1 && params[1] == 1;
+        int variableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        if (isVariable && variableId <= 0) {
+            return false;
+        }
+
+        int[] users = settings.getUserSourceTypes();
+        int[] furni = settings.getFurniSourceTypes();
         this.achievement = name;
         this.mode = WiredHotelProgress.normalizeMode(params.length > 0 ? params[0] : WiredHotelProgress.MODE_ADD);
-        this.amount = WiredHotelProgress.normalizeAmount(params.length > 1 ? params[1] : 1);
-        this.userSource = WiredVariableOperand.normalizeUserSource(
-                params.length > 2 ? params[2] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.valueIsVariable = isVariable;
+        this.amount = WiredHotelProgress.normalizeAmount(params.length > 2 ? params[2] : 1);
+        this.valueTarget = WiredValueVariable.normalizeTarget(params.length > 3 ? params[3] : 0);
+        this.valueVariableId = variableId;
+        this.userSource =
+                WiredVariableOperand.normalizeUserSource(users.length > 0 ? users[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.valueUserSource =
+                WiredVariableOperand.normalizeUserSource(users.length > 1 ? users[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.valueFurniSource = furni.length > 0 ? furni[0] : WiredSourceUtil.SOURCE_TRIGGER;
         this.setDelay(settings.getDelay());
         return true;
     }
@@ -124,7 +152,16 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
         }
 
         int mode = this.mode;
-        int amount = this.amount;
+        int value = this.amount;
+        if (this.valueIsVariable) {
+            Integer read = WiredValueVariable.read(
+                    ctx, room, this.valueTarget, this.valueVariableId, this.valueFurniSource, this.valueUserSource);
+            if (read == null || read <= 0) {
+                return;
+            }
+            value = Math.min(read, WiredHotelProgress.MAX_AMOUNT);
+        }
+        int amount = value;
         WiredProgressLimiter limiter = engine.progressLimiter();
         WiredHotelProgress.dispatch(() -> WiredHotelProgress.progressAchievement(
                 room, users, target, declared, mode, amount, policy, limiter, AchievementManager::progressAchievement));
@@ -138,8 +175,7 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.achievement, this.mode, this.amount, this.getDelay(), this.userSource));
+        return WiredManager.getGson().toJson(new JsonData(this));
     }
 
     @Override
@@ -165,6 +201,11 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
         this.mode = WiredHotelProgress.normalizeMode(data.mode);
         this.amount = WiredHotelProgress.normalizeAmount(data.amount);
         this.userSource = WiredVariableOperand.normalizeUserSource(data.userSource);
+        this.valueIsVariable = data.valueIsVariable && data.valueVariableId > 0;
+        this.valueVariableId = Math.max(0, data.valueVariableId);
+        this.valueTarget = WiredValueVariable.normalizeTarget(data.valueTarget);
+        this.valueFurniSource = data.valueFurniSource;
+        this.valueUserSource = WiredVariableOperand.normalizeUserSource(data.valueUserSource);
         this.setDelay(data.delay);
     }
 
@@ -174,12 +215,30 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
         this.mode = WiredHotelProgress.MODE_ADD;
         this.amount = 1;
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.valueIsVariable = false;
+        this.valueVariableId = 0;
+        this.valueTarget = WiredValueVariable.TARGET_FURNI;
+        this.valueFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.valueUserSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.setDelay(0);
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.valueFurniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userSource, this.valueUserSource};
+    }
+
+    @Override
     public boolean requiresTriggeringUser() {
-        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
+        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER
+                || (this.valueIsVariable
+                        && this.valueTarget == WiredValueVariable.TARGET_USER
+                        && this.valueUserSource == WiredSourceUtil.SOURCE_TRIGGER);
     }
 
     public String getAchievement() {
@@ -213,13 +272,23 @@ public class WiredEffectProgressAchievement extends InteractionWiredEffect {
         int amount;
         int delay;
         int userSource;
+        boolean valueIsVariable;
+        int valueVariableId;
+        int valueTarget;
+        int valueFurniSource;
+        int valueUserSource;
 
-        JsonData(String achievement, int mode, int amount, int delay, int userSource) {
-            this.achievement = achievement;
-            this.mode = mode;
-            this.amount = amount;
-            this.delay = delay;
-            this.userSource = userSource;
+        JsonData(WiredEffectProgressAchievement box) {
+            this.achievement = box.achievement;
+            this.mode = box.mode;
+            this.amount = box.amount;
+            this.delay = box.getDelay();
+            this.userSource = box.userSource;
+            this.valueIsVariable = box.valueIsVariable;
+            this.valueVariableId = box.valueVariableId;
+            this.valueTarget = box.valueTarget;
+            this.valueFurniSource = box.valueFurniSource;
+            this.valueUserSource = box.valueUserSource;
         }
     }
 }

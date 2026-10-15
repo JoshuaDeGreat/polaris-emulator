@@ -28,16 +28,17 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Removes the resolved furni from the room when the stack fires — the inverse of {@link WiredEffectPlaceFurni}.
+ * Ours ({@code wf_act_pickup_furni}, custom code 1156; formerly "remove furni", which is now the official
+ * element that removes temporary furni): removes the resolved furni from the room when the stack fires — the inverse of {@link WiredEffectPlaceFurni}.
  * Targets are the builder-selected furni (resolved through {@link WiredSourceUtil#resolveItems}); two modes:
  * RETURN_TO_INVENTORY (default, non-destructive — picks the item up to its owner's inventory) or DELETE
  * (permanently destroys it). It never removes WIRED furni or itself (stack-safety) and is bounded per fire.
  *
  * <p>Carries two ints — {@code [mode, furniSource]} — plus the furni-id selection block, so it needs the matching
- * Nitro {@code WiredActionLayoutCode.REMOVE_FURNI} (107) dialog with the room-furni picker.</p>
+ * Nitro {@code WiredActionLayoutCode.PICKUP_FURNI} (1156) dialog with the room-furni picker.</p>
  */
 public class WiredEffectRemoveFurni extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.REMOVE_FURNI;
+    public static final WiredEffectType type = WiredEffectType.PICKUP_FURNI;
 
     public static final int MODE_RETURN = 0;
     public static final int MODE_DELETE = 1;

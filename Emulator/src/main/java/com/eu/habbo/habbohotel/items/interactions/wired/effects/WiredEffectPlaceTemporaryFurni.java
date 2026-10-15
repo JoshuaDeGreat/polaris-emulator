@@ -12,11 +12,13 @@ import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -38,8 +40,12 @@ import java.util.List;
  * 1 at the custom target (a user, or the furni of the second slot); altitude 0 on top of the target
  * tile, 1 the saved altitude, 2 the custom target's; offsets -64..64 tiles and -8000..8000 hundredths.
  * At a custom location the first furni of the snapshot lands on the target and the rest keep their
- * places relative to it (as turbo-cloud reads the official text). Spawning with a variable is kept with
- * the box's settings; giving the copies the variable follows.
+ * places relative to it (as turbo-cloud reads the official text).
+ *
+ * <p>Spawning with a variable gives every copy a furni variable. Its value is the number in the box, or
+ * another variable's, read once per firing on the first holder of the value target: furni (the third
+ * furni slot), user (the second user slot), global or context. The variables travel in the string
+ * param, as our other variable boxes send them: {@code "spawnVariableId\tvalueVariableId"}.
  */
 public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.PLACE_FURNI;
@@ -64,7 +70,9 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
     private boolean spawnWithVariable = false;
     private boolean valueIsVariable = false;
     private int value = 0;
-    private int valueTarget = 0;
+    private int valueTarget = WiredValueVariable.TARGET_FURNI;
+    private int spawnVariableId = 0;
+    private int valueVariableId = 0;
     private int targetFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
     private int valueFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
     private int targetUserSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -97,7 +105,22 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         this.spawnWithVariable = param(p, 6, 0) == 1;
         this.valueIsVariable = param(p, 7, 0) == 1;
         this.value = param(p, 8, 0);
-        this.valueTarget = param(p, 9, 0);
+        this.valueTarget = WiredValueVariable.normalizeTarget(param(p, 9, WiredValueVariable.TARGET_FURNI));
+
+        String[] variables = settings.getStringParam() == null
+                ? new String[0]
+                : settings.getStringParam().split("\t", -1);
+        this.spawnVariableId = variables.length > 0 ? WiredValueVariable.parseId(variables[0]) : 0;
+        this.valueVariableId = variables.length > 1 ? WiredValueVariable.parseId(variables[1]) : 0;
+        if (this.spawnWithVariable) {
+            WiredVariableDefinitionInfo spawn = room.getFurniVariableManager().getDefinitionInfo(this.spawnVariableId);
+            if (spawn == null || spawn.isReadOnly()) {
+                throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
+            }
+            if (spawn.hasValue() && this.valueIsVariable && this.valueVariableId <= 0) {
+                throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
+            }
+        }
 
         int[] furniSources = settings.getFurniSourceTypes();
         int[] userSources = settings.getUserSourceTypes();
@@ -160,6 +183,7 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         }
 
         double altitudeOffset = this.offsetAltitude / 100.0;
+        Integer spawnValue = this.spawnValue(ctx, room);
         ConfigurationManager config = WiredPlatform.configuration();
         int ceiling = (config == null) ? 2500 : config.getInt("hotel.rooms.max.furniture", 2500);
 
@@ -190,7 +214,26 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
             if (z != copy.getZ()) {
                 room.moveFurniTo(copy, tile, source.rotation, Math.max(0, z), null, true);
             }
+
+            if (this.spawnWithVariable) {
+                room.getFurniVariableManager().assignVariable(copy, this.spawnVariableId, spawnValue, true);
+            }
         }
+    }
+
+    /**
+     * The value every copy's variable gets: the box's number, or the value variable on the first holder
+     * of the value target that has it (0 when none has). Null for a variable without a value.
+     */
+    private Integer spawnValue(WiredContext ctx, Room room) {
+        if (!this.spawnWithVariable) return null;
+        WiredVariableDefinitionInfo spawn = room.getFurniVariableManager().getDefinitionInfo(this.spawnVariableId);
+        if (spawn == null || !spawn.hasValue()) return null;
+        if (!this.valueIsVariable) return this.value;
+
+        Integer read = WiredValueVariable.read(
+                ctx, room, this.valueTarget, this.valueVariableId, this.valueFurniSource, this.valueUserSource);
+        return read == null ? 0 : read;
     }
 
     /** The custom target {x, y, z}: the first target user, or the first furni of the second slot. */
@@ -236,7 +279,7 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         for (Snapshot source : this.snapshot) message.appendInt(source.itemId);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
+        message.appendString(this.spawnVariableId + "\t" + this.valueVariableId);
         message.appendInt(10);
         message.appendInt(this.targetIsUser ? 1 : 0);
         message.appendInt(this.location);
@@ -286,7 +329,9 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         this.spawnWithVariable = data.spawnWithVariable;
         this.valueIsVariable = data.valueIsVariable;
         this.value = data.value;
-        this.valueTarget = data.valueTarget;
+        this.valueTarget = WiredValueVariable.normalizeTarget(data.valueTarget);
+        this.spawnVariableId = Math.max(0, data.spawnVariableId);
+        this.valueVariableId = Math.max(0, data.valueVariableId);
         this.targetFurniSource = data.targetFurniSource;
         this.valueFurniSource = data.valueFurniSource;
         this.targetUserSource = data.targetUserSource;
@@ -306,7 +351,9 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         this.spawnWithVariable = false;
         this.valueIsVariable = false;
         this.value = 0;
-        this.valueTarget = 0;
+        this.valueTarget = WiredValueVariable.TARGET_FURNI;
+        this.spawnVariableId = 0;
+        this.valueVariableId = 0;
         this.targetFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.valueFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.targetUserSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -355,6 +402,8 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         boolean valueIsVariable;
         int value;
         int valueTarget;
+        int spawnVariableId;
+        int valueVariableId;
         int targetFurniSource;
         int valueFurniSource;
         int targetUserSource;
@@ -373,6 +422,8 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
             this.valueIsVariable = box.valueIsVariable;
             this.value = box.value;
             this.valueTarget = box.valueTarget;
+            this.spawnVariableId = box.spawnVariableId;
+            this.valueVariableId = box.valueVariableId;
             this.targetFurniSource = box.targetFurniSource;
             this.valueFurniSource = box.valueFurniSource;
             this.targetUserSource = box.targetUserSource;

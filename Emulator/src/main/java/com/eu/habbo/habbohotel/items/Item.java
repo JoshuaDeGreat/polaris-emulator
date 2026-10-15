@@ -107,7 +107,7 @@ public class Item implements ISerialize {
         }
 
         ItemManager itemManager = Emulator.getGameEnvironment().getItemManager();
-        this.interactionType = itemManager.getItemInteraction(interactionTypeName.toLowerCase());
+        this.interactionType = itemManager.resolveInteraction(interactionTypeName, this.name);
 
         if ((this.interactionType != null)
                 && "default".equalsIgnoreCase(this.interactionType.getName())

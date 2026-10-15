@@ -312,6 +312,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRelat
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveBadge;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTag;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTemporaryFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetHighscores;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetRewardTrack;
@@ -881,7 +882,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_transaction_fail", WiredTriggerTransactionFail.class));
         this.interactionsList.add(new ItemInteraction("wf_act_place_furni", WiredEffectPlaceTemporaryFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_spawn_furni", WiredEffectPlaceFurni.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_remove_furni", WiredEffectRemoveFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_furni", WiredEffectRemoveTemporaryFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_pickup_furni", WiredEffectRemoveFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_contract_payment", InteractionWiredContractPayment.class));
         this.interactionsList.add(new ItemInteraction("wf_contract_reward", InteractionWiredContractReward.class));
         this.interactionsList.add(new ItemInteraction("wf_contract_trade", InteractionWiredContractTrade.class));
@@ -1208,6 +1210,28 @@ public class ItemManager {
         return this.getItemInteraction(InteractionDefault.class);
     }
 
+    /**
+     * Our wired boxes that share an official box's interaction type: the furni's name picks ours. So an
+     * items_base row {@code item_name = wf_act_pickup_furni, interaction_type = wf_act_remove_furni} is our
+     * pickup box, while every other row with that interaction type is the official one. Their own
+     * interaction types keep working as well.
+     */
+    static final Map<String, String> NAMED_VARIANTS = Map.of(
+            "wf_act_pickup_furni", "wf_act_remove_furni",
+            "wf_act_spawn_furni", "wf_act_place_furni",
+            "wf_act_move_group_step", "wf_act_move_furni_as_group");
+
+    /** The interaction a furni named {@code itemName} gets on {@code interactionType}. */
+    public ItemInteraction resolveInteraction(String interactionType, String itemName) {
+        String type = interactionType == null ? "default" : interactionType.toLowerCase();
+        String name = itemName == null ? "" : itemName.toLowerCase();
+        if (type.equals(NAMED_VARIANTS.get(name))) {
+            ItemInteraction variant = this.interactionsList.find(name);
+            if (variant != null) return variant;
+        }
+        return this.getItemInteraction(type);
+    }
+
     public ItemInteraction getItemInteraction(String type) {
         ItemInteraction interaction = this.interactionsList.find(type);
         if (interaction != null) {
@@ -1470,6 +1494,10 @@ public class ItemManager {
      * A temporary furni of {@code item}'s type (the official "place furni" wired): it lives in memory
      * only, has no owner, and is never saved, picked up into an inventory or deleted from the database.
      */
+    public static boolean isTemporaryItemId(int id) {
+        return id >= FIRST_TEMPORARY_ITEM_ID;
+    }
+
     public HabboItem createTemporaryItem(Item item, String extraData) {
         if (item == null) return null;
 

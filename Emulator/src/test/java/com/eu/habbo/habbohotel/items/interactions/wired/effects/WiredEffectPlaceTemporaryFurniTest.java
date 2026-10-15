@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -18,10 +19,13 @@ import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
+import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
+import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.MockedStatic;
@@ -81,6 +85,51 @@ class WiredEffectPlaceTemporaryFurniTest {
         assertArrayEquals(
                 new int[] {WiredSourceUtil.SOURCE_CLICKED_USER, WiredSourceUtil.SOURCE_TRIGGER},
                 box.officialUserSources());
+    }
+
+    @Test
+    void spawningWithAVariableKeepsBothVariablesAndNeedsAWritableFurniVariable() throws Exception {
+        Room room = mock(Room.class);
+        RoomFurniVariableManager furniVariables = mock(RoomFurniVariableManager.class);
+        WiredVariableDefinitionInfo writable = mock(WiredVariableDefinitionInfo.class);
+        when(writable.hasValue()).thenReturn(true);
+        when(furniVariables.getDefinitionInfo(40)).thenReturn(writable);
+        when(room.getFurniVariableManager()).thenReturn(furniVariables);
+
+        WiredEffectPlaceTemporaryFurni box = new WiredEffectPlaceTemporaryFurni(1, 1, mock(Item.class), "", 0, 0);
+        box.setRoomId(7);
+        GameEnvironment environment = mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS);
+        when(environment.getRoomManager().getRoom(7)).thenReturn(room);
+
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class)) {
+            platform.when(WiredPlatform::gameEnvironment).thenReturn(environment);
+
+            assertTrue(box.saveData(
+                    new WiredSettings(new int[] {0, 0, 0, 0, 0, 0, 1, 1, 0, -10}, "40\t41", new int[0], -1), null));
+            String saved = box.getWiredData();
+            assertTrue(saved.contains("\"spawnVariableId\":40"), saved);
+            assertTrue(saved.contains("\"valueVariableId\":41"), saved);
+            assertTrue(saved.contains("\"valueTarget\":-10"), saved);
+
+            // Not a furni variable of this room.
+            assertThrows(
+                    WiredSaveException.class,
+                    () -> box.saveData(
+                            new WiredSettings(new int[] {0, 0, 0, 0, 0, 0, 1, 0, 5, 0}, "99\t0", new int[0], -1),
+                            null));
+            // The value comes from a variable that was not picked.
+            assertThrows(
+                    WiredSaveException.class,
+                    () -> box.saveData(
+                            new WiredSettings(new int[] {0, 0, 0, 0, 0, 0, 1, 1, 0, 0}, "40\t0", new int[0], -1),
+                            null));
+        }
+    }
+
+    @Test
+    void temporaryFurniIdsAreKnownWithoutTheItem() {
+        assertTrue(ItemManager.isTemporaryItemId(2_050_000_123));
+        assertFalse(ItemManager.isTemporaryItemId(123));
     }
 
     @Test

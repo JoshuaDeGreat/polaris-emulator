@@ -29,7 +29,8 @@ public class WiredExtraLabel extends InteractionWiredExtra {
     static final int[] COLORS = {4278912, 2651759, 4157508, 8416562, 8409402, 8404554, 6834048, 5592405};
 
     public static final int DEFAULT_COLOR = COLORS[0];
-    public static final int MAX_TEXT_LENGTH = 2000;
+    /** The official label input's max_chars. */
+    public static final int MAX_TEXT_LENGTH = 1000;
 
     private String text = "";
     private int color = DEFAULT_COLOR;

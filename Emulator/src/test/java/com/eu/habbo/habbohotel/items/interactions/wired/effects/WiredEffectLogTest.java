@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer;
 import io.netty.buffer.ByteBuf;
 import java.util.Set;
@@ -43,7 +44,8 @@ class WiredEffectLogTest {
         ByteBuf packet = new WiredEffectDataComposer(box, room).compose().get();
         try {
             packet.skipBytes(6);
-            packet.readBoolean();
+            // official layout: furniLimit, stuffIds, stuffIds2, spriteId, id
+            packet.readInt();
             packet.readInt();
             packet.readInt();
             packet.readInt();
@@ -52,7 +54,9 @@ class WiredEffectLogTest {
             packet.readBytes(text);
             int[] params = new int[packet.readInt()];
             for (int i = 0; i < params.length; i++) params[i] = packet.readInt();
-            packet.readInt();
+            packet.readInt(); // variableIds
+            packet.skipBytes(packet.readInt() * 4); // furni sources
+            packet.skipBytes(packet.readInt() * 4); // user sources
             return new Body(new String(text, java.nio.charset.StandardCharsets.UTF_8), params, packet.readInt());
         } finally {
             packet.release();
@@ -68,7 +72,7 @@ class WiredEffectLogTest {
         Body body = body(box);
         assertEquals("boss down", body.message());
         assertArrayEquals(new int[] {3, WiredSourceUtil.SOURCE_TRIGGER}, body.params());
-        assertEquals(WiredEffectType.WRITE_TO_LOGS.code, body.code());
+        assertEquals(WiredActionCodes.official(WiredEffectType.WRITE_TO_LOGS.code), body.code());
     }
 
     @Test

@@ -35,6 +35,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredHotelProgress;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredProgressLimiter;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer;
 import com.eu.habbo.threading.ThreadPooling;
 import io.netty.buffer.ByteBuf;
@@ -54,8 +56,11 @@ class WiredEffectProgressAchievementTest {
         return new WiredEffectProgressAchievement(9, 1, base(), "", 0, 0);
     }
 
-    private static WiredSettings settings(String name, int... params) {
-        return new WiredSettings(params, name, new int[0], 0);
+    /** The official layout from {@code mode, amount[, user source]}: a fixed amount, users in user slot 0. */
+    private static WiredSettings settings(String name, int mode, int amount, int... userSource) {
+        WiredSettings settings = new WiredSettings(new int[] {mode, 0, amount, 0}, name, new int[0], 0);
+        settings.setUserSourceTypes(userSource.length > 0 ? new int[] {userSource[0]} : new int[0]);
+        return settings;
     }
 
     static GameClient author(boolean superwired) {
@@ -77,7 +82,8 @@ class WiredEffectProgressAchievementTest {
         ByteBuf packet = new WiredEffectDataComposer(box, room).compose().get();
         try {
             packet.skipBytes(6);
-            packet.readBoolean();
+            // official layout: furniLimit, stuffIds, stuffIds2, spriteId, id
+            packet.readInt();
             packet.readInt();
             packet.readInt();
             packet.readInt();
@@ -86,7 +92,9 @@ class WiredEffectProgressAchievementTest {
             packet.readBytes(text);
             int[] params = new int[packet.readInt()];
             for (int i = 0; i < params.length; i++) params[i] = packet.readInt();
-            packet.readInt();
+            packet.readInt(); // variableIds
+            packet.skipBytes(packet.readInt() * 4); // furni sources
+            packet.skipBytes(packet.readInt() * 4); // user sources
             return new Body(new String(text, StandardCharsets.UTF_8), params, packet.readInt());
         } finally {
             packet.release();
@@ -123,14 +131,31 @@ class WiredEffectProgressAchievementTest {
     }
 
     @Test
+    void theAmountMayComeFromAVariable() {
+        WiredEffectProgressAchievement box = box();
+        WiredSettings fromVariable =
+                new WiredSettings(new int[] {1, 1, 0, WiredValueVariable.TARGET_GLOBAL}, "ACH_Game\t42", new int[0], 0);
+        assertTrue(box.saveData(fromVariable, author(true)));
+        assertEquals("ACH_Game\t42", body(box).text());
+        assertArrayEquals(
+                new int[] {1, 1, 1, WiredValueVariable.TARGET_GLOBAL}, body(box).params());
+
+        WiredSettings noVariable =
+                new WiredSettings(new int[] {1, 1, 0, WiredValueVariable.TARGET_GLOBAL}, "ACH_Game", new int[0], 0);
+        assertFalse(box.saveData(noVariable, author(true)), "a variable amount needs its variable");
+    }
+
+    @Test
     void theDialogGetsItsParamsUnderItsOwnCode() {
         WiredEffectProgressAchievement box = box();
         box.saveData(settings("ACH_Game", 0, 25, WiredSourceUtil.SOURCE_SELECTOR), author(true));
 
         Body body = body(box);
-        assertEquals("ACH_Game", body.text());
-        assertArrayEquals(new int[] {0, 25, WiredSourceUtil.SOURCE_SELECTOR}, body.params());
-        assertEquals(WiredEffectType.PROGRESS_ACHIEVEMENT.code, body.code());
+        assertEquals("ACH_Game\t0", body.text(), "the name, then the value variable's id");
+        assertArrayEquals(new int[] {0, 0, 25, 0}, body.params());
+        assertArrayEquals(
+                new int[] {WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_TRIGGER}, box.officialUserSources());
+        assertEquals(WiredActionCodes.official(WiredEffectType.PROGRESS_ACHIEVEMENT.code), body.code());
     }
 
     @Test

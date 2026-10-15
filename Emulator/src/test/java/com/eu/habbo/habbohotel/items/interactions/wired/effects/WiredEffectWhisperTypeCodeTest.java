@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer;
 import io.netty.buffer.ByteBuf;
 import java.util.Set;
@@ -24,18 +25,23 @@ class WiredEffectWhisperTypeCodeTest {
 
     @Test
     void giveEffectAdvertisesItsOwnDialog() {
-        assertEquals(WiredEffectType.EFFECT_ID.code, advertisedCode(new WiredEffectGiveEffect(1, 1, base(), "", 0, 0)));
+        assertEquals(
+                WiredActionCodes.official(WiredEffectType.EFFECT_ID.code),
+                advertisedCode(new WiredEffectGiveEffect(1, 1, base(), "", 0, 0)));
     }
 
     @Test
     void giveHandItemAdvertisesItsOwnDialog() {
         assertEquals(
-                WiredEffectType.EFFECT_ID.code, advertisedCode(new WiredEffectGiveHandItem(1, 1, base(), "", 0, 0)));
+                WiredActionCodes.official(WiredEffectType.EFFECT_ID.code),
+                advertisedCode(new WiredEffectGiveHandItem(1, 1, base(), "", 0, 0)));
     }
 
     @Test
     void alertAdvertisesItsOwnDialog() {
-        assertEquals(WiredEffectType.EFFECT_MESSAGE.code, advertisedCode(new WiredEffectAlert(1, 1, base(), "", 0, 0)));
+        assertEquals(
+                WiredActionCodes.official(WiredEffectType.EFFECT_MESSAGE.code),
+                advertisedCode(new WiredEffectAlert(1, 1, base(), "", 0, 0)));
     }
 
     @Test
@@ -56,7 +62,8 @@ class WiredEffectWhisperTypeCodeTest {
         ByteBuf packet = new WiredEffectDataComposer(effect, room).compose().get();
         try {
             packet.skipBytes(6); // frame length and header
-            packet.readBoolean();
+            // official layout: furniLimit, stuffIds, stuffIds2, spriteId, id
+            packet.readInt();
             packet.readInt();
             packet.readInt();
             packet.readInt();
@@ -66,7 +73,9 @@ class WiredEffectWhisperTypeCodeTest {
             for (int i = 0; i < count; i++) {
                 packet.readInt();
             }
-            packet.readInt(); // the selection code slot
+            packet.readInt(); // variableIds
+            packet.skipBytes(packet.readInt() * 4); // furni sources
+            packet.skipBytes(packet.readInt() * 4); // user sources
             return packet.readInt();
         } finally {
             packet.release();

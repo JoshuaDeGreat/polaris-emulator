@@ -32,6 +32,7 @@ public enum CatalogPageLayouts {
     sold_ltd_items,
     plasto,
     default_3x3_color_grouping,
+    recolorable_furniture,
     recent_purchases,
     room_bundle,
     petcustomization,

@@ -74,6 +74,12 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     private int limitedSells;
     private boolean needsUpdate = false;
     private boolean needsDelete = false;
+    /**
+     * A temporary furni (the official "place furni" wired): it has no database row and no owner, is
+     * never saved or given to an inventory, and is gone when the room unloads.
+     */
+    private volatile boolean temporary = false;
+
     private boolean isFromGift = false;
     /** Avatars may walk underneath this item when it is raised high enough, even when the room-wide underpass setting is off. */
     private boolean allowUnderpass = false;
@@ -350,8 +356,23 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
         return this.baseItem.getRotations();
     }
 
+    public boolean isTemporary() {
+        return this.temporary;
+    }
+
+    public void markTemporary() {
+        this.temporary = true;
+    }
+
     @Override
     public void run() {
+        if (this.temporary) {
+            // No row to write or delete.
+            this.needsUpdate = false;
+            this.needsDelete = false;
+            return;
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             if (this.needsDelete) {
                 this.needsUpdate = false;

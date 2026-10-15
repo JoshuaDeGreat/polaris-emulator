@@ -24,8 +24,8 @@ class WiredTriggerAtTimeLongTest {
         WiredTriggerAtTimeLong timer = timer();
 
         assertEquals(WiredTriggerType.AT_GIVEN_TIME_LONG, timer.getType());
-        assertEquals(30, timer.getType().code);
-        assertEquals(30, body(timer, room(1)).typeCode());
+        assertEquals(1004, timer.getType().code); // not an official trigger: 1000 and up
+        assertEquals(1004, body(timer, room(1)).typeCode());
     }
 
     @Test

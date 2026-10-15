@@ -5868,6 +5868,48 @@
       ]
     },
     {
+      "name": "RECOLOR_FURNI",
+      "direction": "client_to_server",
+      "header": 2852,
+      "java": {
+        "symbol": "RecolorFurniEvent",
+        "className": "RecolorFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/RecolorFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "RECOLOR_FURNI",
+        "className": "RecolorFurniComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/RecolorFurniComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "furniId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "scope"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "red"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "green"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "blue"
+        }
+      ]
+    },
+    {
       "name": "GROUP_UNBLOCK_MEMBER",
       "direction": "client_to_server",
       "header": 2864,
@@ -11615,38 +11657,6 @@
           "kind": "scalar",
           "type": "int",
           "name": "id"
-        }
-      ]
-    },
-    {
-      "name": "BUILDERS_CLUB_RECOLOR_FURNI",
-      "direction": "client_to_server",
-      "header": 9480,
-      "java": {
-        "symbol": "BuildersClubRecolorFurniEvent",
-        "className": "BuildersClubRecolorFurniEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/BuildersClubRecolorFurniEvent.java"
-      },
-      "typescript": {
-        "symbol": "BUILDERS_CLUB_RECOLOR_FURNI",
-        "className": "BuildersClubRecolorFurniMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/BuildersClubRecolorFurniMessageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "itemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "colorIndex"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "scope"
         }
       ]
     },
@@ -24495,6 +24505,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "RECOLOR_FURNI_UPDATE",
+      "direction": "server_to_client",
+      "header": 181,
+      "java": {
+        "symbol": "RecolorFurniUpdateComposer",
+        "className": "RecolorFurniUpdateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/RecolorFurniUpdateComposer.java"
+      },
+      "typescript": {
+        "symbol": "RECOLOR_FURNI_UPDATE",
+        "className": "RecolorFurniUpdateParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/RecolorFurniUpdateParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
       "name": "GAME_CENTER_GAME_LIST",
       "direction": "server_to_client",
       "header": 222,
@@ -28926,5 +28952,101 @@
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     }
-  ]
+,
+    {
+      "name": "WIRED_ADDON_SAVE",
+      "direction": "client_to_server",
+      "header": 1883,
+      "java": {
+        "symbol": "WiredAddonSaveDataEvent",
+        "className": "WiredAddonSaveDataEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredAddonSaveDataEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ADDON_SAVE",
+        "className": "UpdateAddonMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/UpdateAddonMessageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+    },
+    {
+      "name": "WIRED_VARIABLE_SAVE",
+      "direction": "client_to_server",
+      "header": 2310,
+      "java": {
+        "symbol": "WiredVariableSaveDataEvent",
+        "className": "WiredVariableSaveDataEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredVariableSaveDataEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE_SAVE",
+        "className": "UpdateVariableMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/UpdateVariableMessageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+    },
+    {
+      "name": "WIRED_SELECTOR_SAVE",
+      "direction": "client_to_server",
+      "header": 3883,
+      "java": {
+        "symbol": "WiredSelectorSaveDataEvent",
+        "className": "WiredSelectorSaveDataEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredSelectorSaveDataEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_SELECTOR_SAVE",
+        "className": "UpdateSelectorMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/UpdateSelectorMessageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+    },
+    {
+      "name": "WIRED_ADDON",
+      "direction": "server_to_client",
+      "header": 2168,
+      "java": {
+        "symbol": "WiredAddonDataComposer",
+        "className": "WiredExtraDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredExtraDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ADDON",
+        "className": "WiredFurniAddonParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniAddonParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer serializeWiredData inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor WiredAddonDefinition inside parse"
+    },
+    {
+      "name": "WIRED_SELECTOR",
+      "direction": "server_to_client",
+      "header": 2509,
+      "java": {
+        "symbol": "WiredSelectorDataComposer",
+        "className": "WiredEffectDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredEffectDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_SELECTOR",
+        "className": "WiredFurniSelectorParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniSelectorParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer serializeWiredData inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor WiredSelectorDefinition inside parse"
+    },
+    {
+      "name": "WIRED_VARIABLE",
+      "direction": "server_to_client",
+      "header": 2955,
+      "java": {
+        "symbol": "WiredVariableDataComposer",
+        "className": "WiredExtraDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredExtraDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE",
+        "className": "WiredFurniVariableParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniVariableParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer serializeWiredData inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor WiredVariableDefinition inside parse"
+    }  ]
 }

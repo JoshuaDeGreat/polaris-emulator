@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredHotelProgress;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import org.junit.jupiter.api.Test;
 
 /** Habbo's progress and reset reward-track actions: what they accept, store and send back. */
@@ -68,7 +69,7 @@ class WiredEffectRewardTrackBoxesTest {
         var body = WiredEffectProgressAchievementTest.body(box);
         assertEquals("season_1\tgames", body.text());
         assertArrayEquals(new int[] {1, 1, WiredSourceUtil.SOURCE_SELECTOR}, body.params());
-        assertEquals(WiredEffectType.PROGRESS_REWARD_TRACK.code, body.code());
+        assertEquals(WiredActionCodes.official(WiredEffectType.PROGRESS_REWARD_TRACK.code), body.code());
     }
 
     @Test
@@ -105,7 +106,7 @@ class WiredEffectRewardTrackBoxesTest {
         var body = WiredEffectProgressAchievementTest.body(box);
         assertEquals("season_1", body.text());
         assertArrayEquals(new int[] {WiredSourceUtil.SOURCE_SELECTOR}, body.params());
-        assertEquals(WiredEffectType.RESET_REWARD_TRACK.code, body.code());
+        assertEquals(WiredActionCodes.official(WiredEffectType.RESET_REWARD_TRACK.code), body.code());
 
         WiredEffectResetRewardTrack loaded = resetBox();
         loaded.loadWiredData(row(box.getWiredData()), null);

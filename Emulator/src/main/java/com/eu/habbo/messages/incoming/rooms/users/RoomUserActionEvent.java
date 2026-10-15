@@ -31,7 +31,7 @@ public class RoomUserActionEvent extends MessageHandler {
             int action = this.packet.readInt();
             if (!RoomUserInputGuard.isValidAction(action)) return;
 
-            int wiredAction = 0;
+            int wiredAction = WiredUserActionType.NONE;
 
             if (action == 5) {
                 UserIdleEvent event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.ACTION, true);
@@ -64,7 +64,7 @@ public class RoomUserActionEvent extends MessageHandler {
                         habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.WAVE, 1);
             }
 
-            if (wiredAction == 0) {
+            if (wiredAction == WiredUserActionType.NONE) {
                 switch (action) {
                     case 1:
                         wiredAction = WiredUserActionType.WAVE;
@@ -83,7 +83,7 @@ public class RoomUserActionEvent extends MessageHandler {
                 }
             }
 
-            if (wiredAction != 0) {
+            if (wiredAction != WiredUserActionType.NONE) {
                 WiredManager.triggerUserPerformsAction(room, habbo.getRoomUnit(), wiredAction, -1);
             }
         }

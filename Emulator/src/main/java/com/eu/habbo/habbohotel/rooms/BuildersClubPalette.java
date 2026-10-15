@@ -5,6 +5,9 @@ import com.eu.habbo.database.Database;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRecolorable;
+import com.eu.habbo.habbohotel.items.recolorable.RecolorableFurniService;
+import com.eu.habbo.habbohotel.items.recolorable.RecolorablePalettes;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.furnieditor.FurniDataManager;
 import com.eu.habbo.messages.outgoing.rooms.items.AddFloorItemComposer;
@@ -73,8 +76,11 @@ public final class BuildersClubPalette {
         return RGB.equals(key) || RED.equals(key) || GREEN.equals(key) || BLUE.equals(key);
     }
 
-    /** True when the furni is a colour variant with a known colour. */
+    /** True when the furni is a recolourable furni, or a colour variant with a known colour. */
     public static boolean hasColor(HabboItem item) {
+        if (item instanceof InteractionRecolorable) {
+            return true;
+        }
         Item base = item == null ? null : item.getBaseItem();
         if (base == null
                 || base.getType() != FurnitureType.FLOOR
@@ -93,6 +99,9 @@ public final class BuildersClubPalette {
     }
 
     public static Integer read(HabboItem item, String key) {
+        if (item instanceof InteractionRecolorable recolorable) {
+            return component(recolorable.hasColor() ? recolorable.getColor() : WHITE, key);
+        }
         if (!hasColor(item)) {
             return null;
         }
@@ -103,6 +112,9 @@ public final class BuildersClubPalette {
     public static boolean write(Room room, HabboItem item, String key, int value) {
         if (room == null || !hasColor(item)) {
             return false;
+        }
+        if (item instanceof InteractionRecolorable recolorable) {
+            return writeRecolorable(room, recolorable, key, value);
         }
 
         Item base = item.getBaseItem();
@@ -141,6 +153,26 @@ public final class BuildersClubPalette {
         room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
         room.sendComposer(new AddFloorItemComposer(item, room.getFurniOwnerName(item.getUserId())).compose());
         persist(item.getId(), target.getId(), room.getId());
+        return true;
+    }
+
+    /** A recolourable furni takes the colour of its palette nearest the value written. */
+    private static boolean writeRecolorable(Room room, InteractionRecolorable item, String key, int value) {
+        int current = item.hasColor() ? item.getColor() : WHITE;
+        int target =
+                RecolorablePalettes.shipped().nearest(item.getBaseItem().getName(), withComponent(current, key, value));
+        if (target < 0 || (item.hasColor() && target == current)) {
+            return false;
+        }
+        if (!spend(room.getId(), System.currentTimeMillis())) {
+            logRefusal(
+                    "budget-" + room.getId(),
+                    "room {} reached {} recolors this second",
+                    room.getId(),
+                    MAX_RECOLORS_PER_SECOND);
+            return false;
+        }
+        RecolorableFurniService.apply(room, List.of(item), target);
         return true;
     }
 

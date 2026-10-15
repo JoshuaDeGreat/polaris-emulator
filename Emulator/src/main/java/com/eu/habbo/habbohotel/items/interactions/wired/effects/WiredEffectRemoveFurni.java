@@ -28,16 +28,17 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Removes the resolved furni from the room when the stack fires — the inverse of {@link WiredEffectPlaceFurni}.
+ * Ours ({@code wf_act_pickup_furni}, custom code 1156; formerly "remove furni", which is now the official
+ * element that removes temporary furni): removes the resolved furni from the room when the stack fires — the inverse of {@link WiredEffectPlaceFurni}.
  * Targets are the builder-selected furni (resolved through {@link WiredSourceUtil#resolveItems}); two modes:
  * RETURN_TO_INVENTORY (default, non-destructive — picks the item up to its owner's inventory) or DELETE
  * (permanently destroys it). It never removes WIRED furni or itself (stack-safety) and is bounded per fire.
  *
  * <p>Carries two ints — {@code [mode, furniSource]} — plus the furni-id selection block, so it needs the matching
- * Nitro {@code WiredActionLayoutCode.REMOVE_FURNI} (107) dialog with the room-furni picker.</p>
+ * Nitro {@code WiredActionLayoutCode.PICKUP_FURNI} (1156) dialog with the room-furni picker.</p>
  */
 public class WiredEffectRemoveFurni extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.REMOVE_FURNI;
+    public static final WiredEffectType type = WiredEffectType.PICKUP_FURNI;
 
     public static final int MODE_RETURN = 0;
     public static final int MODE_DELETE = 1;
@@ -80,26 +81,18 @@ public class WiredEffectRemoveFurni extends InteractionWiredEffect {
             if (target.getRoomId() != room.getId()) continue; // only items currently in this room
             if (removed >= MAX_REMOVE_PER_FIRE) break;
 
-            if (this.mode == MODE_DELETE) {
-                // Deleting is for good. A guest's furni standing in the room is not the owner's to
-                // destroy, so it stays; the return mode below hands it back to whoever owns it.
-                if (target.getUserId() != room.getOwnerId()) continue;
+            // Habbo's remove furni never destroys anything: both modes hand the furni back to whoever owns
+            // it, so a wired builder with modify rights cannot wipe the room owner's furni for good.
+            int ownerId = target.getUserId();
+            Habbo ownerHabbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(ownerId);
+            boolean tracked = BuildersClubRoomSupport.isTrackedItem(target.getId());
 
-                room.pickUpItem(target, null);
-                Emulator.getGameEnvironment().getItemManager().deleteItem(target);
-            } else {
-                int ownerId = target.getUserId();
-                Habbo ownerHabbo =
-                        Emulator.getGameEnvironment().getHabboManager().getHabbo(ownerId);
-                boolean tracked = BuildersClubRoomSupport.isTrackedItem(target.getId());
+            room.pickUpItem(target, ownerHabbo);
 
-                room.pickUpItem(target, ownerHabbo);
-
-                if (ownerHabbo != null && ownerHabbo.getClient() != null && !tracked) {
-                    ownerHabbo.getInventory().getItemsComponent().addItem(target);
-                    ownerHabbo.getClient().sendResponse(new AddHabboItemComposer(target));
-                    ownerHabbo.getClient().sendResponse(new InventoryRefreshComposer());
-                }
+            if (ownerHabbo != null && ownerHabbo.getClient() != null && !tracked) {
+                ownerHabbo.getInventory().getItemsComponent().addItem(target);
+                ownerHabbo.getClient().sendResponse(new AddHabboItemComposer(target));
+                ownerHabbo.getClient().sendResponse(new InventoryRefreshComposer());
             }
 
             removed++;

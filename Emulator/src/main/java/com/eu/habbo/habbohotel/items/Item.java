@@ -106,15 +106,14 @@ public class Item implements ISerialize {
             interactionTypeName = "default";
         }
 
-        this.interactionType =
-                Emulator.getGameEnvironment().getItemManager().getItemInteraction(interactionTypeName.toLowerCase());
+        ItemManager itemManager = Emulator.getGameEnvironment().getItemManager();
+        this.interactionType = itemManager.resolveInteraction(interactionTypeName, this.name);
 
         if ((this.interactionType != null)
                 && "default".equalsIgnoreCase(this.interactionType.getName())
                 && (this.fullName != null)
                 && this.fullName.toLowerCase().startsWith("wf_")) {
-            ItemInteraction fallbackInteraction =
-                    Emulator.getGameEnvironment().getItemManager().getItemInteraction(this.fullName.toLowerCase());
+            ItemInteraction fallbackInteraction = itemManager.getItemInteraction(this.fullName.toLowerCase());
 
             if ((fallbackInteraction != null) && !"default".equalsIgnoreCase(fallbackInteraction.getName())) {
                 this.interactionType = fallbackInteraction;

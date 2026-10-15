@@ -126,7 +126,8 @@ public class Incoming {
     public static final int BuildersClubPlaceRoomItemEvent = 1051;
     public static final int BuildersClubPlaceWallItemEvent = 462;
     // Builders Club recolor window (custom id): itemId, colour index, scope.
-    public static final int BuildersClubRecolorFurniEvent = 9480;
+    // Official recolour of recolourable Builders Club furni (replaces the custom 9480 variant swap).
+    public static final int RecolorFurniEvent = 2852;
     public static final int RequestInventoryPetsEvent = 3095;
     public static final int ModToolRequestRoomVisitsEvent = 3526;
     /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
@@ -214,6 +215,10 @@ public class Incoming {
     public static final int RequestInventoryItemsEvent = 3150;
     public static final int ModToolRoomAlertEvent = 3842;
     public static final int WiredEffectSaveDataEvent = 2281;
+    // Official AIR wired addon, selector and variable saves (build WIN63-202610131318).
+    public static final int WiredAddonSaveDataEvent = 1883;
+    public static final int WiredSelectorSaveDataEvent = 3883;
+    public static final int WiredVariableSaveDataEvent = 2310;
     public static final int WiredApplySetConditionsEvent = 3373;
     public static final int CheckPetNameEvent = 2109;
     public static final int SecureLoginEvent = 2419;

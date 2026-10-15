@@ -20,6 +20,38 @@ import org.junit.jupiter.api.Test;
 class ItemInteractionRegistryCompatibilityTest {
 
     @Test
+    void ourBoxesOnAnOfficialInteractionTypeArePickedByTheFurniName() {
+        TestItemManager manager = new TestItemManager();
+        manager.loadDefaults();
+
+        assertEquals(
+                com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni.class,
+                manager.resolveInteraction("wf_act_remove_furni", "wf_act_pickup_furni")
+                        .getType());
+        assertEquals(
+                com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTemporaryFurni.class,
+                manager.resolveInteraction("wf_act_remove_furni", "wf_act_remove_furni")
+                        .getType());
+        assertEquals(
+                com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni.class,
+                manager.resolveInteraction("WF_ACT_PLACE_FURNI", "wf_act_spawn_furni")
+                        .getType());
+        assertEquals(
+                com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAsGroup.class,
+                manager.resolveInteraction("wf_act_move_furni_as_group", "wf_act_move_group_step")
+                        .getType());
+        // The name only counts on its official counterpart: another interaction type stays what it is.
+        assertEquals(
+                manager.getItemInteraction("wf_act_toggle_state").getType(),
+                manager.resolveInteraction("wf_act_toggle_state", "wf_act_pickup_furni")
+                        .getType());
+        // Their own interaction types keep working.
+        assertEquals(
+                com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni.class,
+                manager.resolveInteraction("wf_act_pickup_furni", "anything").getType());
+    }
+
+    @Test
     void lookupFallbackOrderingAndUniquenessStayStable() {
         TestItemManager manager = new TestItemManager();
         manager.loadDefaults();

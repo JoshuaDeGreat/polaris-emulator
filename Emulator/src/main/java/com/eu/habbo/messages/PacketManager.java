@@ -543,6 +543,7 @@ import com.eu.habbo.messages.incoming.users.UserActivityEvent;
 import com.eu.habbo.messages.incoming.users.UserNuxEvent;
 import com.eu.habbo.messages.incoming.users.UserSaveLookEvent;
 import com.eu.habbo.messages.incoming.users.UserWearBadgeEvent;
+import com.eu.habbo.messages.incoming.wired.WiredAddonSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredApplySetConditionsEvent;
 import com.eu.habbo.messages.incoming.wired.WiredArrayInspectionRequestEvent;
@@ -562,6 +563,7 @@ import com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomStateActionEvent;
+import com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredUserInspectMoveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredUserSelectedEvent;
@@ -571,6 +573,7 @@ import com.eu.habbo.messages.incoming.wired.WiredUserVariablesRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredVariableHashesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredVariableHoldersPageEvent;
 import com.eu.habbo.messages.incoming.wired.WiredVariableHoldersRequestEvent;
+import com.eu.habbo.messages.incoming.wired.WiredVariableSaveDataEvent;
 import com.eu.habbo.monitoring.EmulatorNetworkStats;
 import com.eu.habbo.plugin.EventHandler;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
@@ -799,8 +802,7 @@ public class PacketManager {
         this.registerHandler(Incoming.BuildersClubQueryFurniCountEvent, BuildersClubQueryFurniCountEvent.class);
         this.registerHandler(Incoming.BuildersClubPlaceRoomItemEvent, BuildersClubPlaceRoomItemEvent.class);
         this.registerHandler(
-                Incoming.BuildersClubRecolorFurniEvent,
-                com.eu.habbo.messages.incoming.catalog.BuildersClubRecolorFurniEvent.class);
+                Incoming.RecolorFurniEvent, com.eu.habbo.messages.incoming.rooms.items.RecolorFurniEvent.class);
         this.registerHandler(Incoming.BuildersClubPlaceWallItemEvent, BuildersClubPlaceWallItemEvent.class);
         this.registerHandler(Incoming.RequestCatalogPageEvent, RequestCatalogPageEvent.class);
         this.registerHandler(Incoming.CatalogProductMetadataEvent, CatalogProductMetadataEvent.class);
@@ -1330,6 +1332,9 @@ public class PacketManager {
     void registerWired() throws Exception {
         this.registerHandler(Incoming.WiredTriggerSaveDataEvent, WiredTriggerSaveDataEvent.class);
         this.registerHandler(Incoming.WiredEffectSaveDataEvent, WiredEffectSaveDataEvent.class);
+        this.registerHandler(Incoming.WiredAddonSaveDataEvent, WiredAddonSaveDataEvent.class);
+        this.registerHandler(Incoming.WiredSelectorSaveDataEvent, WiredSelectorSaveDataEvent.class);
+        this.registerHandler(Incoming.WiredVariableSaveDataEvent, WiredVariableSaveDataEvent.class);
         this.registerHandler(Incoming.WiredConditionSaveDataEvent, WiredConditionSaveDataEvent.class);
         this.registerHandler(Incoming.WiredApplySetConditionsEvent, WiredApplySetConditionsEvent.class);
         this.registerHandler(Incoming.WiredMonitorRequestEvent, WiredMonitorRequestEvent.class);

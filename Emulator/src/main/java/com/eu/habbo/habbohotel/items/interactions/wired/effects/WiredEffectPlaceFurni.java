@@ -22,7 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Spawns ("builds") a fresh floor furni into the room when the stack fires — the in-room analogue of
+ * Our "spawn furni" (furni classname {@code wf_act_spawn_furni}): spawns ("builds") a fresh floor furni into the room when the stack fires — the in-room analogue of
  * {@link WiredEffectGiveOrTakeFurni} (which mints into a user's inventory). The furni is a freshly minted,
  * persisted item owned by the ROOM OWNER, placed either on this effect furni's own tile or at a stored x/y.
  *
@@ -31,7 +31,8 @@ import java.sql.SQLException;
  * room's furniture ceiling is honoured so a repeater trigger + place loop cannot flood/OOM the room.</p>
  */
 public class WiredEffectPlaceFurni extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.PLACE_FURNI;
+    // Ours (wf_act_spawn_furni): the official "place furni" is WiredEffectPlaceTemporaryFurni.
+    public static final WiredEffectType type = WiredEffectType.SPAWN_FURNI;
 
     public static final int MODE_THIS_TILE = 0;
     public static final int MODE_STORED_XY = 1;

@@ -60,6 +60,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionPuzzleBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPyramid;
 import com.eu.habbo.habbohotel.items.interactions.InteractionQueueSpeedControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRandomState;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRecolorable;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRedeemableSubscriptionBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRentableSpace;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
@@ -286,6 +287,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMakeF
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMakeUserSay;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMatchFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectModifyArray;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveAsGroup;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAsGroup;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAway;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniTo;
@@ -301,6 +303,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegat
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOpenHabboPages;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOverrideHeight;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceTemporaryFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlayYoutube;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectProgressAchievement;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectProgressRewardTrack;
@@ -309,6 +312,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRelat
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveBadge;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTag;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveTemporaryFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetHighscores;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetRewardTrack;
@@ -876,8 +880,10 @@ public class ItemManager {
         this.interactionsList.add(
                 new ItemInteraction("wf_trg_transaction_complete", WiredTriggerTransactionComplete.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_transaction_fail", WiredTriggerTransactionFail.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_place_furni", WiredEffectPlaceFurni.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_remove_furni", WiredEffectRemoveFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_place_furni", WiredEffectPlaceTemporaryFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_spawn_furni", WiredEffectPlaceFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_furni", WiredEffectRemoveTemporaryFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_pickup_furni", WiredEffectRemoveFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_contract_payment", InteractionWiredContractPayment.class));
         this.interactionsList.add(new ItemInteraction("wf_contract_reward", InteractionWiredContractReward.class));
         this.interactionsList.add(new ItemInteraction("wf_contract_trade", InteractionWiredContractTrade.class));
@@ -1092,7 +1098,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_user_collides_bot", WiredTriggerCollision.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_user_collides_other", WiredTriggerCollision.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_one_condition", WiredExtraOrEval.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_move_furni_as_group", WiredEffectMoveFurniAsGroup.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_furni_as_group", WiredEffectMoveAsGroup.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_group_step", WiredEffectMoveFurniAsGroup.class));
         this.interactionsList.add(new ItemInteraction("wf_slc_remote", WiredEffectRemoteSelector.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_mov_curve", WiredExtraMovementCurve.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_time_util", WiredExtraTimeUtilities.class));
@@ -1186,6 +1193,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_room_linker", InteractionWiredRoomLinker.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_leaderboard", WiredExtraVariableLeaderboard.class));
         this.interactionsList.add(new ItemInteraction("wf_label", WiredExtraLabel.class));
+        this.interactionsList.add(new ItemInteraction("recolorable", InteractionRecolorable.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {
@@ -1200,6 +1208,28 @@ public class ItemManager {
 
         LOGGER.debug("Can't find interaction class: {}", type.getName());
         return this.getItemInteraction(InteractionDefault.class);
+    }
+
+    /**
+     * Our wired boxes that share an official box's interaction type: the furni's name picks ours. So an
+     * items_base row {@code item_name = wf_act_pickup_furni, interaction_type = wf_act_remove_furni} is our
+     * pickup box, while every other row with that interaction type is the official one. Their own
+     * interaction types keep working as well.
+     */
+    static final Map<String, String> NAMED_VARIANTS = Map.of(
+            "wf_act_pickup_furni", "wf_act_remove_furni",
+            "wf_act_spawn_furni", "wf_act_place_furni",
+            "wf_act_move_group_step", "wf_act_move_furni_as_group");
+
+    /** The interaction a furni named {@code itemName} gets on {@code interactionType}. */
+    public ItemInteraction resolveInteraction(String interactionType, String itemName) {
+        String type = interactionType == null ? "default" : interactionType.toLowerCase();
+        String name = itemName == null ? "" : itemName.toLowerCase();
+        if (type.equals(NAMED_VARIANTS.get(name))) {
+            ItemInteraction variant = this.interactionsList.find(name);
+            if (variant != null) return variant;
+        }
+        return this.getItemInteraction(type);
     }
 
     public ItemInteraction getItemInteraction(String type) {
@@ -1386,6 +1416,10 @@ public class ItemManager {
         }
 
         extraData = ItemDataGuard.normalizeExtraData(extraData);
+        // A recolourable furni only ever starts in a colour of its palette, whatever the client asked for.
+        if (InteractionRecolorable.isRecolorable(item)) {
+            extraData = InteractionRecolorable.placementExtradata(item, extraData, "0");
+        }
 
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO items (user_id, item_id, extra_data, limited_data) VALUES (?, ?, ?, ?)",
@@ -1450,7 +1484,46 @@ public class ItemManager {
         return new ArrayList<>(this.newuserGifts.values());
     }
 
+    /** Ids of temporary furni: far above any database id, and never written to the database. */
+    private static final int FIRST_TEMPORARY_ITEM_ID = 2_050_000_000;
+
+    private static final java.util.concurrent.atomic.AtomicInteger NEXT_TEMPORARY_ITEM_ID =
+            new java.util.concurrent.atomic.AtomicInteger(FIRST_TEMPORARY_ITEM_ID);
+
+    /**
+     * A temporary furni of {@code item}'s type (the official "place furni" wired): it lives in memory
+     * only, has no owner, and is never saved, picked up into an inventory or deleted from the database.
+     */
+    public static boolean isTemporaryItemId(int id) {
+        return id >= FIRST_TEMPORARY_ITEM_ID;
+    }
+
+    public HabboItem createTemporaryItem(Item item, String extraData) {
+        if (item == null) return null;
+
+        int id = NEXT_TEMPORARY_ITEM_ID.getAndUpdate(
+                next -> next >= Integer.MAX_VALUE - 1 ? FIRST_TEMPORARY_ITEM_ID : next + 1);
+        String data = ItemDataGuard.normalizeExtraData(extraData);
+        HabboItem created;
+        Class<? extends HabboItem> itemClass = item.getInteractionType().getType();
+        try {
+            created = itemClass
+                    .getDeclaredConstructor(int.class, int.class, Item.class, String.class, int.class, int.class)
+                    .newInstance(id, 0, item, data, 0, 0);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+            created = new InteractionDefault(id, 0, item, data, 0, 0);
+        }
+        created.markTemporary();
+        return created;
+    }
+
     public void deleteItem(HabboItem item) {
+        if (item == null || item.isTemporary()) {
+            // A temporary furni has no rows to delete.
+            return;
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(
                     "DELETE FROM items_teleports WHERE teleport_one_id = ? OR teleport_two_id = ?")) {

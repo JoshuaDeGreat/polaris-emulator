@@ -201,19 +201,19 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
         }
 
+        // Picks are kept whatever the source, as in the official client: they are only used while the
+        // source is "picked furni", and switching back to it finds them again.
         List<HabboItem> newItems = new ArrayList<>();
-        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            for (int i = 0; i < itemsCount; i++) {
-                int itemId = settings.getFurniIds()[i];
-                HabboItem it = Emulator.getGameEnvironment()
-                        .getRoomManager()
-                        .getRoom(this.getRoomId())
-                        .getHabboItem(itemId);
+        for (int i = 0; i < itemsCount; i++) {
+            int itemId = settings.getFurniIds()[i];
+            HabboItem it = Emulator.getGameEnvironment()
+                    .getRoomManager()
+                    .getRoom(this.getRoomId())
+                    .getHabboItem(itemId);
 
-                if (it == null) throw new WiredSaveException(String.format("Item %s not found", itemId));
+            if (it == null) throw new WiredSaveException(String.format("Item %s not found", itemId));
 
-                newItems.add(it);
-            }
+            newItems.add(it);
         }
 
         int delay = settings.getDelay();
@@ -222,9 +222,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
             throw new WiredSaveException("Delay too long");
 
         this.items.clear();
-        if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            this.items.addAll(newItems);
-        }
+        this.items.addAll(newItems);
         this.setDelay(delay);
 
         return true;

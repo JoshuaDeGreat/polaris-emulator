@@ -9,6 +9,8 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
+public class WiredEffectUsersNeighborhood extends InteractionWiredEffect implements WiredOfficialSelector {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectUsersNeighborhood.class);
 
     public static final WiredEffectType type = WiredEffectType.USERS_NEIGHBORHOOD_SELECTOR;
@@ -47,8 +49,8 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
     }
 
     private static final int MAX_PICKED_FURNI = 20;
-    private static final int MAX_TILE_OFFSETS = 64;
-    private static final int GRID_RANGE = 4;
+    private static final int MAX_TILE_OFFSETS = 441;
+    private static final int GRID_RANGE = WiredNeighborhoodWire.RADIUS;
 
     private int sourceType = SOURCE_USER_TRIGGER;
     private boolean filterExisting = false;
@@ -259,26 +261,24 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        // Official layout: [isUser, rootX, rootY, ...drawing]; the source in the furni or user source
+        // slot, filter and invert in the selector switches.
         int[] params = settings.getIntParams();
-        if (params == null || params.length < 1) {
-            throw new WiredSaveException("wf_slc_users_neighborhood: intParams must have at least 1 element");
+        if (params == null || params.length < 3) {
+            throw new WiredSaveException("wf_slc_users_neighborhood: intParams must hold the type and the root tile");
         }
 
-        this.sourceType = normalizeSourceType(params[0]);
-        this.filterExisting = params.length > 1 && params[1] == 1;
-        this.invert = params.length > 2 && params[2] == 1;
-        this.targetOffsetX = params.length > 3 ? params[3] : 0;
-        this.targetOffsetY = params.length > 4 ? params[4] : 0;
-
-        this.tileOffsets = new ArrayList<>();
-        if (params.length > 5) {
-            int n = params[5];
-            for (int i = 0; i < n && i < MAX_TILE_OFFSETS; i++) {
-                int xi = 6 + i * 2;
-                if (xi + 1 < params.length) {
-                    tileOffsets.add(new int[] {params[xi], params[xi + 1]});
-                }
-            }
+        boolean user = params[0] == 1;
+        int[] sources = user ? settings.getUserSourceTypes() : settings.getFurniSourceTypes();
+        int official = (sources != null && sources.length > 0) ? sources[0] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.sourceType = normalizeSourceType(WiredNeighborhoodWire.privateSource(user, official));
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
+        this.targetOffsetX = WiredNeighborhoodWire.clampRoot(params[1]);
+        this.targetOffsetY = WiredNeighborhoodWire.clampRoot(params[2]);
+        this.tileOffsets = WiredNeighborhoodWire.decode(params, 3);
+        if (this.tileOffsets.size() > MAX_TILE_OFFSETS) {
+            this.tileOffsets = new ArrayList<>(this.tileOffsets.subList(0, MAX_TILE_OFFSETS));
         }
 
         this.pickedFurniIds = new ArrayList<>();
@@ -311,23 +311,43 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
         message.appendInt(this.getId());
         message.appendString("");
 
-        int paramCount = 6 + tileOffsets.size() * 2;
-        message.appendInt(paramCount);
-        message.appendInt(sourceType);
-        message.appendInt(filterExisting ? 1 : 0);
-        message.appendInt(invert ? 1 : 0);
-        message.appendInt(targetOffsetX);
-        message.appendInt(targetOffsetY);
-        message.appendInt(tileOffsets.size());
-        for (int[] offset : tileOffsets) {
-            message.appendInt(offset[0]);
-            message.appendInt(offset[1]);
+        int[] drawing = WiredNeighborhoodWire.encode(this.tileOffsets);
+        message.appendInt(3 + drawing.length);
+        message.appendInt(WiredNeighborhoodWire.isUserSource(this.sourceType) ? 1 : 0);
+        message.appendInt(this.targetOffsetX);
+        message.appendInt(this.targetOffsetY);
+        for (int bits : drawing) {
+            message.appendInt(bits);
         }
 
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
         message.appendInt(0);
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return WiredNeighborhoodWire.isUserSource(this.sourceType)
+                ? new int[] {WiredSourceUtil.SOURCE_TRIGGER}
+                : new int[] {WiredNeighborhoodWire.officialSource(this.sourceType)};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return WiredNeighborhoodWire.isUserSource(this.sourceType)
+                ? new int[] {WiredNeighborhoodWire.officialSource(this.sourceType)}
+                : new int[] {WiredSourceUtil.SOURCE_TRIGGER};
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
     }
 
     @Override

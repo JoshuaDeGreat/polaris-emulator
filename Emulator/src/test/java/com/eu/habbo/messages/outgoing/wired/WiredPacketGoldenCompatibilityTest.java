@@ -179,33 +179,55 @@ class WiredPacketGoldenCompatibilityTest {
     }
 
     private static void appendFixtureWhenSerialized(InteractionWiredTrigger trigger, Room room) {
-        doAnswer(invocation -> appendFixture(invocation.getArgument(0)))
+        doAnswer(invocation -> appendFixture(invocation.getArgument(0), "trigger"))
                 .when(trigger)
                 .serializeWiredData(any(ServerMessage.class), eq(room));
     }
 
     private static void appendFixtureWhenSerialized(InteractionWiredEffect effect, Room room) {
-        doAnswer(invocation -> appendFixture(invocation.getArgument(0)))
+        doAnswer(invocation -> appendFixture(invocation.getArgument(0), "action"))
                 .when(effect)
                 .serializeWiredData(any(ServerMessage.class), eq(room));
     }
 
     private static void appendFixtureWhenSerialized(InteractionWiredCondition condition, Room room) {
-        doAnswer(invocation -> appendFixture(invocation.getArgument(0)))
+        doAnswer(invocation -> appendFixture(invocation.getArgument(0), "condition"))
                 .when(condition)
                 .serializeWiredData(any(ServerMessage.class), eq(room));
     }
 
     private static void appendFixtureWhenSerialized(InteractionWiredExtra extra, Room room) {
-        doAnswer(invocation -> appendFixture(invocation.getArgument(0)))
+        doAnswer(invocation -> appendFixture(invocation.getArgument(0), "addon"))
                 .when(extra)
                 .serializeWiredData(any(ServerMessage.class), eq(room));
     }
 
-    private static Object appendFixture(ServerMessage message) {
-        message.appendBoolean(true);
-        message.appendInt(42);
+    /** A box's legacy definition; the composers send it on in the official layout. */
+    private static Object appendFixture(ServerMessage message, String holder) {
+        message.appendBoolean(false);
+        message.appendInt(5); // furni limit
+        message.appendInt(1);
+        message.appendInt(0x0a0b0c0d); // picked furni
+        message.appendInt(42); // sprite id
+        message.appendInt(0x01020304); // box id
         message.appendString("wired");
+        message.appendInt(2);
+        message.appendInt(1);
+        message.appendInt(2);
+        message.appendInt(0); // selection code
+        // An addon writes its action-space code (64, execute in order); it goes out as official 17.
+        message.appendInt(holder.equals("addon") ? 64 : 3); // code
+        switch (holder) {
+            case "action", "addon" -> {
+                message.appendInt(4); // delay
+                message.appendInt(0); // conflicts
+            }
+            case "trigger" -> message.appendInt(0); // conflicts
+            default -> {
+                message.appendInt(0);
+                message.appendInt(0);
+            }
+        }
         return null;
     }
 

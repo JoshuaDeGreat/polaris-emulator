@@ -115,7 +115,7 @@ public final class WiredDefinitionWire {
         out.appendInt(0); // variableIds
         writeInts(out, new int[0]); // furni sources
         writeInts(out, new int[0]); // user sources
-        out.appendInt(definition.code);
+        out.appendInt(officialCode(holder, definition.code));
 
         switch (holder) {
             case ACTION -> out.appendInt(definition.delay);
@@ -146,6 +146,16 @@ public final class WiredDefinitionWire {
             out.appendInt(0); // wired context
         }
         writeInts(out, new int[0]); // default int params
+    }
+
+    /** Selectors, addons and variables have their own official code spaces. */
+    static int officialCode(Holder holder, int legacyCode) {
+        return switch (holder) {
+            case SELECTOR -> WiredSelectorCodes.official(legacyCode);
+            case ADDON -> WiredAddonCodes.officialAddon(legacyCode);
+            case VARIABLE -> WiredAddonCodes.officialVariable(legacyCode);
+            default -> legacyCode;
+        };
     }
 
     private static int[] readInts(ByteBuf in) {

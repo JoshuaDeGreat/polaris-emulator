@@ -197,7 +197,7 @@ class WiredPacketGoldenCompatibilityTest {
     }
 
     private static void appendFixtureWhenSerialized(InteractionWiredExtra extra, Room room) {
-        doAnswer(invocation -> appendFixture(invocation.getArgument(0), "action"))
+        doAnswer(invocation -> appendFixture(invocation.getArgument(0), "addon"))
                 .when(extra)
                 .serializeWiredData(any(ServerMessage.class), eq(room));
     }
@@ -215,9 +215,10 @@ class WiredPacketGoldenCompatibilityTest {
         message.appendInt(1);
         message.appendInt(2);
         message.appendInt(0); // selection code
-        message.appendInt(3); // code
+        // An addon writes its action-space code (64, execute in order); it goes out as official 17.
+        message.appendInt(holder.equals("addon") ? 64 : 3); // code
         switch (holder) {
-            case "action" -> {
+            case "action", "addon" -> {
                 message.appendInt(4); // delay
                 message.appendInt(0); // conflicts
             }

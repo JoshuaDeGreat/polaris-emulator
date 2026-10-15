@@ -8122,6 +8122,11 @@ METHOD public static com.eu.habbo.habbohotel.wired.migrate.WiredEvents#userVaria
 METHOD public static com.eu.habbo.habbohotel.wired.migrate.WiredEvents#userWalksOff(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.users.HabboItem):com.eu.habbo.habbohotel.wired.core.WiredEvent throws -
 METHOD public static com.eu.habbo.habbohotel.wired.migrate.WiredEvents#userWalksOn(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.users.HabboItem):com.eu.habbo.habbohotel.wired.core.WiredEvent throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredAddonCodes extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredAddonCodes#FIRST_CUSTOM_ADDON:int
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredAddonCodes#officialAddon(int):int throws -
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredAddonCodes#officialVariable(int):int throws -
+
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire#writeOfficial(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder,com.eu.habbo.messages.ServerMessage):void throws -
 
@@ -8144,6 +8149,10 @@ METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredHolders extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#isVariable(com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#of(com.eu.habbo.habbohotel.items.interactions.InteractionWired):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes#SCAN_CHEST_FURNI_BY_TYPE:int
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes#official(int):int throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.tick.WiredTickService extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#DEFAULT_TICK_INTERVAL_MS:int

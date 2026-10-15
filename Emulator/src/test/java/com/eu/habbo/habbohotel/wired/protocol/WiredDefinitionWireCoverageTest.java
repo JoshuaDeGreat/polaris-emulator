@@ -97,6 +97,96 @@ class WiredDefinitionWireCoverageTest {
     }
 
     @Test
+    void everySelectorSendsItsOwnOfficialSelectorCode() throws Exception {
+        java.util.Map<Integer, String> seen = new java.util.HashMap<>();
+        List<String> failures = new ArrayList<>();
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment)
+                    .thenReturn(mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS));
+
+            for (Class<? extends InteractionWired> type : WiredInteractionRegistryFixture.wiredTypes()) {
+                InteractionWired item = WiredInteractionRegistryFixture.instantiate(type);
+                if (WiredHolders.of(item) != WiredDefinitionWire.Holder.SELECTOR) continue;
+
+                ServerMessage legacy = new ServerMessage(1);
+                item.serializeWiredData(legacy, mock(Room.class, Answers.RETURNS_DEEP_STUBS));
+                ServerMessage official = new ServerMessage(2);
+                WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.SELECTOR, official);
+
+                ByteBuf in = official.get();
+                in.skipBytes(6);
+                in.readInt();
+                in.skipBytes(in.readInt() * 4);
+                in.skipBytes(in.readInt() * 4);
+                in.readInt();
+                in.readInt();
+                OfficialReader.string(in);
+                in.skipBytes(in.readInt() * 4);
+                int variables = in.readInt();
+                for (int i = 0; i < variables; i++) OfficialReader.string(in);
+                in.skipBytes(in.readInt() * 4);
+                in.skipBytes(in.readInt() * 4);
+                int code = in.readInt();
+                in.release();
+
+                boolean official019 = code >= 0 && code <= 19;
+                if (!official019 && code < WiredSelectorCodes.SCAN_CHEST_FURNI_BY_TYPE) {
+                    failures.add(type.getSimpleName() + " sends selector code " + code);
+                }
+                String previous = seen.put(code, type.getSimpleName());
+                if (previous != null && !previous.equals(type.getSimpleName())) {
+                    failures.add(type.getSimpleName() + " shares code " + code + " with " + previous);
+                }
+            }
+        }
+
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+        for (int code = 0; code <= 19; code++) {
+            assertTrue(seen.containsKey(code), "no selector sends official code " + code + ": " + seen);
+        }
+    }
+
+    @Test
+    void everyAddonAndVariableHasItsOwnOfficialCode() throws Exception {
+        java.util.Map<String, String> seen = new java.util.HashMap<>();
+        List<String> failures = new ArrayList<>();
+        int variables = 0;
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment)
+                    .thenReturn(mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS));
+
+            for (Class<? extends InteractionWired> type : WiredInteractionRegistryFixture.wiredTypes()) {
+                InteractionWired item = WiredInteractionRegistryFixture.instantiate(type);
+                WiredDefinitionWire.Holder holder = WiredHolders.of(item);
+                if (holder != WiredDefinitionWire.Holder.ADDON && holder != WiredDefinitionWire.Holder.VARIABLE)
+                    continue;
+
+                ServerMessage legacy = new ServerMessage(1);
+                item.serializeWiredData(legacy, mock(Room.class, Answers.RETURNS_DEEP_STUBS));
+                ByteBuf body = legacy.get();
+                body.skipBytes(6);
+                int code = WiredDefinitionWire.officialCode(holder, WiredDefinitionWire.readLegacy(body, holder).code);
+                body.release();
+
+                if (code < 0) failures.add(type.getSimpleName() + " has no official " + holder + " code");
+                if (holder == WiredDefinitionWire.Holder.VARIABLE) {
+                    variables++;
+                    if (code > 9) failures.add(type.getSimpleName() + " sends variable code " + code);
+                }
+                String previous = seen.put(holder + ":" + code, type.getSimpleName());
+                if (previous != null && !previous.equals(type.getSimpleName())) {
+                    failures.add(type.getSimpleName() + " shares " + holder + " code " + code + " with " + previous);
+                }
+            }
+        }
+
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+        assertEquals(9, variables);
+    }
+
+    @Test
     void theOfficialLayoutKeepsEveryLegacyField() {
         WiredDefinitionWire.Definition definition = new WiredDefinitionWire.Definition();
         definition.furniLimit = 20;

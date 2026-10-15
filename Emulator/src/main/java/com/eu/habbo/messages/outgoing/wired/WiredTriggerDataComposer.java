@@ -22,7 +22,7 @@ public class WiredTriggerDataComposer extends MessageComposer {
         // Each box still writes the legacy layout; it goes out in the official one.
         ServerMessage legacy = new ServerMessage(Outgoing.WiredTriggerDataComposer);
         this.trigger.serializeWiredData(legacy, this.room);
-        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.TRIGGER, this.response);
+        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.TRIGGER, this.response, this.trigger);
         this.trigger.needsUpdate(true);
         return this.response;
     }

@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer;
 import io.netty.buffer.ByteBuf;
 import java.util.Set;
@@ -24,18 +25,23 @@ class WiredEffectWhisperTypeCodeTest {
 
     @Test
     void giveEffectAdvertisesItsOwnDialog() {
-        assertEquals(WiredEffectType.EFFECT_ID.code, advertisedCode(new WiredEffectGiveEffect(1, 1, base(), "", 0, 0)));
+        assertEquals(
+                WiredActionCodes.official(WiredEffectType.EFFECT_ID.code),
+                advertisedCode(new WiredEffectGiveEffect(1, 1, base(), "", 0, 0)));
     }
 
     @Test
     void giveHandItemAdvertisesItsOwnDialog() {
         assertEquals(
-                WiredEffectType.EFFECT_ID.code, advertisedCode(new WiredEffectGiveHandItem(1, 1, base(), "", 0, 0)));
+                WiredActionCodes.official(WiredEffectType.EFFECT_ID.code),
+                advertisedCode(new WiredEffectGiveHandItem(1, 1, base(), "", 0, 0)));
     }
 
     @Test
     void alertAdvertisesItsOwnDialog() {
-        assertEquals(WiredEffectType.EFFECT_MESSAGE.code, advertisedCode(new WiredEffectAlert(1, 1, base(), "", 0, 0)));
+        assertEquals(
+                WiredActionCodes.official(WiredEffectType.EFFECT_MESSAGE.code),
+                advertisedCode(new WiredEffectAlert(1, 1, base(), "", 0, 0)));
     }
 
     @Test
@@ -68,8 +74,8 @@ class WiredEffectWhisperTypeCodeTest {
                 packet.readInt();
             }
             packet.readInt(); // variableIds
-            packet.readInt(); // furni sources
-            packet.readInt(); // user sources
+            packet.skipBytes(packet.readInt() * 4); // furni sources
+            packet.skipBytes(packet.readInt() * 4); // user sources
             return packet.readInt();
         } finally {
             packet.release();

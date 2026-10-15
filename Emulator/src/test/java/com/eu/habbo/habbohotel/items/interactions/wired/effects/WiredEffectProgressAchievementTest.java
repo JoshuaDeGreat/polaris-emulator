@@ -35,6 +35,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredHotelProgress;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredProgressLimiter;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredActionCodes;
 import com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer;
 import com.eu.habbo.threading.ThreadPooling;
 import io.netty.buffer.ByteBuf;
@@ -88,8 +89,8 @@ class WiredEffectProgressAchievementTest {
             int[] params = new int[packet.readInt()];
             for (int i = 0; i < params.length; i++) params[i] = packet.readInt();
             packet.readInt(); // variableIds
-            packet.readInt(); // furni sources
-            packet.readInt(); // user sources
+            packet.skipBytes(packet.readInt() * 4); // furni sources
+            packet.skipBytes(packet.readInt() * 4); // user sources
             return new Body(new String(text, StandardCharsets.UTF_8), params, packet.readInt());
         } finally {
             packet.release();
@@ -133,7 +134,7 @@ class WiredEffectProgressAchievementTest {
         Body body = body(box);
         assertEquals("ACH_Game", body.text());
         assertArrayEquals(new int[] {0, 25, WiredSourceUtil.SOURCE_SELECTOR}, body.params());
-        assertEquals(WiredEffectType.PROGRESS_ACHIEVEMENT.code, body.code());
+        assertEquals(WiredActionCodes.official(WiredEffectType.PROGRESS_ACHIEVEMENT.code), body.code());
     }
 
     @Test

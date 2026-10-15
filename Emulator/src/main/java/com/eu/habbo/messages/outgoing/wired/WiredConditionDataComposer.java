@@ -22,7 +22,7 @@ public class WiredConditionDataComposer extends MessageComposer {
         // Each box still writes the legacy layout; it goes out in the official one.
         ServerMessage legacy = new ServerMessage(Outgoing.WiredConditionDataComposer);
         this.condition.serializeWiredData(legacy, this.room);
-        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.CONDITION, this.response);
+        WiredDefinitionWire.writeOfficial(legacy, WiredDefinitionWire.Holder.CONDITION, this.response, this.condition);
         this.condition.needsUpdate(true);
         return this.response;
     }

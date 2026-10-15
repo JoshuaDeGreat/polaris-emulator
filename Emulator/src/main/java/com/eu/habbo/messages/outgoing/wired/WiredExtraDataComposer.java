@@ -41,7 +41,8 @@ public class WiredExtraDataComposer extends MessageComposer implements SecretBea
         WiredDefinitionWire.writeOfficial(
                 legacy,
                 variable ? WiredDefinitionWire.Holder.VARIABLE : WiredDefinitionWire.Holder.ADDON,
-                this.response);
+                this.response,
+                this.extra);
         this.extra.needsUpdate(true);
         return this.response;
     }

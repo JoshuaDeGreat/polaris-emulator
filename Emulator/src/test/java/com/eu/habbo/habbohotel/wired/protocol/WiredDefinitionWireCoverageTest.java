@@ -187,6 +187,43 @@ class WiredDefinitionWireCoverageTest {
     }
 
     @Test
+    void actionsGoOutWithOfficialCodesOrOursFrom1000() throws Exception {
+        java.util.Map<Integer, Integer> legacyByOfficial = new java.util.HashMap<>();
+        List<String> failures = new ArrayList<>();
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment)
+                    .thenReturn(mock(GameEnvironment.class, Answers.RETURNS_DEEP_STUBS));
+
+            for (Class<? extends InteractionWired> type : WiredInteractionRegistryFixture.wiredTypes()) {
+                InteractionWired item = WiredInteractionRegistryFixture.instantiate(type);
+                if (WiredHolders.of(item) != WiredDefinitionWire.Holder.ACTION) continue;
+
+                ServerMessage legacy = new ServerMessage(1);
+                item.serializeWiredData(legacy, mock(Room.class, Answers.RETURNS_DEEP_STUBS));
+                ByteBuf body = legacy.get();
+                body.skipBytes(6);
+                int legacyCode = WiredDefinitionWire.readLegacy(body, WiredDefinitionWire.Holder.ACTION).code;
+                body.release();
+                int code = WiredDefinitionWire.officialCode(WiredDefinitionWire.Holder.ACTION, legacyCode);
+
+                if (code < 0 || (code > 64 && code < WiredActionCodes.FIRST_CUSTOM_ACTION)) {
+                    failures.add(type.getSimpleName() + " sends action code " + code);
+                }
+                Integer previous = legacyByOfficial.put(code, legacyCode);
+                if (previous != null && previous != legacyCode) {
+                    failures.add("action code " + code + " is used by legacy codes " + previous + " and " + legacyCode);
+                }
+            }
+        }
+
+        assertTrue(failures.isEmpty(), String.join("\n", failures));
+        assertEquals(28, WiredDefinitionWire.officialCode(WiredDefinitionWire.Holder.ACTION, 41), "control clock");
+        assertEquals(
+                1126, WiredDefinitionWire.officialCode(WiredDefinitionWire.Holder.ACTION, 126), "ours: modify array");
+    }
+
+    @Test
     void theOfficialLayoutKeepsEveryLegacyField() {
         WiredDefinitionWire.Definition definition = new WiredDefinitionWire.Definition();
         definition.furniLimit = 20;
@@ -195,7 +232,7 @@ class WiredDefinitionWireCoverageTest {
         definition.id = 1234;
         definition.stringParam = "hi";
         definition.intParams = new int[] {1, 2, 3};
-        definition.code = 5;
+        definition.code = 41; // control clock, officially 28
         definition.delay = 6;
 
         ServerMessage official = new ServerMessage(2);
@@ -216,7 +253,7 @@ class WiredDefinitionWireCoverageTest {
         assertEquals(0, in.readInt(), "variableIds");
         assertEquals(0, in.readInt(), "furni sources");
         assertEquals(0, in.readInt(), "user sources");
-        assertEquals(5, in.readInt(), "code");
+        assertEquals(28, in.readInt(), "code");
         assertEquals(6, in.readInt(), "delay");
         assertFalse(in.readBoolean(), "advanced mode");
         in.release();

@@ -18,8 +18,9 @@ import java.nio.charset.StandardCharsets;
  * advancedMode}, the input sources conf, {@code bool allowWallFurni}, the holder's type specifics
  * (condition quantifier type byte and invert), the wired context and {@code int[] defaultIntParams}.
  *
- * <p>The new fields go out empty until each box writes them itself; an action's context block (the
- * variable leaderboard) is passed on as it is.
+ * <p>The furni and user sources come from the box's source fields; the other new fields go out empty
+ * until each box writes them itself. An action's context block (the variable leaderboard) is passed
+ * on as it is.
  */
 public final class WiredDefinitionWire {
     /** Which wired definition packet this is. */
@@ -50,10 +51,20 @@ public final class WiredDefinitionWire {
 
     /** Rewrites {@code legacy} (a message holding one legacy definition) into {@code target}. */
     public static void writeOfficial(ServerMessage legacy, Holder holder, ServerMessage target) {
+        writeOfficial(legacy, holder, target, null);
+    }
+
+    /**
+     * Rewrites {@code legacy} into {@code target}, with the furni and user sources of {@code box} in the
+     * official source fields.
+     */
+    public static void writeOfficial(ServerMessage legacy, Holder holder, ServerMessage target, Object box) {
         ByteBuf body = legacy.get();
         try {
             body.skipBytes(FRAME_BYTES);
             Definition definition = readLegacy(body, holder);
+            definition.furniSources = WiredSourceFields.furniSources(box);
+            definition.userSources = WiredSourceFields.userSources(box);
             writeOfficial(definition, holder, target);
         } finally {
             body.release();
@@ -68,6 +79,8 @@ public final class WiredDefinitionWire {
         int id;
         String stringParam = "";
         int[] intParams = new int[0];
+        int[] furniSources = new int[0];
+        int[] userSources = new int[0];
         int code;
         int delay;
         /** An action's legacy context block (count and entries), passed on unchanged. */
@@ -113,8 +126,8 @@ public final class WiredDefinitionWire {
         out.appendString(definition.stringParam);
         writeInts(out, definition.intParams);
         out.appendInt(0); // variableIds
-        writeInts(out, new int[0]); // furni sources
-        writeInts(out, new int[0]); // user sources
+        writeInts(out, definition.furniSources);
+        writeInts(out, definition.userSources);
         out.appendInt(officialCode(holder, definition.code));
 
         switch (holder) {
@@ -148,9 +161,10 @@ public final class WiredDefinitionWire {
         writeInts(out, new int[0]); // default int params
     }
 
-    /** Selectors, addons and variables have their own official code spaces. */
+    /** Actions, selectors, addons and variables go out with their official codes. */
     static int officialCode(Holder holder, int legacyCode) {
         return switch (holder) {
+            case ACTION -> WiredActionCodes.official(legacyCode);
             case SELECTOR -> WiredSelectorCodes.official(legacyCode);
             case ADDON -> WiredAddonCodes.officialAddon(legacyCode);
             case VARIABLE -> WiredAddonCodes.officialVariable(legacyCode);

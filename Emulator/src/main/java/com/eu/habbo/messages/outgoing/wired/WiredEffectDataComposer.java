@@ -27,7 +27,8 @@ public class WiredEffectDataComposer extends MessageComposer {
         WiredDefinitionWire.writeOfficial(
                 legacy,
                 selector ? WiredDefinitionWire.Holder.SELECTOR : WiredDefinitionWire.Holder.ACTION,
-                this.response);
+                this.response,
+                this.effect);
         this.effect.needsUpdate(true);
         return this.response;
     }

@@ -14,10 +14,14 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredServices;
 import com.eu.habbo.habbohotel.wired.core.WiredState;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import java.sql.ResultSet;
 import org.junit.jupiter.api.Test;
 
-/** Habbo's jump strength on wf_xtra_mov_curve: a signed strength next to our easing curves. */
+/**
+ * Habbo's jump strength on wf_xtra_mov_curve: a signed strength next to our easing curves. Params:
+ * [from variable, strength, official target, curve, intensity].
+ */
 class WiredExtraMovementCurveJumpTest {
 
     private static WiredExtraMovementCurve box() {
@@ -32,7 +36,7 @@ class WiredExtraMovementCurveJumpTest {
     void aJumpCarriesItsSignedStrengthAsTheStyleIntensity() {
         WiredExtraMovementCurve box = box();
 
-        box.saveData(settings(WiredExtraMovementCurve.CURVE_JUMP, 100, -250), null);
+        box.saveData(settings(0, -250, 1, WiredExtraMovementCurve.CURVE_JUMP, 100), null);
 
         assertEquals(WiredExtraMovementCurve.CURVE_JUMP, box.getCurveType());
         assertEquals(-250, box.getStyleIntensity());
@@ -42,7 +46,7 @@ class WiredExtraMovementCurveJumpTest {
     void anEasingCurveStillCarriesItsIntensityAndTheStrengthIsClamped() {
         WiredExtraMovementCurve box = box();
 
-        box.saveData(settings(WiredExtraMovementCurve.CURVE_BOUNCE, 40, 5000), null);
+        box.saveData(settings(0, 5000, 1, WiredExtraMovementCurve.CURVE_BOUNCE, 40), null);
 
         assertEquals(40, box.getStyleIntensity());
         assertEquals(WiredExtraMovementCurve.STRENGTH_MAX, box.getStrength());
@@ -51,7 +55,7 @@ class WiredExtraMovementCurveJumpTest {
     @Test
     void theStrengthSurvivesTheDatabaseAndOldBoxesGetHabbosDefault() throws Exception {
         WiredExtraMovementCurve saved = box();
-        saved.saveData(settings(WiredExtraMovementCurve.CURVE_JUMP, 100, 300), null);
+        saved.saveData(settings(0, 300, 1, WiredExtraMovementCurve.CURVE_JUMP, 100), null);
 
         WiredExtraMovementCurve loaded = box();
         loaded.loadWiredData(row(saved.getWiredData()), null);
@@ -75,7 +79,7 @@ class WiredExtraMovementCurveJumpTest {
 
         WiredExtraMovementCurve box = box();
         WiredSettings settings = new WiredSettings(
-                new int[] {WiredExtraMovementCurve.CURVE_JUMP, 100, 40, 1, WiredVariableOperand.TARGET_ROOM, 0, 0},
+                new int[] {1, 40, WiredVariableTargets.OFFICIAL_GLOBAL, WiredExtraMovementCurve.CURVE_JUMP, 100},
                 "custom:77",
                 new int[0],
                 0);

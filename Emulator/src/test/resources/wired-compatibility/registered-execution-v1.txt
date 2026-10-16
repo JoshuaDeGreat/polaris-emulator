@@ -123,7 +123,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveDuckets 
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect | EFFECT | type=EFFECT_ID | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveExperience | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveFurniFromChest | EFFECT | type=GIVE_FURNI_FROM_CHEST | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem | EFFECT | type=EFFECT_ID | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem | EFFECT | type=GIVE_HAND_ITEM | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewBonusRarePoints | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewHofPoints | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveLook | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
@@ -284,6 +284,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSig
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater | TRIGGER | type=PERIODICALLY | event=TIMER_REPEAT | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong | TRIGGER | type=PERIODICALLY_LONG | event=TIMER_REPEAT_LONG | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterShort | TRIGGER | type=PERIODICALLY_SHORT | event=TIMER_REPEAT_SHORT | actor=false | match=true
+com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRoomInitialized | TRIGGER | type=ROOM_INITIALIZED | event=ROOM_INITIALIZED | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerScoreAchieved | TRIGGER | type=SCORE_ACHIEVED | event=SCORE_ACHIEVED | actor=true | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses | TRIGGER | type=TEAM_GAME_RESULT | event=TEAM_WINS | actor=false | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins | TRIGGER | type=TEAM_GAME_RESULT | event=TEAM_WINS | actor=false | match=true

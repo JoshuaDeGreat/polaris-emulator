@@ -12,13 +12,14 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class WiredEffectUsersTeam extends InteractionWiredEffect {
+public class WiredEffectUsersTeam extends InteractionWiredEffect implements WiredOfficialSelector {
     private static final int TEAM_ANY = 0;
 
     public static final WiredEffectType type = WiredEffectType.USERS_TEAM_SELECTOR;
@@ -60,10 +61,30 @@ public class WiredEffectUsersTeam extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
         this.teamType = (params.length > 0) ? this.normalizeTeamType(params[0]) : TEAM_ANY;
-        this.filterExisting = params.length > 1 && params[1] == 1;
-        this.invert = params.length > 2 && params[2] == 1;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -123,10 +144,8 @@ public class WiredEffectUsersTeam extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(1);
         message.appendInt(this.teamType);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());

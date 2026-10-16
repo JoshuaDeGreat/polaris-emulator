@@ -22,6 +22,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -93,10 +94,10 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeStringData());
-        message.appendInt(4);
-        message.appendInt(this.targetType);
-        message.appendInt(this.userSource);
-        message.appendInt(this.furniSource);
+        // Official layout: [variable target (furni 0, user 1, global -10, context -20)], the furni and
+        // users in the official source slots; our quantifier (0 all, 1 any) follows.
+        message.appendInt(2);
+        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -109,10 +110,15 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         int[] params = settings.getIntParams();
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
-        this.targetType = (params.length > 0) ? normalizeTargetType(params[0]) : TARGET_USER;
-        this.userSource = (params.length > 1) ? normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.furniSource = (params.length > 2) ? normalizeFurniSource(params[2]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 3) ? normalizeQuantifier(params[3]) : QUANTIFIER_ALL;
+        this.targetType =
+                (params.length > 0) ? normalizeTargetType(WiredVariableTargets.fromOfficial(params[0])) : TARGET_USER;
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = (params.length > 1) ? normalizeQuantifier(params[1]) : QUANTIFIER_ALL;
         String[] stringParts = splitStringData(settings.getStringParam());
         this.setVariableToken(normalizeVariableToken(stringParts.length > 0 ? stringParts[0] : ""));
         ArrayData arrayData = parseArrayData(stringParts.length > 1 ? stringParts[1] : null);

@@ -630,6 +630,16 @@ public final class WiredManager {
     /**
      * Trigger when a user enters the room.
      */
+    /** Official room initialized: once per room load, before anything else can trigger. */
+    public static boolean triggerRoomInitialized(Room room) {
+        if (!isEnabled() || room == null) {
+            return false;
+        }
+
+        return handleEvent(
+                WiredEvent.builder(WiredEvent.Type.ROOM_INITIALIZED, room).build());
+    }
+
     public static boolean triggerUserEntersRoom(Room room, RoomUnit user) {
         if (!isEnabled() || room == null || user == null) {
             return false;

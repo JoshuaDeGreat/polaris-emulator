@@ -184,11 +184,13 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [seconds (0-59), minutes (0-99), half second (0-1), comparison (0 less, 1 equal,
+        // 2 more)], the counters in the official source slot; our quantifier (0 all, 1 any) follows.
         message.appendInt(5);
-        message.appendInt(this.comparison);
+        message.appendInt(this.halfSecondSteps / 2);
         message.appendInt(this.minutes);
-        message.appendInt(this.halfSecondSteps);
-        message.appendInt(this.furniSource);
+        message.appendInt(this.halfSecondSteps % 2);
+        message.appendInt(this.comparison);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -200,11 +202,16 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
 
-        this.comparison = (params.length > 0) ? this.normalizeComparison(params[0]) : COMPARISON_EQUAL;
+        int seconds = (params.length > 0) ? Math.clamp(params[0], 0, 59) : 0;
         this.minutes = (params.length > 1) ? this.normalizeMinutes(params[1]) : 0;
-        this.halfSecondSteps = (params.length > 2) ? this.normalizeHalfSecondSteps(params[2]) : 0;
-        this.furniSource = (params.length > 3) ? this.normalizeFurniSource(params[3]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 4) ? this.normalizeQuantifier(params[4]) : QUANTIFIER_ALL;
+        int half = (params.length > 2) ? Math.clamp(params[2], 0, 1) : 0;
+        this.halfSecondSteps = this.normalizeHalfSecondSteps(seconds * 2 + half);
+        this.comparison = (params.length > 3) ? this.normalizeComparison(params[3]) : COMPARISON_EQUAL;
+        // Officially one counter is enough.
+        this.quantifier = (params.length > 4) ? this.normalizeQuantifier(params[4]) : QUANTIFIER_ANY;
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
 
         this.items.clear();
 

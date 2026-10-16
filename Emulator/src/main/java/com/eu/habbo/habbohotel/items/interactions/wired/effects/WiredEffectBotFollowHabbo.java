@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredBotSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -22,7 +23,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WiredEffectBotFollowHabbo extends InteractionWiredEffect {
+public class WiredEffectBotFollowHabbo extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_FOLLOW_AVATAR;
 
     private String botName = "";
@@ -47,10 +48,8 @@ public class WiredEffectBotFollowHabbo extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName);
-        message.appendInt(3);
+        message.appendInt(1);
         message.appendInt(this.mode);
-        message.appendInt(this.userSource);
-        message.appendInt(this.botSource);
         message.appendInt(1);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -72,17 +71,26 @@ public class WiredEffectBotFollowHabbo extends InteractionWiredEffect {
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[] {};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource, this.userSource};
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("Mode is invalid");
+        // Official layout: [start / stop following]; the bots are user slot 0, the user to follow slot 1.
+        if (settings.getIntParams().length < 1) throw new WiredSaveException("Mode is invalid");
 
         int mode = settings.getIntParams()[0];
         // The same normalisation loadWiredData applies, so a save and a reload agree.
-        this.userSource = WiredSourceUtil.isDefaultUserSource(settings.getIntParams()[1])
-                ? settings.getIntParams()[1]
-                : WiredSourceUtil.SOURCE_TRIGGER;
-        this.botSource = (settings.getIntParams().length > 2)
-                ? WiredBotSourceUtil.normalizeBotSource(settings.getIntParams()[2])
-                : WiredBotSourceUtil.SOURCE_BOT_NAME;
+        int followed = settings.userSource(1, WiredSourceUtil.SOURCE_TRIGGER);
+        this.userSource = WiredSourceUtil.isDefaultUserSource(followed) ? followed : WiredSourceUtil.SOURCE_TRIGGER;
+        this.botSource =
+                WiredBotSourceUtil.normalizeBotSource(settings.userSource(0, WiredBotSourceUtil.SOURCE_BOT_NAME));
 
         if (mode != 0 && mode != 1) throw new WiredSaveException("Mode is invalid");
 

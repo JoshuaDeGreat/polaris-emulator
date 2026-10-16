@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The "show message" box takes a fourth int, the bubble width the message should use: -1 keeps the
+ * The "show message" box takes a third int (official [visibility, style, width]), the bubble width the message should use: -1 keeps the
  * room setting, 0/1/2 are wide/normal/thin as the room setting names them. A box saved before the
  * slot existed keeps the room setting.
  */
@@ -53,27 +53,27 @@ class WiredEffectWhisperBubbleWidthTest {
     }
 
     @Test
-    void aBoxSavedWithThreeIntsKeepsTheRoomSetting() throws Exception {
-        WiredEffectWhisper effect = saved(new int[] {0, 0, 34});
+    void aBoxSavedWithTwoIntsKeepsTheRoomSetting() throws Exception {
+        WiredEffectWhisper effect = saved(new int[] {0, 34});
 
         assertEquals(-1, effect.getBubbleWidthOverride());
     }
 
     @Test
-    void theFourthIntIsTheBubbleWidth() throws Exception {
-        assertEquals(2, saved(new int[] {0, 0, 34, 2}).getBubbleWidthOverride());
-        assertEquals(0, saved(new int[] {0, 0, 34, 0}).getBubbleWidthOverride());
+    void theThirdIntIsTheBubbleWidth() throws Exception {
+        assertEquals(2, saved(new int[] {0, 34, 2}).getBubbleWidthOverride());
+        assertEquals(0, saved(new int[] {0, 34, 0}).getBubbleWidthOverride());
     }
 
     @Test
     void aWidthThatNamesNothingKeepsTheRoomSetting() throws Exception {
-        assertEquals(-1, saved(new int[] {0, 0, 34, 9}).getBubbleWidthOverride());
-        assertEquals(-1, saved(new int[] {0, 0, 34, -3}).getBubbleWidthOverride());
+        assertEquals(-1, saved(new int[] {0, 34, 9}).getBubbleWidthOverride());
+        assertEquals(-1, saved(new int[] {0, 34, -3}).getBubbleWidthOverride());
     }
 
     @Test
-    void theDialogGetsFourIntsBackWithTheWidthLast() throws Exception {
-        WiredEffectWhisper effect = saved(new int[] {0, 1, 34, 1});
+    void theDialogGetsTheOfficialThreeIntsBackWithTheWidthLast() throws Exception {
+        WiredEffectWhisper effect = saved(new int[] {1, 34, 1});
         Room room = mock(Room.class);
         RoomSpecialTypes specialTypes = mock(RoomSpecialTypes.class);
         when(specialTypes.getTriggers(anyInt(), anyInt())).thenReturn(Set.of());
@@ -89,8 +89,8 @@ class WiredEffectWhisperBubbleWidthTest {
             packet.readInt();
             packet.readInt();
             packet.skipBytes(packet.readShort()); // the message
-            assertEquals(4, packet.readInt());
-            assertEquals(0, packet.readInt());
+            // official [visibility, style, width]; the user source is the official slot
+            assertEquals(3, packet.readInt());
             assertEquals(1, packet.readInt());
             assertEquals(34, packet.readInt());
             assertEquals(1, packet.readInt());

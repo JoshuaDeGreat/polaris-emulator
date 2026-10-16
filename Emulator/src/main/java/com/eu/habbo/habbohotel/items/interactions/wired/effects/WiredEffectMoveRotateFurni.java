@@ -305,10 +305,9 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.direction);
         message.appendInt(this.rotation);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -321,11 +320,12 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
 
         if (room == null) return false;
 
-        if (settings.getIntParams().length < 3) throw new WiredSaveException("invalid data");
+        // Official layout: [movement, rotation]; the furni source is the official source slot.
+        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
 
         this.direction = settings.getIntParams()[0];
         this.rotation = settings.getIntParams()[1];
-        this.furniSource = settings.getIntParams()[2];
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int count = settings.getFurniIds().length;
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5)) return false;

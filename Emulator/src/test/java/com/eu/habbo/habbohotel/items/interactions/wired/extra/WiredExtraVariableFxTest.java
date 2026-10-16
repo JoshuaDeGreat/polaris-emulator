@@ -101,17 +101,44 @@ class WiredExtraVariableFxTest {
         0
     };
 
+    /** {@link #PARAMS} in the official 23-int layout the editor gets back. */
+    private static final int[] OFFICIAL_PARAMS = {
+        1, // user (official target)
+        WiredExtraVariableFx.VISIBILITY_GAME_TEAM,
+        WiredExtraVariableFx.SHOW_WHEN_CHANGES,
+        0, // update mask
+        0, // show on hover
+        2500,
+        1,
+        WiredExtraVariableFx.COLOR_DYNAMIC_TEAM,
+        3,
+        0, // renderer
+        0,
+        10, // default min (long)
+        0,
+        250, // default max (long)
+        1,
+        0,
+        -10, // override min: global
+        1, // override max: the holder's (user)
+        0,
+        7, // audience value (long)
+        5, // segments
+        0, // category extra
+        0 // stack order
+    };
+
     @Test
     void whatTheEditorSavesComesBackToItUnchanged() throws Exception {
         WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
-        assertTrue(
-                box.saveData(new WiredSettings(PARAMS, "custom:300\t\tcustom:400\tmisc_heart", new int[0], 0), null));
+        assertTrue(box.saveData(
+                new WiredSettings(OFFICIAL_PARAMS, "custom:300\t\tcustom:400\tmisc_heart", new int[0], 0), null));
 
         Body body = body(box, room());
 
         assertEquals(4321, body.spriteId());
         assertEquals(7, body.itemId());
-        assertArrayEquals(PARAMS, body.params());
+        assertArrayEquals(OFFICIAL_PARAMS, body.params());
         assertEquals("custom:300\t\tcustom:400\tmisc_heart", body.text());
         assertEquals(WiredExtraVariableFxProgressBar.CODE, body.code());
         assertEquals(131, body.code());
@@ -125,8 +152,9 @@ class WiredExtraVariableFxTest {
         WiredExtraVariableFxProgressBar loaded = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
         loaded.loadWiredData(row(saved.getWiredData()), room());
 
+        // A save in the old 16-int layout still reads, and goes back out in the official one.
         Body body = body(loaded, room());
-        assertArrayEquals(PARAMS, body.params());
+        assertArrayEquals(OFFICIAL_PARAMS, body.params());
         assertEquals("custom:300\t\tcustom:400\tmisc_heart", body.text());
         assertEquals(400, loaded.getAudienceItemId());
         assertEquals("misc_heart", loaded.getIcon());
@@ -140,20 +168,27 @@ class WiredExtraVariableFxTest {
 
         Body body = body(box, room());
         int[] expected = {
-            WiredExtraVariableFx.SOURCE_USER,
+            1,
             WiredExtraVariableFx.VISIBILITY_HAS_VARIABLE_WITH_VALUE,
             WiredExtraVariableFx.SHOW_NEVER,
+            0,
+            0,
             WiredExtraVariableFx.SHOW_DURATION_MIN_MS,
             WiredVariableFxStyles.styleCount(WiredVariableFxStyles.CATEGORY_PROGRESS_BAR) - 1,
             1000,
             100,
-            WiredExtraVariableFx.SEGMENTS_MAX,
+            0,
+            0,
+            0,
             0,
             100,
             1,
             1,
-            WiredExtraVariableFx.OVERRIDE_TARGET_HOLDER,
-            WiredExtraVariableFx.OVERRIDE_TARGET_HOLDER,
+            1,
+            1,
+            0,
+            0,
+            WiredExtraVariableFx.SEGMENTS_MAX,
             0,
             0
         };
@@ -300,6 +335,23 @@ class WiredExtraVariableFxTest {
     }
 
     @Test
+    void anOfficialSaveReadsTheLongsAndTheVariableIdsApart() throws Exception {
+        int[] params = OFFICIAL_PARAMS.clone();
+        params[10] = -1; // default min -5, as hi/lo words
+        params[11] = -5;
+        WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
+        WiredSettings settings = new WiredSettings(params, "", new int[0], 0);
+        settings.setVariableIds(new String[] {"300", "0", "400"});
+        box.saveData(settings, null);
+
+        Body body = body(box, room());
+        assertEquals(-1, body.params()[10]);
+        assertEquals(-5, body.params()[11]);
+        assertEquals("custom:300\t\tcustom:400\t", body.text());
+        assertArrayEquals(new String[] {"300", "0", "400"}, box.officialVariableIds());
+    }
+
+    @Test
     void pickingUpResetsEverything() throws Exception {
         WiredExtraVariableFxProgressBar box = new WiredExtraVariableFxProgressBar(7, 1, base(), "", 0, 0);
         box.saveData(new WiredSettings(PARAMS, "custom:300\t\tcustom:400\tmisc_heart", new int[0], 0), null);
@@ -308,7 +360,7 @@ class WiredExtraVariableFxTest {
 
         Body body = body(box, room());
         assertEquals(WiredExtraVariableFx.VISIBILITY_EVERYONE, body.params()[1]);
-        assertEquals(WiredExtraVariableFx.DEFAULT_MAX_VALUE, body.params()[9]);
+        assertEquals(WiredExtraVariableFx.DEFAULT_MAX_VALUE, body.params()[13]);
         assertEquals("\t\t\t", body.text());
     }
 }

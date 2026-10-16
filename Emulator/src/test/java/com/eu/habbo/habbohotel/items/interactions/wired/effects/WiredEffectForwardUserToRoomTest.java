@@ -109,6 +109,12 @@ class WiredEffectForwardUserToRoomTest {
         return new WiredSettings(params, roomId, furniIds, 0);
     }
 
+    /** The official furni source slot. */
+    private static WiredSettings furniSlot(WiredSettings settings, int source) {
+        settings.setFurniSourceTypes(new int[] {source});
+        return settings;
+    }
+
     private static int forwardedRoom(Habbo habbo) {
         ArgumentCaptor<ForwardToRoomComposer> sent = ArgumentCaptor.forClass(ForwardToRoomComposer.class);
         verify(habbo.getClient()).sendResponse(sent.capture());
@@ -159,8 +165,8 @@ class WiredEffectForwardUserToRoomTest {
         assertTrue(box.saveData(settings(" 42 ", new int[0], 0), null));
         assertEquals("42", json(box).get("roomIdText").getAsString());
         assertFalse(box.saveData(settings("lobby", new int[0], 0), null));
-        assertFalse(box.saveData(settings("", new int[0], 0, WiredSourceUtil.SOURCE_SELECTED), null));
-        assertTrue(box.saveData(settings("", new int[0], 0, WiredSourceUtil.SOURCE_SIGNAL), null));
+        assertFalse(box.saveData(furniSlot(settings("", new int[0]), WiredSourceUtil.SOURCE_SELECTED), null));
+        assertTrue(box.saveData(furniSlot(settings("", new int[0]), WiredSourceUtil.SOURCE_SIGNAL), null));
         assertEquals(WiredSourceUtil.SOURCE_SIGNAL, json(box).get("furniSource").getAsInt());
     }
 

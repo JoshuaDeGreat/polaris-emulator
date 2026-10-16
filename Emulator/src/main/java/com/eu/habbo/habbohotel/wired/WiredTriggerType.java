@@ -57,7 +57,9 @@ public enum WiredTriggerType {
     USERNAME_AS_TRIGGER(1005),
     // The official "furni state is changed" trigger: any state update of the picked furni, whether a
     // user toggled it or a wired effect set it. STATE_CHANGED (4) stays the user-toggle-only box.
-    STATE_CHANGE(20);
+    STATE_CHANGE(20),
+    // Official: fires once when the room loads, before any other trigger.
+    ROOM_INITIALIZED(28);
 
     public final int code;
 

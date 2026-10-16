@@ -20,7 +20,8 @@ public final class WiredTextInputCaptureSupport {
     private static final int MATCH_CONTAINS = 0;
     private static final int MATCH_EXACT = 1;
     private static final int MATCH_ALL_WORDS = 2;
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("#([^#]+)#");
+    // The official capture token is "#(name)"; ours, "#name#", keeps working for saved keywords.
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("#\\(([^()#]+)\\)|#([^#]+)#");
     // Cap the number of capture groups compiled into the fallback template
     // regex, which runs against every chat message in the room. Many groups —
     // and especially adjacent (.+?) groups with empty separators — cause
@@ -234,8 +235,7 @@ public final class WiredTextInputCaptureSupport {
                 return null;
             }
 
-            String placeholderName =
-                    matcher.group(1) != null ? matcher.group(1).trim().toLowerCase() : "";
+            String placeholderName = placeholderName(matcher);
             if (placeholderName.isEmpty() || !capturersByName.containsKey(placeholderName)) {
                 return null;
             }
@@ -368,6 +368,11 @@ public final class WiredTextInputCaptureSupport {
         return (pattern != null) ? pattern.pattern : null;
     }
 
+    private static String placeholderName(Matcher matcher) {
+        String name = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+        return name != null ? name.trim().toLowerCase() : "";
+    }
+
     private static TemplatePattern compilePattern(String template) {
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(template);
         List<String> literals = new ArrayList<>();
@@ -386,8 +391,7 @@ public final class WiredTextInputCaptureSupport {
             }
 
             literals.add(template.substring(cursor, matcher.start()));
-            String placeholderName =
-                    matcher.group(1) != null ? matcher.group(1).trim().toLowerCase() : "";
+            String placeholderName = placeholderName(matcher);
             placeholderNames.add(placeholderName);
             cursor = matcher.end();
 

@@ -67,11 +67,13 @@ class WiredEffectLogTest {
     void theDialogGetsTheLevelAndTheUserSourceUnderItsOwnCode() {
         WiredEffectLog box = box();
 
-        assertTrue(box.saveData(settings("  boss down  ", 3, WiredSourceUtil.SOURCE_TRIGGER), null));
+        WiredSettings settings = settings("  boss down  ", 3);
+        settings.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_TRIGGER});
+        assertTrue(box.saveData(settings, null));
 
         Body body = body(box);
         assertEquals("boss down", body.message());
-        assertArrayEquals(new int[] {3, WiredSourceUtil.SOURCE_TRIGGER}, body.params());
+        assertArrayEquals(new int[] {3}, body.params()); // official [level]; the source is the slot
         assertEquals(WiredActionCodes.official(WiredEffectType.WRITE_TO_LOGS.code), body.code());
     }
 

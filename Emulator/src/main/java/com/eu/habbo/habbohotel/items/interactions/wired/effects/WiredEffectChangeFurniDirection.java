@@ -285,10 +285,9 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(4);
+        message.appendInt(3);
         message.appendInt(this.startRotation != null ? this.startRotation.getValue() : 0);
         message.appendInt(this.blockedAction);
-        message.appendInt(this.furniSource);
         message.appendInt(this.blockOnUserCollision ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -298,7 +297,9 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 3) throw new WiredSaveException("Invalid data");
+        // Official layout: [start direction, turn, stop on user collision]; the furni source is the
+        // official source slot.
+        if (settings.getIntParams().length < 2) throw new WiredSaveException("Invalid data");
 
         int startDirectionInt = settings.getIntParams()[0];
 
@@ -309,8 +310,8 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
         RoomUserRotation startDirection = RoomUserRotation.fromValue(startDirectionInt);
 
         int blockedActionInt = settings.getIntParams()[1];
-        this.furniSource = settings.getIntParams()[2];
-        this.blockOnUserCollision = settings.getIntParams().length > 3 && settings.getIntParams()[3] == 1;
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.blockOnUserCollision = settings.getIntParams().length > 2 && settings.getIntParams()[2] == 1;
 
         if (blockedActionInt < 0 || blockedActionInt > 6) {
             throw new WiredSaveException("Blocked action is invalid");

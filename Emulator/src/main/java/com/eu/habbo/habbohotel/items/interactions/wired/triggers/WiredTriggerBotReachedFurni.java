@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
+public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger implements WiredOfficialSources {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredTriggerBotReachedFurni.class);
     private static final int BOT_SOURCE_NAME = 100;
     private static final int BOT_SOURCE_SELECTOR = 200;
@@ -83,9 +84,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName);
-        message.appendInt(2);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.botSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
 
@@ -106,6 +105,16 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource};
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings) {
         return this.saveData(settings, null);
     }
@@ -113,13 +122,15 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         this.botName = settings.getStringParam();
-        int[] params = settings.getIntParams();
-        this.furniSource = (params.length > 0)
-                ? this.normalizeFurniSource(params[0])
+        // Official: no int params; the furni and the bot source are the official source slots.
+        int[] furni = settings.getFurniSourceTypes();
+        int[] users = settings.getUserSourceTypes();
+        this.furniSource = (furni.length > 0)
+                ? this.normalizeFurniSource(furni[0])
                 : ((settings.getFurniIds().length > 0)
                         ? WiredSourceUtil.SOURCE_SELECTED
                         : WiredSourceUtil.SOURCE_TRIGGER);
-        this.botSource = (params.length > 1) ? this.normalizeBotSource(params[1]) : BOT_SOURCE_NAME;
+        this.botSource = (users.length > 0) ? this.normalizeBotSource(users[0]) : BOT_SOURCE_NAME;
 
         this.items.clear();
         // Picked furni mean the picks, as in the official editor, which has no furni source on a trigger.

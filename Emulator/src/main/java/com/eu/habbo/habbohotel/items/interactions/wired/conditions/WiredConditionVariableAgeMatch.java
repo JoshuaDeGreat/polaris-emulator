@@ -13,6 +13,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,6 +43,11 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
     protected int comparison = COMPARISON_LOWER_THAN;
     protected int durationAmount = 0;
     protected int durationUnit = DURATION_UNIT_SECONDS;
+    /** The duration read from a variable (official, WIN63-202610121624), on the box's own selection. */
+    protected boolean fromVariable = false;
+
+    protected int durationVariableId = 0;
+    protected int durationTarget = WiredValueVariable.TARGET_GLOBAL;
 
     public WiredConditionVariableAgeMatch(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -75,15 +82,19 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.variableToken == null ? "" : this.variableToken);
-        message.appendInt(8);
-        message.appendInt(this.targetType);
-        message.appendInt(this.compareValue);
+        // Official layout: [target, comparison (0 less, 2 more), useUpdate, durationHigh, durationLow, unit,
+        // fromVariable, durationTarget], the variable then a tab and the duration variable in the string,
+        // the furni and users in the official source slots; our quantifier follows.
+        message.appendString((this.variableToken == null ? "" : this.variableToken) + "\t" + this.durationVariableId);
+        message.appendInt(9);
+        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
         message.appendInt(this.comparison);
+        message.appendInt(this.compareValue);
+        message.appendInt(0);
         message.appendInt(this.durationAmount);
         message.appendInt(this.durationUnit);
-        message.appendInt(this.userSource);
-        message.appendInt(this.furniSource);
+        message.appendInt(this.fromVariable ? 1 : 0);
+        message.appendInt(this.durationTarget);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -96,15 +107,29 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         int[] params = settings.getIntParams();
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
-        this.targetType = (params.length > 0) ? normalizeTargetTypeExtended(params[0]) : TARGET_USER;
-        this.compareValue = (params.length > 1) ? normalizeCompareValue(params[1]) : COMPARE_VALUE_CREATED;
-        this.comparison = (params.length > 2) ? normalizeComparison(params[2]) : COMPARISON_LOWER_THAN;
-        this.durationAmount = normalizeDurationAmount((params.length > 3) ? params[3] : 0);
-        this.durationUnit = (params.length > 4) ? normalizeDurationUnit(params[4]) : DURATION_UNIT_SECONDS;
-        this.userSource = (params.length > 5) ? normalizeUserSource(params[5]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.furniSource = (params.length > 6) ? normalizeFurniSource(params[6]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 7) ? normalizeQuantifier(params[7]) : QUANTIFIER_ALL;
-        this.setVariableToken(normalizeVariableToken(settings.getStringParam()));
+        this.targetType = (params.length > 0)
+                ? normalizeTargetTypeExtended(WiredVariableTargets.fromOfficial(params[0]))
+                : TARGET_USER;
+        this.comparison = (params.length > 1) ? normalizeComparison(params[1]) : COMPARISON_LOWER_THAN;
+        this.compareValue = (params.length > 2) ? normalizeCompareValue(params[2]) : COMPARE_VALUE_CREATED;
+        long duration = (params.length > 4) ? (((long) params[3]) << 32) | (params[4] & 0xFFFFFFFFL) : 0L;
+        this.durationAmount = normalizeDurationAmount((int) Math.clamp(duration, 0, MAX_DURATION_AMOUNT));
+        this.durationUnit = (params.length > 5) ? normalizeDurationUnit(params[5]) : DURATION_UNIT_SECONDS;
+        this.durationTarget =
+                WiredValueVariable.normalizeTarget((params.length > 7) ? params[7] : WiredValueVariable.TARGET_GLOBAL);
+        this.quantifier = (params.length > 8) ? normalizeQuantifier(params[8]) : QUANTIFIER_ALL;
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        String text = settings.getStringParam() == null ? "" : settings.getStringParam();
+        int tab = text.indexOf('\t');
+        this.setVariableToken(normalizeVariableToken(tab < 0 ? text : text.substring(0, tab)));
+        this.durationVariableId = tab < 0 ? 0 : WiredValueVariable.parseId(text.substring(tab + 1));
+        this.fromVariable = (params.length > 6) && params[6] == 1 && this.durationVariableId > 0;
+        if (!this.fromVariable) this.durationVariableId = 0;
 
         if (!this.isValidSource(room)) {
             return false;
@@ -145,7 +170,20 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
             return false;
         }
 
-        long thresholdMs = durationToMillis(this.durationAmount, this.durationUnit);
+        int amount = this.durationAmount;
+        if (this.fromVariable) {
+            Integer read = WiredValueVariable.read(
+                    ctx,
+                    room,
+                    this.durationTarget,
+                    this.durationVariableId,
+                    this.furniSource,
+                    this.selectedItems,
+                    this.userSource);
+            if (read == null) return false;
+            amount = normalizeDurationAmount(read);
+        }
+        long thresholdMs = durationToMillis(amount, this.durationUnit);
 
         return switch (this.targetType) {
             case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, thresholdMs);
@@ -170,19 +208,22 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
             if (item != null) itemIds.add(item.getId());
         }
 
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        itemIds,
-                        this.targetType,
-                        this.variableToken,
-                        this.variableItemId,
-                        this.compareValue,
-                        this.comparison,
-                        this.durationAmount,
-                        this.durationUnit,
-                        this.userSource,
-                        this.furniSource,
-                        this.quantifier));
+        JsonData data = new JsonData(
+                itemIds,
+                this.targetType,
+                this.variableToken,
+                this.variableItemId,
+                this.compareValue,
+                this.comparison,
+                this.durationAmount,
+                this.durationUnit,
+                this.userSource,
+                this.furniSource,
+                this.quantifier);
+        data.fromVariable = this.fromVariable;
+        data.durationVariableId = this.durationVariableId;
+        data.durationTarget = this.durationTarget;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -206,6 +247,11 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
                 this.userSource = normalizeUserSource(data.userSource);
                 this.furniSource = normalizeFurniSource(data.furniSource);
                 this.quantifier = normalizeQuantifier(data.quantifier);
+                this.durationVariableId = Math.max(0, data.durationVariableId);
+                this.fromVariable = data.fromVariable && this.durationVariableId > 0;
+                this.durationTarget = data.durationTarget == null
+                        ? WiredValueVariable.TARGET_GLOBAL
+                        : WiredValueVariable.normalizeTarget(data.durationTarget);
                 this.setVariableToken(normalizeVariableToken(
                         (data.variableToken != null)
                                 ? data.variableToken
@@ -232,6 +278,9 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
     @Override
     public void onPickUp() {
         super.onPickUp();
+        this.fromVariable = false;
+        this.durationVariableId = 0;
+        this.durationTarget = WiredValueVariable.TARGET_GLOBAL;
         this.compareValue = COMPARE_VALUE_CREATED;
         this.comparison = COMPARISON_LOWER_THAN;
         this.durationAmount = 0;
@@ -428,6 +477,9 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         int userSource;
         int furniSource;
         int quantifier;
+        boolean fromVariable;
+        int durationVariableId;
+        Integer durationTarget;
 
         JsonData(
                 List<Integer> itemIds,

@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredState;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,13 +33,17 @@ import java.util.Set;
  * defensible reading (signal source + picked fallback). The {@code wired-phase1-deferred} design doc
  * tracks refining it if a different behaviour is desired.</p>
  */
-public class WiredEffectRemoteSelector extends InteractionWiredEffect {
+public class WiredEffectRemoteSelector extends InteractionWiredEffect implements WiredOfficialSelector {
     public static final WiredEffectType type = WiredEffectType.REMOTE_SELECTOR;
     private static final int MAX_PICKED_FURNI = 20;
 
     private boolean filterExisting = false;
     private boolean invert = false;
     private List<Integer> pickedFurniIds = new ArrayList<>();
+    /** Official int params: how the picked selectors' results combine, and how many of them run. */
+    private boolean intersect = false;
+
+    private int pickCount = 0;
 
     public WiredEffectRemoteSelector(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -112,23 +117,40 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
             return false;
         }
 
+        // "Filter the stacks": that many of the picked selectors, chosen at random.
+        if (this.pickCount > 0 && this.pickCount < selectors.size()) {
+            java.util.Collections.shuffle(selectors, java.util.concurrent.ThreadLocalRandom.current());
+            selectors = new ArrayList<>(selectors.subList(0, this.pickCount));
+        }
+
         Set<HabboItem> items = new LinkedHashSet<>();
         Set<RoomUnit> users = new LinkedHashSet<>();
         boolean pickedItems = false;
         boolean pickedUsers = false;
+        boolean first = true;
 
         for (InteractionWiredEffect selector : selectors) {
             WiredContext scratch = new WiredContext(ctx.event(), ctx.triggerItem(), ctx.services(), new WiredState(20));
             selector.execute(scratch);
 
-            if (scratch.targets().isItemsModifiedBySelector()) {
-                pickedItems = true;
-                items.addAll(scratch.targets().items());
+            Set<HabboItem> selectedItems = scratch.targets().isItemsModifiedBySelector()
+                    ? new LinkedHashSet<>(scratch.targets().items())
+                    : new LinkedHashSet<>();
+            Set<RoomUnit> selectedUsers = scratch.targets().isUsersModifiedBySelector()
+                    ? new LinkedHashSet<>(scratch.targets().users())
+                    : new LinkedHashSet<>();
+            pickedItems |= scratch.targets().isItemsModifiedBySelector();
+            pickedUsers |= scratch.targets().isUsersModifiedBySelector();
+
+            // Union, or with "intersection" only what every picked selector chose.
+            if (first || !this.intersect) {
+                items.addAll(selectedItems);
+                users.addAll(selectedUsers);
+            } else {
+                items.retainAll(selectedItems);
+                users.retainAll(selectedUsers);
             }
-            if (scratch.targets().isUsersModifiedBySelector()) {
-                pickedUsers = true;
-                users.addAll(scratch.targets().users());
-            }
+            first = false;
         }
 
         if (pickedItems) {
@@ -153,8 +175,11 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
 
-        this.filterExisting = params.length > 0 && params[0] == 1;
-        this.invert = params.length > 1 && params[1] == 1;
+        // Official layout: [combine type (0 union, 1 intersection), random pick count (0 = all)].
+        this.intersect = params.length > 0 && params[0] == 1;
+        this.pickCount = params.length > 1 ? Math.clamp(params[1], 0, MAX_PICKED_FURNI) : 0;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
 
         this.pickedFurniIds = new ArrayList<>();
         if (settings.getFurniIds() != null) {
@@ -166,6 +191,26 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
 
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {WiredSourceUtil.SOURCE_SELECTED};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -185,8 +230,10 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.filterExisting, this.invert, this.pickedFurniIds, this.getDelay()));
+        JsonData data = new JsonData(this.filterExisting, this.invert, this.pickedFurniIds, this.getDelay());
+        data.intersect = this.intersect;
+        data.pickCount = this.pickCount;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -206,6 +253,8 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
         this.filterExisting = data.filterExisting;
         this.invert = data.invert;
         this.pickedFurniIds = (data.pickedFurniIds != null) ? data.pickedFurniIds : new ArrayList<>();
+        this.intersect = data.intersect;
+        this.pickCount = Math.clamp(data.pickCount, 0, MAX_PICKED_FURNI);
         this.setDelay(data.delay);
     }
 
@@ -214,6 +263,8 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
         this.filterExisting = false;
         this.invert = false;
         this.pickedFurniIds = new ArrayList<>();
+        this.intersect = false;
+        this.pickCount = 0;
         this.setDelay(0);
     }
 
@@ -233,8 +284,8 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
         message.appendInt(this.getId());
         message.appendString("");
         message.appendInt(2);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
+        message.appendInt(this.intersect ? 1 : 0);
+        message.appendInt(this.pickCount);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -247,6 +298,9 @@ public class WiredEffectRemoteSelector extends InteractionWiredEffect {
     }
 
     static class JsonData {
+        boolean intersect;
+        int pickCount;
+
         boolean filterExisting;
         boolean invert;
         List<Integer> pickedFurniIds;

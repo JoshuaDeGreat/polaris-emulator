@@ -62,9 +62,8 @@ public class WiredEffectLog extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.message);
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.logLevel);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -96,8 +95,9 @@ public class WiredEffectLog extends InteractionWiredEffect {
 
         int[] params = settings.getIntParams();
         this.logLevel = normalizeLevel((params.length > 0) ? params[0] : LEVEL_INFO);
-        this.userSource = WiredVariableOperand.normalizeUserSource(
-                (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        // Official layout: [level]; the user source is the official source slot.
+        this.userSource =
+                WiredVariableOperand.normalizeUserSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
 
         this.setDelay(settings.getDelay());
 

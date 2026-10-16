@@ -228,19 +228,21 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
     public void serializeWiredData(ServerMessage message, Room room) {
         this.refresh();
 
+        // Official layout: the picks are the furni types to match, the furni checked come from the
+        // official source slot, no int params. Ours follow: the source of the types (101 = the picks),
+        // the quantifier, and the furni checked as picks of their own in the string.
         message.appendBoolean(false);
         message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
-        message.appendInt(this.items.size());
+        message.appendInt(this.secondaryItems.size());
 
-        for (HabboItem item : this.items) {
+        for (HabboItem item : this.secondaryItems) {
             message.appendInt(item.getId());
         }
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.serializeIds(this.secondaryItems));
-        message.appendInt(3);
-        message.appendInt(this.furniSource);
+        message.appendString(this.serializeIds(this.items));
+        message.appendInt(2);
         message.appendInt(this.compareFurniSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
@@ -257,58 +259,36 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
         int[] params = settings.getIntParams();
         String stringParam =
                 (settings.getStringParam() != null) ? settings.getStringParam().trim() : "";
-        boolean legacyData = (params.length <= 1) && stringParam.isEmpty();
 
         this.onPickUp();
 
-        if (legacyData) {
-            this.furniSource =
-                    (params.length > 0) ? this.normalizeFurniSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
-            this.quantifier = QUANTIFIER_ANY;
-        } else {
-            this.furniSource =
-                    (params.length > 0) ? this.normalizeFurniSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
-            this.compareFurniSource =
-                    (params.length > 1) ? this.normalizeFurniSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
-            this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
-        }
-
-        if (count > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
-            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
-        }
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.compareFurniSource =
+                (params.length > 0) ? this.normalizeFurniSource(params[0]) : SOURCE_SECONDARY_SELECTED;
+        // Officially one match is enough.
+        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1]) : QUANTIFIER_ANY;
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {
             return false;
         }
 
-        if (legacyData) {
+        if (this.compareFurniSource == SOURCE_SECONDARY_SELECTED) {
             for (int itemId : settings.getFurniIds()) {
                 HabboItem item = room.getHabboItem(itemId);
                 if (item != null) {
                     this.secondaryItems.add(item);
                 }
             }
-
-            this.compareFurniSource =
-                    this.secondaryItems.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : SOURCE_SECONDARY_SELECTED;
-            return true;
         }
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            for (int itemId : settings.getFurniIds()) {
-                HabboItem item = room.getHabboItem(itemId);
-                if (item != null) {
-                    this.items.add(item);
-                }
-            }
-        }
-
-        if (this.compareFurniSource == SOURCE_SECONDARY_SELECTED) {
             for (Integer itemId : this.parseIds(stringParam)) {
                 HabboItem item = room.getHabboItem(itemId);
                 if (item != null) {
-                    this.secondaryItems.add(item);
+                    this.items.add(item);
                 }
             }
         }

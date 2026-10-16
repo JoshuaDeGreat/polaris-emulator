@@ -23,6 +23,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -32,7 +34,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class WiredEffectRemoveVariable extends InteractionWiredEffect {
+/**
+ * The official "remove variable" (AIR code 40). Int params {@code [target]}, an official variable
+ * target (1 user, 0 furni, -20 context); string param the variable (an id, or {@code internal:<key>});
+ * furni slot 0 and user slot 0 are the holders it is removed from.
+ */
+public class WiredEffectRemoveVariable extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.REMOVE_VAR;
 
     public static final int TARGET_USER = 0;
@@ -237,10 +244,8 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
                 this.internalVariableKey.isEmpty()
                         ? String.valueOf(this.variableItemId)
                         : "internal:" + this.internalVariableKey);
-        message.appendInt(3);
-        message.appendInt(this.targetType);
-        message.appendInt(this.userSource);
-        message.appendInt(this.furniSource);
+        message.appendInt(1);
+        message.appendInt(WiredValueVariable.officialOf(this.targetType));
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -256,11 +261,15 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         }
 
         int[] intParams = settings.getIntParams();
-        int nextTargetType = normalizeTargetType((intParams.length > 0) ? intParams[0] : TARGET_USER);
+        int holder =
+                WiredValueVariable.holderOf((intParams.length > 0) ? intParams[0] : WiredValueVariable.TARGET_USER);
+        int nextTargetType = normalizeTargetType(holder < 0 ? TARGET_USER : holder);
+        int[] userSources = settings.getUserSourceTypes();
+        int[] furniSources = settings.getFurniSourceTypes();
         int nextUserSource =
-                normalizeUserSource((intParams.length > 1) ? intParams[1] : WiredSourceUtil.SOURCE_TRIGGER);
+                normalizeUserSource(userSources.length > 0 ? userSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
         int nextFurniSource =
-                normalizeFurniSource((intParams.length > 2) ? intParams[2] : WiredSourceUtil.SOURCE_TRIGGER);
+                normalizeFurniSource(furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
         int nextVariableItemId = parseVariableItemId(settings.getStringParam());
         String nextInternalKey = normalizeInternalKey(settings.getStringParam());
         boolean internal = settings.getStringParam() != null
@@ -417,6 +426,16 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         this.furniSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.selectedFurni.clear();
         this.setDelay(0);
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userSource};
     }
 
     @Override

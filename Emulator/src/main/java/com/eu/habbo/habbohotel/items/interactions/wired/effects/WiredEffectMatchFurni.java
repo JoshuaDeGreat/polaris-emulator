@@ -269,12 +269,11 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(5);
+        message.appendInt(4);
         message.appendInt(this.state ? 1 : 0);
         message.appendInt(this.direction ? 1 : 0);
         message.appendInt(this.position ? 1 : 0);
         message.appendInt(this.altitude ? 1 : 0);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -283,13 +282,14 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        // Official layout: [state, direction, position, altitude]; the furni source is the official
+        // source slot.
         if (settings.getIntParams().length < 4) throw new WiredSaveException("Invalid data");
         boolean setState = settings.getIntParams()[0] == 1;
         boolean setDirection = settings.getIntParams()[1] == 1;
         boolean setPosition = settings.getIntParams()[2] == 1;
-        boolean setAltitude = (settings.getIntParams().length > 4) ? (settings.getIntParams()[3] == 1) : false;
-        this.furniSource =
-                (settings.getIntParams().length > 4) ? settings.getIntParams()[4] : settings.getIntParams()[3];
+        boolean setAltitude = settings.getIntParams()[3] == 1;
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 

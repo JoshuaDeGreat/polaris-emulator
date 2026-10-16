@@ -149,15 +149,14 @@ class WiredVariableAssignmentParityTest {
         try (var emulator = mockStatic(Emulator.class, CALLS_REAL_METHODS)) {
             emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
             assertTrue(give.saveData(
-                    new WiredSettings(new int[] {0, 1, 42, 0, 0}, "internal:@effect", new int[0], 0), null));
-            assertTrue(remove.saveData(
-                    new WiredSettings(new int[] {0, 0, 0}, "internal:@has_rights", new int[0], 0), null));
+                    new WiredSettings(new int[] {1, 0, 42, 0, 0, -10, 0}, "internal:@effect", new int[0], 0), null));
+            assertTrue(remove.saveData(new WiredSettings(new int[] {1}, "internal:@has_rights", new int[0], 0), null));
             assertThrows(
                     WiredSaveException.class,
-                    () -> give.saveData(new WiredSettings(new int[] {1}, "internal:@effect", new int[0], 0), null));
+                    () -> give.saveData(new WiredSettings(new int[] {0}, "internal:@effect", new int[0], 0), null));
             assertThrows(
                     WiredSaveException.class,
-                    () -> remove.saveData(new WiredSettings(new int[] {0}, "internal:@effect", new int[0], 0), null));
+                    () -> remove.saveData(new WiredSettings(new int[] {1}, "internal:@effect", new int[0], 0), null));
         }
         String saved = give.getWiredData();
         WiredEffectGiveVariable reopened = new WiredEffectGiveVariable(12, 1, null, "", 0, 0);

@@ -77,6 +77,21 @@ class WiredLeaderboardCodecTest {
     }
 
     @Test
+    void anOfficialSaveSendsTheVariableIdsApart() {
+        WiredLeaderboardCodec.Stored stored = WiredLeaderboardCodec.encode(sample());
+
+        WiredLeaderboardCodec.Stored official =
+                WiredLeaderboardCodec.fromSave(stored.intParams(), stored.stringParam(), stored.variableIds());
+        assertArrayEquals(stored.variableIds(), official.variableIds());
+        assertEquals(stored.stringParam(), official.stringParam());
+
+        // Ours carries them in the text; the packet's ids are then ignored.
+        WiredLeaderboardCodec.Stored ours = WiredLeaderboardCodec.fromSave(
+                stored.intParams(), WiredLeaderboardCodec.toWire(stored), new String[] {"1", "2"});
+        assertArrayEquals(stored.variableIds(), ours.variableIds());
+    }
+
+    @Test
     void anEmptyBoxReadsAsTheDefaults() {
         WiredLeaderboardCodec.Decoded decoded =
                 WiredLeaderboardCodec.decode(new WiredLeaderboardCodec.Stored(new int[0], new String[0], ""), 3, 4);

@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,7 +30,7 @@ import java.util.Set;
  * so "scan chest furni by type" resolves to room furni of the chest's stored types. When an authentic
  * drag-to-fill chest exists, this can be upgraded to scan real deposited furni.)
  */
-public class WiredEffectScanChestFurniByType extends InteractionWiredEffect {
+public class WiredEffectScanChestFurniByType extends InteractionWiredEffect implements WiredOfficialSelector {
     public static final WiredEffectType type = WiredEffectType.SCAN_CHEST_FURNI_BY_TYPE;
     private static final int MAX_PICKED_FURNI = 20;
 
@@ -87,8 +88,8 @@ public class WiredEffectScanChestFurniByType extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
-        this.filterExisting = params.length > 0 && params[0] == 1;
-        this.invert = params.length > 1 && params[1] == 1;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
 
         this.chestIds = new ArrayList<>();
         if (settings.getFurniIds() != null) {
@@ -100,6 +101,26 @@ public class WiredEffectScanChestFurniByType extends InteractionWiredEffect {
 
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -150,9 +171,7 @@ public class WiredEffectScanChestFurniByType extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());

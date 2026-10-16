@@ -90,6 +90,20 @@ public class WiredSettings {
         return this.userSourceTypes;
     }
 
+    /** The furni source of the official source slot {@code index}, or {@code fallback} when not sent. */
+    public int furniSource(int index, int fallback) {
+        return (this.furniSourceTypes != null && index < this.furniSourceTypes.length)
+                ? this.furniSourceTypes[index]
+                : fallback;
+    }
+
+    /** The user source of the official source slot {@code index}, or {@code fallback} when not sent. */
+    public int userSource(int index, int fallback) {
+        return (this.userSourceTypes != null && index < this.userSourceTypes.length)
+                ? this.userSourceTypes[index]
+                : fallback;
+    }
+
     public void setUserSourceTypes(int[] userSourceTypes) {
         this.userSourceTypes = (userSourceTypes != null) ? userSourceTypes : new int[0];
     }

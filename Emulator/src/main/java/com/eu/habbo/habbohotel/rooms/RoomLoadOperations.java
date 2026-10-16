@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.plugin.events.rooms.RoomLoadedEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -174,18 +175,27 @@ final class RoomLoadOperations implements RoomLoader.Operations {
         this.restoreUnitVariables();
         this.refreshWaterMasks(specialTypes);
 
+        boolean published = false;
         synchronized (this.room) {
             try {
                 if (this.room.publishLoadTransition(generation, this::scheduleCycle)) {
                     this.room.pluginManager().fireEvent(new RoomLoadedEvent(this.room));
-                    return true;
+                    published = true;
                 }
             } catch (Exception exception) {
                 this.room.failLoadTransition(generation);
                 LOGGER.error("Caught exception publishing room load", exception);
             }
         }
-        return false;
+        if (published) {
+            // Official room initialized: once per load, outside the room lock, before anyone is in.
+            try {
+                WiredManager.triggerRoomInitialized(this.room);
+            } catch (RuntimeException exception) {
+                LOGGER.error("Caught exception firing room initialized", exception);
+            }
+        }
+        return published;
     }
 
     /** On the room cycle workers; the shared pool only when they are not there (tests, early startup). */

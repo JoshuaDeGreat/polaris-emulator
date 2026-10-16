@@ -18,6 +18,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -30,7 +32,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
+public class WiredExtraTextOutputVariable extends InteractionWiredExtra implements WiredOfficialSources {
     public static final int CODE = 80;
     public static final int TARGET_USER = 0;
     public static final int TARGET_FURNI = 1;
@@ -88,7 +90,10 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
         int[] intParams = settings.getIntParams();
         String[] stringData = splitStringData(settings.getStringParam());
-        int nextTargetType = normalizeTargetType((intParams.length > 0) ? intParams[0] : TARGET_USER);
+        // Official layout: [every holder (0/1), variable target (official ids), text mode (0/1)]; the
+        // holders' furni and user source in the official slots.
+        int nextTargetType = normalizeTargetType(WiredVariableTargets.fromOfficial(
+                (intParams.length > 1) ? intParams[1] : WiredVariableTargets.OFFICIAL_USER));
         String nextVariableToken = normalizeVariableToken(stringData[0]);
 
         if (nextVariableToken.isEmpty()) {
@@ -106,8 +111,10 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_array_address");
         }
 
+        int[] furniSources = settings.getFurniSourceTypes();
+        int[] userSources = settings.getUserSourceTypes();
         int nextFurniSource =
-                normalizeFurniSource((intParams.length > 4) ? intParams[4] : WiredSourceUtil.SOURCE_TRIGGER);
+                normalizeFurniSource(furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
         this.items.clear();
 
         if (nextTargetType == TARGET_FURNI && nextFurniSource == WiredSourceUtil.SOURCE_SELECTED) {
@@ -126,9 +133,9 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
         this.targetType = nextTargetType;
         this.setVariableToken(nextVariableToken);
-        this.displayType = normalizeDisplayType((intParams.length > 1) ? intParams[1] : DISPLAY_NUMERIC);
-        this.placeholderType = normalizePlaceholderType((intParams.length > 2) ? intParams[2] : TYPE_SINGLE);
-        this.userSource = normalizeUserSource((intParams.length > 3) ? intParams[3] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.displayType = (intParams.length > 2 && intParams[2] == 1) ? DISPLAY_TEXTUAL : DISPLAY_NUMERIC;
+        this.placeholderType = (intParams.length > 0 && intParams[0] == 1) ? TYPE_MULTIPLE : TYPE_SINGLE;
+        this.userSource = normalizeUserSource(userSources.length > 0 ? userSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
         this.furniSource = nextFurniSource;
         this.placeholderName = normalizePlaceholderName(stringData[1]);
         this.delimiter = normalizeDelimiter(stringData[2]);
@@ -140,6 +147,16 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         }
 
         return true;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userSource};
     }
 
     @Override
@@ -183,12 +200,10 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
             editorData += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayAddress));
         }
         message.appendString(editorData);
-        message.appendInt(5);
-        message.appendInt(this.targetType);
-        message.appendInt(this.displayType);
-        message.appendInt(this.placeholderType);
-        message.appendInt(this.userSource);
-        message.appendInt(this.furniSource);
+        message.appendInt(3);
+        message.appendInt(this.placeholderType == TYPE_MULTIPLE ? 1 : 0);
+        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
+        message.appendInt(this.displayType == DISPLAY_TEXTUAL ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);

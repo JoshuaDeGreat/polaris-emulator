@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.math.BigDecimal;
@@ -20,7 +21,7 @@ import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class WiredEffectFurniAltitude extends InteractionWiredEffect {
+public class WiredEffectFurniAltitude extends InteractionWiredEffect implements WiredOfficialSelector {
     private static final int COMPARISON_LESS = 0;
     private static final int COMPARISON_EQUAL = 1;
     private static final int COMPARISON_GREATER = 2;
@@ -77,18 +78,38 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
-        if (params == null || params.length < 3) {
-            throw new WiredSaveException(
-                    "wf_slc_furni_altitude requires 3 int params: comparison, filterExisting, invert");
+        // Official layout: [altitude in hundredths (0-8000), comparison (0 less, 1 equal, 2 more)].
+        if (params == null || params.length < 2) {
+            throw new WiredSaveException("wf_slc_furni_altitude requires 2 int params: altitude, comparison");
         }
 
-        this.comparison = this.normalizeComparison(params[0]);
-        this.filterExisting = params[1] == 1;
-        this.invert = params[2] == 1;
-        this.altitude = this.parseAltitudeOrDefault(settings.getStringParam());
+        this.comparison = this.normalizeComparison(params[1]);
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
+        this.altitude = this.normalizeAltitude(Math.clamp(params[0], 0, 8000) / 100.0D);
         this.setDelay(settings.getDelay());
 
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -155,11 +176,10 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.formatAltitude(this.altitude));
-        message.appendInt(3);
+        message.appendString("");
+        message.appendInt(2);
+        message.appendInt((int) Math.round(this.altitude * 100));
         message.appendInt(this.comparison);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());

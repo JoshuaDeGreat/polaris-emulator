@@ -70,6 +70,12 @@ public final class WiredDefinitionWire {
                 definition.furniSources = WiredSourceFields.furniSources(box);
                 definition.userSources = WiredSourceFields.userSources(box);
             }
+            if (box instanceof WiredOfficialVariableIds variables) {
+                definition.variableIds = variables.officialVariableIds();
+            }
+            if (box instanceof WiredOfficialSecondaryPicks picks) {
+                definition.stuffIds2 = picks.officialFurniIds2();
+            }
             if (box instanceof WiredOfficialSelector selector) {
                 definition.selectorFilter = selector.selectorFilter();
                 definition.selectorInvert = selector.selectorInvert();
@@ -84,10 +90,12 @@ public final class WiredDefinitionWire {
     static final class Definition {
         int furniLimit;
         int[] stuffIds = new int[0];
+        int[] stuffIds2 = new int[0];
         int spriteId;
         int id;
         String stringParam = "";
         int[] intParams = new int[0];
+        String[] variableIds = new String[0];
         int[] furniSources = new int[0];
         int[] userSources = new int[0];
         boolean selectorFilter;
@@ -131,12 +139,13 @@ public final class WiredDefinitionWire {
     static void writeOfficial(Definition definition, Holder holder, ServerMessage out) {
         out.appendInt(definition.furniLimit);
         writeInts(out, definition.stuffIds);
-        writeInts(out, new int[0]); // stuffIds2
+        writeInts(out, definition.stuffIds2);
         out.appendInt(definition.spriteId);
         out.appendInt(definition.id);
         out.appendString(definition.stringParam);
         writeInts(out, definition.intParams);
-        out.appendInt(0); // variableIds
+        out.appendInt(definition.variableIds.length);
+        for (String variableId : definition.variableIds) out.appendString(variableId);
         writeInts(out, definition.furniSources);
         writeInts(out, definition.userSources);
         out.appendInt(officialCode(holder, definition.code));

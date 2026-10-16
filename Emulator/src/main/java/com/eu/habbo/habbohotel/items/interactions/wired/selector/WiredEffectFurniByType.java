@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -24,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredEffectFurniByType extends InteractionWiredEffect {
+public class WiredEffectFurniByType extends InteractionWiredEffect implements WiredOfficialSelector {
 
     public static final WiredEffectType type = WiredEffectType.FURNI_BYTYPE_SELECTOR;
     private static final int SOURCE_FURNI_PICKED = 0;
@@ -102,14 +103,13 @@ public class WiredEffectFurniByType extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
-        if (params == null || params.length < 4) {
-            throw new WiredSaveException("wf_slc_furni_bytype: intParams must have at least 4 elements");
-        }
-
-        this.sourceType = normalizeSourceType(params[0]);
-        this.matchState = params.length > 1 && params[1] == 1;
-        this.filterExisting = params.length > 2 && params[2] == 1;
-        this.invert = params.length > 3 && params[3] == 1;
+        // Official layout: [matchState], the furni whose types are wanted in the official source slot.
+        this.sourceType = settings.getFurniSourceTypes().length > 0
+                ? fromOfficialSource(settings.getFurniSourceTypes()[0])
+                : SOURCE_FURNI_PICKED;
+        this.matchState = params != null && params.length > 0 && params[0] == 1;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
 
         this.pickedFurniIds = new ArrayList<>();
         if (settings.getFurniIds() != null) {
@@ -139,16 +139,50 @@ public class WiredEffectFurniByType extends InteractionWiredEffect {
         message.appendInt(this.getId());
         message.appendString("");
 
-        message.appendInt(4);
-        message.appendInt(this.sourceType);
+        message.appendInt(1);
         message.appendInt(matchState ? 1 : 0);
-        message.appendInt(filterExisting ? 1 : 0);
-        message.appendInt(invert ? 1 : 0);
 
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
         message.appendInt(0);
+    }
+
+    /** Our source of the wanted types as the official source number. */
+    private int officialSource() {
+        return switch (this.sourceType) {
+            case SOURCE_FURNI_SIGNAL -> WiredSourceUtil.SOURCE_SIGNAL;
+            case SOURCE_FURNI_TRIGGER -> WiredSourceUtil.SOURCE_TRIGGER;
+            default -> WiredSourceUtil.SOURCE_SELECTED;
+        };
+    }
+
+    private static int fromOfficialSource(int source) {
+        return switch (source) {
+            case WiredSourceUtil.SOURCE_SIGNAL -> SOURCE_FURNI_SIGNAL;
+            case WiredSourceUtil.SOURCE_TRIGGER -> SOURCE_FURNI_TRIGGER;
+            default -> SOURCE_FURNI_PICKED;
+        };
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.officialSource()};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override

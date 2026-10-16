@@ -54,10 +54,11 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         this.items.clear();
         this.indexOffset.clear();
 
-        if (settings.getIntParams().length < 3) throw new WiredSaveException("invalid data");
+        // Official layout: [direction, empty tiles]; the furni source is the official source slot.
+        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
         this.direction = settings.getIntParams()[0];
         this.spacing = settings.getIntParams()[1];
-        this.furniSource = settings.getIntParams()[2];
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int count = settings.getFurniIds().length;
 
@@ -267,10 +268,9 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.direction);
         message.appendInt(this.spacing);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());

@@ -152,8 +152,7 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.badge);
-        message.appendInt(2);
-        message.appendInt(this.userSource);
+        message.appendInt(1);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -165,10 +164,12 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(settings.getStringParam());
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0)
-                ? WiredUserConditionInputGuard.normalizeUserSource(params[0])
+        // Official layout: the badge in the string, no int params, the users in the official source slot;
+        // our quantifier (0 all, 1 any) follows as param 0.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ANY) : QUANTIFIER_ANY;
+        this.quantifier = (params.length > 0) ? this.normalizeQuantifier(params[0], QUANTIFIER_ALL) : QUANTIFIER_ALL;
 
         return true;
     }

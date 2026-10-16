@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.WiredFurniOpacityComposer;
@@ -25,7 +26,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class WiredEffectChangeOpacity extends InteractionWiredEffect {
+/**
+ * Official set furni transparency (61). Int params, official: {@code [audience (1 everyone), visibility
+ * (0 visible, 100 invisible), click through, easing, target users]}; ours follows: {@code transition
+ * seconds}. The visibility is the transparency: in-between values are ours. Furni source slot 0 is
+ * the target furni; user slot 0 the audience, slot 1 the target users (stored only: avatars are not
+ * made transparent yet). Internally the box keeps its opacity (100 = fully visible).
+ */
+public class WiredEffectChangeOpacity extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.CHANGE_OPACITY;
 
     static final int VISIBILITY_SOURCE_USERS = 0;
@@ -47,6 +55,8 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
     private int furniSource = WiredSourceUtil.SOURCE_SELECTED;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
     private boolean clickThrough;
+    private boolean targetUsers;
+    private int targetUserSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectChangeOpacity(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -111,7 +121,7 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
         Room room = getRoom();
         int[] parameters = settings == null ? null : settings.getIntParams();
         int[] selectedIds = settings == null || settings.getFurniIds() == null ? new int[0] : settings.getFurniIds();
-        if (room == null || parameters == null || parameters.length < 7) {
+        if (room == null || parameters == null || parameters.length < 4) {
             throw new WiredSaveException("Invalid opacity effect data");
         }
         if (selectedIds.length > WiredManager.MAXIMUM_FURNI_SELECTION) {
@@ -134,12 +144,16 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
         }
 
         this.visibility = normalizeVisibility(parameters[0]);
-        this.opacity = clamp(parameters[1], MINIMUM_OPACITY, MAXIMUM_OPACITY);
-        this.easing = clamp(parameters[2], 0, 4);
-        this.durationSeconds = normalizeDuration(parameters[3]);
-        this.furniSource = WiredMovementPayloadGuard.furniSource(parameters[4]);
-        this.userSource = WiredMovementPayloadGuard.userSource(parameters[5]);
-        this.clickThrough = parameters[6] == 1;
+        this.opacity = MAXIMUM_OPACITY - clamp(parameters[1], MINIMUM_OPACITY, MAXIMUM_OPACITY);
+        this.clickThrough = parameters[2] == 1;
+        this.easing = clamp(parameters[3], 0, 4);
+        this.targetUsers = parameters.length > 4 && parameters[4] == 1;
+        this.durationSeconds = normalizeDuration(parameters.length > 5 ? parameters[5] : DEFAULT_DURATION_SECONDS);
+        this.furniSource =
+                WiredMovementPayloadGuard.furniSource(settings.furniSource(0, WiredSourceUtil.SOURCE_SELECTED));
+        this.userSource = WiredMovementPayloadGuard.userSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
+        this.targetUserSource =
+                WiredMovementPayloadGuard.userSource(settings.userSource(1, WiredSourceUtil.SOURCE_TRIGGER));
         if (!this.items.isEmpty() && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
         }
@@ -150,17 +164,19 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
     @Override
     public String getWiredData() {
         this.validateItems(this.items);
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.visibility,
-                        this.opacity,
-                        this.easing,
-                        this.durationSeconds,
-                        this.furniSource,
-                        this.userSource,
-                        this.clickThrough,
-                        this.getDelay(),
-                        this.items.stream().map(HabboItem::getId).toList()));
+        JsonData data = new JsonData(
+                this.visibility,
+                this.opacity,
+                this.easing,
+                this.durationSeconds,
+                this.furniSource,
+                this.userSource,
+                this.clickThrough,
+                this.getDelay(),
+                this.items.stream().map(HabboItem::getId).toList());
+        data.targetUsers = this.targetUsers;
+        data.targetUserSource = this.targetUserSource;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -170,6 +186,8 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
         if (data == null) {
             return;
         }
+        this.targetUsers = data.targetUsers;
+        this.targetUserSource = WiredMovementPayloadGuard.userSource(data.targetUserSource);
 
         this.visibility = normalizeVisibility(data.visibility);
         this.opacity = clamp(data.opacity, MINIMUM_OPACITY, MAXIMUM_OPACITY);
@@ -204,14 +222,13 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(7);
+        message.appendInt(6);
         message.appendInt(this.visibility);
-        message.appendInt(this.opacity);
-        message.appendInt(this.easing);
-        message.appendInt(this.durationSeconds);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.userSource);
+        message.appendInt(MAXIMUM_OPACITY - this.opacity);
         message.appendInt(this.clickThrough ? 1 : 0);
+        message.appendInt(this.easing);
+        message.appendInt(this.targetUsers ? 1 : 0);
+        message.appendInt(this.durationSeconds);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -280,7 +297,19 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
         this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.clickThrough = false;
+        this.targetUsers = false;
+        this.targetUserSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.setDelay(0);
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userSource, this.targetUserSource};
     }
 
     private static int normalizeVisibility(int value) {
@@ -307,6 +336,8 @@ public class WiredEffectChangeOpacity extends InteractionWiredEffect {
         boolean clickThrough;
         int delay;
         List<Integer> itemIds;
+        boolean targetUsers;
+        int targetUserSource;
 
         JsonData() {}
 

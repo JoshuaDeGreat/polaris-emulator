@@ -135,6 +135,21 @@ public final class WiredLeaderboardCodec {
         return new Stored(intParams == null ? new int[0] : intParams.clone(), variableIds, stringParam);
     }
 
+    /**
+     * A save: ours carries the variable ids after the string fields; the official client sends the
+     * string fields alone and the ids as the packet's variable ids.
+     */
+    public static Stored fromSave(int[] intParams, String wireString, String[] variableIds) {
+        String text = wireString == null ? "" : wireString;
+        if (!text.isEmpty()
+                && variableIds != null
+                && variableIds.length == VARIABLE_ID_COUNT
+                && text.split(SEPARATOR, -1).length == STRING_FIELD_COUNT) {
+            return new Stored(intParams == null ? new int[0] : intParams.clone(), variableIds.clone(), text);
+        }
+        return fromWire(intParams, wireString);
+    }
+
     public static String toWire(Stored stored) {
         if (stored.stringParam().isEmpty()) {
             return "";

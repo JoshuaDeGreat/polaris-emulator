@@ -139,7 +139,9 @@ public enum WiredEffectType {
     // achievement enabler add-on between them.
     PROGRESS_ACHIEVEMENT(150),
     PROGRESS_REWARD_TRACK(152),
-    RESET_REWARD_TRACK(153);
+    RESET_REWARD_TRACK(153),
+    /** Ours: give a hand item; it shared the official give effect's code (52) and the text editor. */
+    GIVE_HAND_ITEM(157);
 
     public final int code;
 

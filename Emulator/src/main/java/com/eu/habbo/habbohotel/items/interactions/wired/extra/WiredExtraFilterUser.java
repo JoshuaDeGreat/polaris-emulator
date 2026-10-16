@@ -6,7 +6,10 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,6 +19,13 @@ public class WiredExtraFilterUser extends InteractionWiredExtra {
     private static final int MAX_FILTER_AMOUNT = 10000;
 
     private int amount = 0;
+    /** Official: N may come from a variable (its id in the string), read on the triggering holder. */
+    private boolean amountFromVariable = false;
+
+    private int amountTarget = WiredValueVariable.TARGET_USER;
+    private int amountVariableId = 0;
+    /** Ours: keep a random N rather than the first N (saved boxes keep the random pick). */
+    private boolean randomPick = true;
 
     public WiredExtraFilterUser(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -47,12 +57,29 @@ public class WiredExtraFilterUser extends InteractionWiredExtra {
         }
 
         this.amount = normalizeAmount(value);
+        // Official layout: [N, N from a variable, variable target]; ours follow: [random pick].
+        int[] params = settings.getIntParams();
+        this.amountFromVariable = params.length > 1 && params[1] == 1;
+        this.amountTarget =
+                WiredValueVariable.normalizeTarget(params.length > 2 ? params[2] : WiredValueVariable.TARGET_USER);
+        this.randomPick = params.length > 3 && params[3] == 1;
+        this.amountVariableId = this.amountFromVariable && params.length > 0
+                ? WiredValueVariable.parseId(settings.getStringParam())
+                : 0;
+        if (this.amountFromVariable && this.amountVariableId <= 0) {
+            return false;
+        }
         return true;
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.amount));
+        JsonData data = new JsonData(this.amount);
+        data.amountFromVariable = this.amountFromVariable;
+        data.amountTarget = this.amountTarget;
+        data.amountVariableId = this.amountVariableId;
+        data.randomPick = this.randomPick;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -62,9 +89,12 @@ public class WiredExtraFilterUser extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
-        message.appendInt(1);
+        message.appendString(this.amountVariableId > 0 ? String.valueOf(this.amountVariableId) : "");
+        message.appendInt(4);
         message.appendInt(this.amount);
+        message.appendInt(this.amountFromVariable ? 1 : 0);
+        message.appendInt(this.amountTarget);
+        message.appendInt(this.randomPick ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -83,6 +113,13 @@ public class WiredExtraFilterUser extends InteractionWiredExtra {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.amount = normalizeAmount((data != null) ? data.amount : 0);
+            if (data != null) {
+                this.amountVariableId = Math.max(0, data.amountVariableId);
+                this.amountFromVariable = data.amountFromVariable && this.amountVariableId > 0;
+                this.amountTarget = WiredValueVariable.normalizeTarget(
+                        data.amountTarget == null ? WiredValueVariable.TARGET_USER : data.amountTarget);
+                this.randomPick = data.randomPick == null || data.randomPick;
+            }
             return;
         }
 
@@ -96,6 +133,10 @@ public class WiredExtraFilterUser extends InteractionWiredExtra {
     @Override
     public void onPickUp() {
         this.amount = 0;
+        this.amountFromVariable = false;
+        this.amountTarget = WiredValueVariable.TARGET_USER;
+        this.amountVariableId = 0;
+        this.randomPick = true;
     }
 
     @Override
@@ -110,12 +151,33 @@ public class WiredExtraFilterUser extends InteractionWiredExtra {
         return this.amount;
     }
 
+    /** N for this firing: the number, or the variable read on the triggering holder (0 when unset). */
+    public int resolveAmount(WiredContext ctx) {
+        if (!this.amountFromVariable) return this.amount;
+        Integer value = WiredValueVariable.read(
+                ctx,
+                ctx == null ? null : ctx.room(),
+                this.amountTarget,
+                this.amountVariableId,
+                WiredSourceUtil.SOURCE_TRIGGER,
+                WiredSourceUtil.SOURCE_TRIGGER);
+        return value == null ? 0 : normalizeAmount(value);
+    }
+
+    public boolean isRandomPick() {
+        return this.randomPick;
+    }
+
     private static int normalizeAmount(int value) {
         return Math.max(0, Math.min(MAX_FILTER_AMOUNT, value));
     }
 
     static class JsonData {
         int amount;
+        boolean amountFromVariable;
+        Integer amountTarget;
+        int amountVariableId;
+        Boolean randomPick;
 
         JsonData(int amount) {
             this.amount = amount;

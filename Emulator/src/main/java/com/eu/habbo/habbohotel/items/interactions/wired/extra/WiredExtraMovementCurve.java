@@ -11,6 +11,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableOperand;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.lang.ref.WeakReference;
 import java.sql.ResultSet;
@@ -30,11 +32,12 @@ import java.util.List;
  *
  * <p>The strength is typed or read from a variable when the furni moves, as Habbo's editor offers.
  *
- * <p>Int params: {@code [curve, intensity (0-100, easing), strength, strength from variable (0/1),
- * variable target, its user source, its furni source]}. String param: the variable token. Picked
- * furni: the furni the variable is read from when its source is the box's own picks.
+ * <p>Int params, official first: {@code [strength from variable (0/1), strength, variable target
+ * (official ids)]}, then ours: {@code [curve, intensity (0-100, easing)]}. String param: the
+ * variable token. Sources: the variable's user and furni source in the official slots. Picked furni:
+ * the furni the variable is read from when its source is the box's own picks.
  */
-public class WiredExtraMovementCurve extends InteractionWiredExtra {
+public class WiredExtraMovementCurve extends InteractionWiredExtra implements WiredOfficialSources {
     public static final int CODE = 97;
 
     public static final int CURVE_LINEAR = 0;
@@ -86,43 +89,30 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int value = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : this.curveType;
-
-        // The string is the fallback for a dialog that only has a text field: it is read when no
-        // int was sent at all, never over an int that merely equals the current value.
-        if (settings.getIntParams().length == 0
-                && settings.getStringParam() != null
-                && !settings.getStringParam().isEmpty()) {
-            try {
-                value = Integer.parseInt(settings.getStringParam());
-            } catch (NumberFormatException ignored) {
-                value = this.curveType;
-            }
-        }
-
-        this.curveType = normalizeCurve(value);
-        if (settings.getIntParams().length > 1) {
-            this.intensity = normalizeIntensity(settings.getIntParams()[1]);
-        }
+        // Official layout: [strength from a variable, strength, variable target]; ours follow:
+        // [curve, intensity]. The variable token is the text, its sources the official slots.
         int[] params = settings.getIntParams();
-        if (params.length > 2) {
-            this.strength = normalizeStrength(params[2]);
-        }
-        if (params.length > 3) {
-            this.strengthMode = (params[3] == STRENGTH_VARIABLE) ? STRENGTH_VARIABLE : STRENGTH_VALUE;
-            this.variableTarget = WiredVariableOperand.normalizeTarget((params.length > 4) ? params[4] : 0);
-            this.variableUserSource = WiredVariableOperand.normalizeUserSource((params.length > 5) ? params[5] : 0);
-            this.variableFurniSource = WiredVariableOperand.normalizeFurniSource((params.length > 6) ? params[6] : 0);
-            this.variableToken = WiredVariableOperand.normalizeToken(settings.getStringParam());
+        this.strengthMode = (params.length > 0 && params[0] == 1) ? STRENGTH_VARIABLE : STRENGTH_VALUE;
+        this.strength = normalizeStrength((params.length > 1) ? params[1] : STRENGTH_DEFAULT);
+        this.variableTarget = WiredVariableOperand.normalizeTarget(WiredVariableTargets.fromOfficial(
+                (params.length > 2) ? params[2] : WiredVariableTargets.OFFICIAL_USER));
+        this.curveType = normalizeCurve((params.length > 3) ? params[3] : CURVE_JUMP);
+        this.intensity = normalizeIntensity((params.length > 4) ? params[4] : INTENSITY_DEFAULT);
+        int[] users = settings.getUserSourceTypes();
+        int[] furni = settings.getFurniSourceTypes();
+        this.variableUserSource =
+                WiredVariableOperand.normalizeUserSource(users.length > 0 ? users[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.variableFurniSource =
+                WiredVariableOperand.normalizeFurniSource(furni.length > 0 ? furni[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.variableToken = WiredVariableOperand.normalizeToken(settings.getStringParam());
 
-            this.variableFurni.clear();
-            Room room = settings.getRoom();
-            if (room != null && settings.getFurniIds() != null) {
-                for (int furniId : settings.getFurniIds()) {
-                    if (this.variableFurni.size() >= WiredManager.MAXIMUM_FURNI_SELECTION) break;
-                    HabboItem item = room.getHabboItem(furniId);
-                    if (item != null) this.variableFurni.add(item);
-                }
+        this.variableFurni.clear();
+        Room room = settings.getRoom();
+        if (room != null && settings.getFurniIds() != null) {
+            for (int furniId : settings.getFurniIds()) {
+                if (this.variableFurni.size() >= WiredManager.MAXIMUM_FURNI_SELECTION) break;
+                HabboItem item = room.getHabboItem(furniId);
+                if (item != null) this.variableFurni.add(item);
             }
         }
         return true;
@@ -156,14 +146,12 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.variableToken);
-        message.appendInt(7);
+        message.appendInt(5);
+        message.appendInt(this.strengthMode);
+        message.appendInt(this.strength);
+        message.appendInt(WiredVariableTargets.toOfficial(this.variableTarget));
         message.appendInt(this.curveType);
         message.appendInt(this.intensity);
-        message.appendInt(this.strength);
-        message.appendInt(this.strengthMode);
-        message.appendInt(this.variableTarget);
-        message.appendInt(this.variableUserSource);
-        message.appendInt(this.variableFurniSource);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -228,6 +216,16 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
     @Override
     public boolean hasConfiguration() {
         return true;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.variableFurniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.variableUserSource};
     }
 
     public int getCurveType() {

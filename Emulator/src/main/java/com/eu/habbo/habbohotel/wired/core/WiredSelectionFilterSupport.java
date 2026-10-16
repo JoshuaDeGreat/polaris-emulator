@@ -49,15 +49,17 @@ final class WiredSelectionFilterSupport {
         }
 
         int furniLimit = Integer.MAX_VALUE;
+        boolean furniRandom = false;
         List<WiredExtraFilterFurniByVariable> variableFilters = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {
             if (extra instanceof WiredExtraFilterFurni) {
                 // A filter that was never configured carries 0, which means "no limit" rather than
                 // "nothing": applying it would silently empty every selection the stack makes.
-                int amount = ((WiredExtraFilterFurni) extra).getAmount();
+                int amount = ((WiredExtraFilterFurni) extra).resolveAmount(ctx);
                 if (amount > 0) {
                     furniLimit = Math.min(furniLimit, amount);
+                    furniRandom |= ((WiredExtraFilterFurni) extra).isRandomPick();
                 }
             } else if (extra instanceof WiredExtraFilterFurniByVariable) {
                 variableFilters.add((WiredExtraFilterFurniByVariable) extra);
@@ -78,7 +80,7 @@ final class WiredSelectionFilterSupport {
             }
 
             if (furniLimit != Integer.MAX_VALUE) {
-                filteredItems = limitIterable(filteredItems, furniLimit);
+                filteredItems = limitIterable(filteredItems, furniLimit, furniRandom);
             }
 
             return toItemList(filteredItems);
@@ -99,14 +101,16 @@ final class WiredSelectionFilterSupport {
         }
 
         int userLimit = Integer.MAX_VALUE;
+        boolean userRandom = false;
         List<WiredExtraFilterUsersByVariable> variableFilters = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {
             if (extra instanceof WiredExtraFilterUser) {
                 // Same as the furni filter: 0 is the unconfigured state and must not limit anything.
-                int amount = ((WiredExtraFilterUser) extra).getAmount();
+                int amount = ((WiredExtraFilterUser) extra).resolveAmount(ctx);
                 if (amount > 0) {
                     userLimit = Math.min(userLimit, amount);
+                    userRandom |= ((WiredExtraFilterUser) extra).isRandomPick();
                 }
             } else if (extra instanceof WiredExtraFilterUsersByVariable) {
                 variableFilters.add((WiredExtraFilterUsersByVariable) extra);
@@ -127,7 +131,7 @@ final class WiredSelectionFilterSupport {
             }
 
             if (userLimit != Integer.MAX_VALUE) {
-                filteredUsers = limitIterable(filteredUsers, userLimit);
+                filteredUsers = limitIterable(filteredUsers, userLimit, userRandom);
             }
 
             return toUserList(filteredUsers);
@@ -147,7 +151,8 @@ final class WiredSelectionFilterSupport {
         return new FilterScope();
     }
 
-    private static <T> List<T> limitIterable(Iterable<T> values, int limit) {
+    /** The first N in selection order, as officially, or a random N (ours). */
+    private static <T> List<T> limitIterable(Iterable<T> values, int limit, boolean random) {
         List<T> result = new ArrayList<>();
 
         if (values == null || limit <= 0) {
@@ -164,7 +169,9 @@ final class WiredSelectionFilterSupport {
             return result;
         }
 
-        Collections.shuffle(result, Emulator.getRandom());
+        if (random) {
+            Collections.shuffle(result, Emulator.getRandom());
+        }
         return new ArrayList<>(result.subList(0, limit));
     }
 

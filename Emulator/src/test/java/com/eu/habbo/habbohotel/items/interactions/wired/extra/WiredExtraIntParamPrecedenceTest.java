@@ -32,11 +32,14 @@ class WiredExtraIntParamPrecedenceTest {
     void movementCurveKeepsTheIntWhenBothAreSent() throws Exception {
         WiredExtraMovementCurve extra = new WiredExtraMovementCurve(1, 1, base(), "", 0, 0);
 
-        extra.saveData(new WiredSettings(new int[] {WiredExtraMovementCurve.CURVE_LINEAR}, "3", new int[0], 0), null);
+        // The text is the variable token now: the curve comes from the ints alone.
+        extra.saveData(
+                new WiredSettings(new int[] {0, 80, 1, WiredExtraMovementCurve.CURVE_LINEAR}, "3", new int[0], 0),
+                null);
         assertEquals(WiredExtraMovementCurve.CURVE_LINEAR, extra.getCurveType());
 
         extra.saveData(new WiredSettings(new int[0], "3", new int[0], 0), null);
-        assertEquals(WiredExtraMovementCurve.CURVE_EASE_IN_OUT, extra.getCurveType());
+        assertEquals(WiredExtraMovementCurve.CURVE_JUMP, extra.getCurveType());
     }
 
     @Test

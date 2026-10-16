@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,7 +19,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredEffectUsersByName extends InteractionWiredEffect {
+public class WiredEffectUsersByName extends InteractionWiredEffect implements WiredOfficialSelector {
     public static final WiredEffectType type = WiredEffectType.USERS_BY_NAME_SELECTOR;
 
     private String namesText = "";
@@ -41,27 +42,21 @@ public class WiredEffectUsersByName extends InteractionWiredEffect {
             return;
         }
 
+        // Every avatar by its name, as officially: users, bots and pets.
         Set<RoomUnit> result = new LinkedHashSet<>();
+        Set<RoomUnit> availableUsers = new LinkedHashSet<>();
 
-        for (Habbo habbo : room.getHabbos()) {
-            if (habbo == null || habbo.getHabboInfo() == null || habbo.getRoomUnit() == null) {
+        for (RoomUnit unit : room.getRoomUnits()) {
+            if (unit == null) {
                 continue;
             }
+            availableUsers.add(unit);
 
-            String username = habbo.getHabboInfo().getUsername();
-            if (username == null) {
-                continue;
-            }
-
-            if (this.usernames.contains(username.trim().toLowerCase(Locale.ROOT))) {
-                result.add(habbo.getRoomUnit());
+            String name = nameOf(room, unit);
+            if (name != null && this.usernames.contains(name.trim().toLowerCase(Locale.ROOT))) {
+                result.add(unit);
             }
         }
-
-        Set<RoomUnit> availableUsers = room.getHabbos().stream()
-                .filter(habbo -> habbo != null && habbo.getRoomUnit() != null)
-                .map(Habbo::getRoomUnit)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
         result = this.applySelectorModifiers(
                 result, availableUsers, ctx.targets().users(), this.filterExisting, this.invert);
 
@@ -74,10 +69,30 @@ public class WiredEffectUsersByName extends InteractionWiredEffect {
 
         this.namesText = this.normalizeNamesText(settings.getStringParam());
         this.usernames = this.parseUsernames(this.namesText);
-        this.filterExisting = params.length > 0 && params[0] == 1;
-        this.invert = params.length > 1 && params[1] == 1;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -144,9 +159,7 @@ public class WiredEffectUsersByName extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.namesText);
-        message.appendInt(2);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -158,6 +171,16 @@ public class WiredEffectUsersByName extends InteractionWiredEffect {
         return false;
     }
 
+    private static String nameOf(Room room, RoomUnit unit) {
+        Habbo habbo = room.getHabbo(unit);
+        if (habbo != null && habbo.getHabboInfo() != null)
+            return habbo.getHabboInfo().getUsername();
+        var bot = room.getBot(unit);
+        if (bot != null) return bot.getName();
+        var pet = room.getPet(unit);
+        return pet != null ? pet.getName() : null;
+    }
+
     private String normalizeNamesText(String value) {
         if (value == null || value.trim().isEmpty()) {
             return "";
@@ -165,7 +188,7 @@ public class WiredEffectUsersByName extends InteractionWiredEffect {
 
         Set<String> normalizedLines = new LinkedHashSet<>();
 
-        for (String line : value.split("\\R")) {
+        for (String line : value.split("[\\t\\r\\n]+")) {
             String normalized = line.trim();
             if (!normalized.isEmpty()) {
                 normalizedLines.add(normalized);
@@ -182,7 +205,7 @@ public class WiredEffectUsersByName extends InteractionWiredEffect {
             return result;
         }
 
-        for (String line : value.split("\\R")) {
+        for (String line : value.split("[\\t\\r\\n]+")) {
             String normalized = line.trim();
             if (!normalized.isEmpty()) {
                 result.add(normalized.toLowerCase(Locale.ROOT));

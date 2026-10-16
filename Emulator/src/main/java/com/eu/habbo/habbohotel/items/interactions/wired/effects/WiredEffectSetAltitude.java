@@ -157,10 +157,10 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.formatAltitude(this.altitude));
+        message.appendString("");
         message.appendInt(2);
+        message.appendInt((int) Math.round(this.normalizeAltitude(this.altitude) * 100.0D));
         message.appendInt(this.operator);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -170,8 +170,11 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
-        this.operator = (params.length > 0) ? this.normalizeOperator(params[0]) : OPERATOR_SET;
-        this.furniSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        // Official layout: [altitude in hundredths, operator]; the furni source is the official slot.
+        // A save from before that layout sent the altitude as text and [operator].
+        boolean official = params.length > 1;
+        this.operator = this.normalizeOperator(official ? params[1] : (params.length > 0 ? params[0] : OPERATOR_SET));
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int delay = settings.getDelay();
         if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20)) {
@@ -198,7 +201,9 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
             newItems.add(item);
         }
 
-        this.altitude = this.parseAltitude(settings.getStringParam());
+        this.altitude = official
+                ? this.normalizeAltitude(Math.max(0, params[0]) / 100.0D)
+                : this.parseAltitude(settings.getStringParam());
         this.items.clear();
         this.items.addAll(newItems);
         this.setDelay(delay);

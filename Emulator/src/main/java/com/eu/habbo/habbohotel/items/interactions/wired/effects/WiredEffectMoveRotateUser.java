@@ -149,10 +149,9 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.movementDirection);
-        message.appendInt(this.rotationDirection);
-        message.appendInt(this.userSource);
+        message.appendInt(toOfficialRotation(this.rotationDirection));
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -175,7 +174,7 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 3) {
+        if (settings.getIntParams().length < 2) {
             throw new WiredSaveException("Invalid data");
         }
 
@@ -185,8 +184,10 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
         }
 
         this.movementDirection = this.normalizeDirection(settings.getIntParams()[0]);
-        this.rotationDirection = this.normalizeRotation(settings.getIntParams()[1]);
-        this.userSource = settings.getIntParams()[2];
+        // Official layout: [movement, rotation (9 clockwise, 10 counter-clockwise; ours 8 and 9)]; the
+        // user source is the official source slot.
+        this.rotationDirection = this.normalizeRotation(fromOfficialRotation(settings.getIntParams()[1]));
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.setDelay(delay);
 
         return true;
@@ -210,6 +211,21 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
 
     private int normalizeDirection(int direction) {
         return (direction >= 0 && direction <= 7) ? direction : -1;
+    }
+
+    private static final int OFFICIAL_ROTATION_CLOCKWISE = 9;
+    private static final int OFFICIAL_ROTATION_COUNTER_CLOCKWISE = 10;
+
+    static int toOfficialRotation(int rotation) {
+        if (rotation == ROTATION_CLOCKWISE) return OFFICIAL_ROTATION_CLOCKWISE;
+        if (rotation == ROTATION_COUNTER_CLOCKWISE) return OFFICIAL_ROTATION_COUNTER_CLOCKWISE;
+        return rotation;
+    }
+
+    static int fromOfficialRotation(int rotation) {
+        if (rotation == OFFICIAL_ROTATION_CLOCKWISE) return ROTATION_CLOCKWISE;
+        if (rotation == OFFICIAL_ROTATION_COUNTER_CLOCKWISE) return ROTATION_COUNTER_CLOCKWISE;
+        return (rotation == ROTATION_CLOCKWISE) ? -1 : rotation;
     }
 
     private int normalizeRotation(int rotation) {

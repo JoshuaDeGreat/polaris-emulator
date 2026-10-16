@@ -19,7 +19,7 @@ public class WiredExtraExecutionLimit extends InteractionWiredExtra {
     public static final int MIN_EXECUTIONS = 1;
     public static final int MAX_EXECUTIONS = 100;
     public static final int DEFAULT_EXECUTIONS = 1;
-    public static final int MIN_TIME_WINDOW_MS = 1000;
+    public static final int MIN_TIME_WINDOW_MS = 500;
     public static final int MAX_TIME_WINDOW_MS = 10000;
     public static final int DEFAULT_TIME_WINDOW_MS = 1000;
     public static final int TIME_WINDOW_STEP_MS = 500;
@@ -46,7 +46,8 @@ public class WiredExtraExecutionLimit extends InteractionWiredExtra {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] intParams = settings.getIntParams();
         int nextExecutions = (intParams.length > 0) ? intParams[0] : this.maxExecutions;
-        int nextTimeWindowMs = (intParams.length > 1) ? intParams[1] : this.timeWindowMs;
+        // Official layout: [max executions, window in half-second pulses (1-20)].
+        int nextTimeWindowMs = (intParams.length > 1) ? intParams[1] * TIME_WINDOW_STEP_MS : this.timeWindowMs;
 
         this.maxExecutions = normalizeExecutions(nextExecutions);
         this.timeWindowMs = normalizeTimeWindowMs(nextTimeWindowMs);
@@ -69,7 +70,7 @@ public class WiredExtraExecutionLimit extends InteractionWiredExtra {
         message.appendString("");
         message.appendInt(2);
         message.appendInt(this.maxExecutions);
-        message.appendInt(this.timeWindowMs);
+        message.appendInt(this.timeWindowMs / TIME_WINDOW_STEP_MS);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);

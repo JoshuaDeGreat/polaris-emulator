@@ -80,10 +80,9 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.pointsType);
         message.appendInt(this.amount);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -112,7 +111,7 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
         }
 
         int[] params = settings.getIntParams();
-        if (params.length < 3) {
+        if (params.length < 2) {
             throw new WiredSaveException("Invalid data");
         }
 
@@ -132,7 +131,8 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
 
         this.pointsType = nextPointsType;
         this.amount = nextAmount;
-        this.userSource = params[2];
+        // Ours: [points type, amount]; the user source is the official source slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.setDelay(delay);
 
         return true;

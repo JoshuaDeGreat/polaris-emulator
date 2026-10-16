@@ -47,9 +47,8 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.message);
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.length);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -58,10 +57,11 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        // Official layout: [minutes]; the user source is the official source slot.
+        if (settings.getIntParams().length < 1) throw new WiredSaveException("invalid data");
 
-        this.length = Math.max(1, Math.min(settings.getIntParams()[0], MAX_MUTE_MINUTES));
-        this.userSource = settings.getIntParams()[1];
+        this.length = Math.max(0, Math.min(settings.getIntParams()[0], MAX_MUTE_MINUTES));
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.message = settings.getStringParam();
 
         this.setDelay(settings.getDelay());

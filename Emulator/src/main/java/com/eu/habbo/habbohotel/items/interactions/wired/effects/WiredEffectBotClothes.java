@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredBotSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
@@ -20,7 +21,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class WiredEffectBotClothes extends InteractionWiredEffect {
+public class WiredEffectBotClothes extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_CLOTHES;
 
     private String botName = "";
@@ -43,12 +44,21 @@ public class WiredEffectBotClothes extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName + ((char) 9) + "" + this.botLook);
-        message.appendInt(1);
-        message.appendInt(this.botSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
         message.appendInt(0);
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource};
     }
 
     @Override
@@ -70,9 +80,9 @@ public class WiredEffectBotClothes extends InteractionWiredEffect {
         // refused here rather than broadcast.
         if (!RoomItemInputGuard.isValidFigure(data[1])) throw new WiredSaveException("Invalid figure");
 
-        this.botSource = (settings.getIntParams().length > 0)
-                ? WiredBotSourceUtil.normalizeBotSource(settings.getIntParams()[0])
-                : WiredBotSourceUtil.SOURCE_BOT_NAME;
+        // Official: "name\tfigure", no int params; the bots are user slot 0.
+        this.botSource =
+                WiredBotSourceUtil.normalizeBotSource(settings.userSource(0, WiredBotSourceUtil.SOURCE_BOT_NAME));
         this.botName = data[0].substring(
                 0, Math.min(data[0].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
         this.botLook = data[1];

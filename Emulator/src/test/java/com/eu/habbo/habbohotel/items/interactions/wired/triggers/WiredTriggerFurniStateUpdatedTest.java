@@ -100,7 +100,7 @@ class WiredTriggerFurniStateUpdatedTest {
 
         assertEquals(WiredTriggerType.STATE_CHANGE.code, body.typeCode());
         assertEquals(20, body.typeCode()); // official STATE_CHANGE
-        assertArrayEquals(new int[] {1, 100}, body.params());
+        assertArrayEquals(new int[] {1}, body.params()); // official [mode]; the source is the slot
         assertArrayEquals(new int[] {500}, body.selectedIds());
         assertEquals(WiredEvent.Type.FURNI_STATE_UPDATED.toLegacyType(), WiredTriggerType.STATE_CHANGE);
     }

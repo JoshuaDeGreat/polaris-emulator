@@ -30,6 +30,12 @@ class WiredEffectRewardTrackBoxesTest {
         return new WiredSettings(params, text, new int[0], 0);
     }
 
+    /** The official user source slot. */
+    private static WiredSettings userSlot(WiredSettings settings, int source) {
+        settings.setUserSourceTypes(new int[] {source});
+        return settings;
+    }
+
     @Test
     void onlyAStaffAuthorMaySaveEitherBox() {
         assertFalse(progressBox().saveData(settings("season_1\tgames", 1, 5, 0), author(false)));
@@ -48,7 +54,11 @@ class WiredEffectRewardTrackBoxesTest {
         assertFalse(box.saveData(settings("season_1", 1, 5, 0), author(true)), "no task");
         assertFalse(box.saveData(settings("season_1\t", 1, 5, 0), author(true)));
         assertFalse(box.saveData(settings("\tgames", 1, 5, 0), author(true)));
-        assertFalse(box.saveData(settings("season_1\tgames\textra", 1, 5, 0), author(true)));
+        assertFalse(
+                box.saveData(settings("season_1\tgames\textra", 1, 5, 0), author(true)),
+                "the third field is a variable id");
+        assertFalse(
+                box.saveData(settings("season_1\tgames", 1, 1, 5, -10), author(true)), "a value variable needs its id");
         assertFalse(
                 box.saveData(settings("season:1\tgames", 1, 5, 0), author(true)), "':' is the allow-list separator");
         assertFalse(box.saveData(settings("x".repeat(65) + "\tgames", 1, 5, 0), author(true)));
@@ -57,7 +67,7 @@ class WiredEffectRewardTrackBoxesTest {
     @Test
     void theProgressParamsAreClampedAndSentBackUnderItsCode() {
         WiredEffectProgressRewardTrack box = progressBox();
-        assertTrue(box.saveData(settings(" season_1 \t games ", 0, Integer.MAX_VALUE, 999), author(true)));
+        assertTrue(box.saveData(settings(" season_1 \t games ", 0, 0, Integer.MAX_VALUE, 999), author(true)));
 
         assertEquals("season_1", box.getTrackId());
         assertEquals("games", box.getTaskId());
@@ -65,17 +75,26 @@ class WiredEffectRewardTrackBoxesTest {
         assertEquals(WiredHotelProgress.MAX_AMOUNT, box.getAmount());
         assertEquals(WiredSourceUtil.SOURCE_TRIGGER, box.getUserSource());
 
-        box.saveData(settings("season_1\tgames", 1, -4, WiredSourceUtil.SOURCE_SELECTOR), author(true));
+        box.saveData(
+                userSlot(settings("season_1\tgames", 1, 0, -4, -20), WiredSourceUtil.SOURCE_SELECTOR), author(true));
+        assertEquals(WiredSourceUtil.SOURCE_SELECTOR, box.getUserSource());
         var body = WiredEffectProgressAchievementTest.body(box);
         assertEquals("season_1\tgames", body.text());
-        assertArrayEquals(new int[] {1, 1, WiredSourceUtil.SOURCE_SELECTOR}, body.params());
+        // official [add, amount from a variable, amount, variable target]
+        assertArrayEquals(new int[] {1, 0, 1, -20}, body.params());
+
+        box.saveData(settings("season_1\tgames\t12", 0, 1, 5, -10), author(true));
+        body = WiredEffectProgressAchievementTest.body(box);
+        assertEquals("season_1\tgames\t12", body.text());
+        assertArrayEquals(new int[] {0, 1, 5, -10}, body.params());
         assertEquals(WiredActionCodes.official(WiredEffectType.PROGRESS_REWARD_TRACK.code), body.code());
     }
 
     @Test
     void theProgressBoxSurvivesTheDatabaseAndTamperedRowsAreCleaned() throws Exception {
         WiredEffectProgressRewardTrack saved = progressBox();
-        saved.saveData(settings("season_1\tgames", 0, 30, WiredSourceUtil.SOURCE_SELECTOR), author(true));
+        saved.saveData(
+                userSlot(settings("season_1\tgames", 0, 0, 30, -10), WiredSourceUtil.SOURCE_SELECTOR), author(true));
 
         WiredEffectProgressRewardTrack loaded = progressBox();
         loaded.loadWiredData(row(saved.getWiredData()), null);
@@ -101,11 +120,13 @@ class WiredEffectRewardTrackBoxesTest {
 
         assertFalse(box.saveData(settings("", 0), author(true)));
         assertFalse(box.saveData(settings("season 1", 0), author(true)));
-        assertTrue(box.saveData(settings("season_1", WiredSourceUtil.SOURCE_SELECTOR), author(true)));
+        WiredSettings settings = settings("season_1");
+        settings.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+        assertTrue(box.saveData(settings, author(true)));
 
         var body = WiredEffectProgressAchievementTest.body(box);
         assertEquals("season_1", body.text());
-        assertArrayEquals(new int[] {WiredSourceUtil.SOURCE_SELECTOR}, body.params());
+        assertArrayEquals(new int[0], body.params()); // official: no ints; the source is the slot
         assertEquals(WiredActionCodes.official(WiredEffectType.RESET_REWARD_TRACK.code), body.code());
 
         WiredEffectResetRewardTrack loaded = resetBox();

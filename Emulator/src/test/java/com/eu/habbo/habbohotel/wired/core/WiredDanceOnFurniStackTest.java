@@ -74,7 +74,10 @@ class WiredDanceOnFurniStackTest {
             // What the editors send: dance, no filters; the rug picked, user source "trigger".
             assertTrue(trigger.saveData(
                     new WiredSettings(new int[] {WiredUserActionType.DANCE, 0, 0, 0, 1}, "", new int[0], -1)));
-            assertTrue(condition.saveData(new WiredSettings(new int[] {0, 0, 0}, "", new int[] {900}, -1)));
+            WiredSettings onRug = new WiredSettings(new int[] {0}, "", new int[] {900}, -1);
+            onRug.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTED});
+            onRug.setUserSourceTypes(new int[] {WiredSourceUtil.SOURCE_TRIGGER});
+            assertTrue(condition.saveData(onRug));
         }
 
         List<String> calls = new ArrayList<>();

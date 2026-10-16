@@ -63,10 +63,9 @@ public class WiredEffectClickSettings extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.userOption);
         message.appendInt(this.furniOption);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -81,7 +80,8 @@ public class WiredEffectClickSettings extends InteractionWiredEffect {
 
         this.userOption = normalizeUserOption(params[0]);
         this.furniOption = normalizeFurniOption(params[1]);
-        this.userSource = (params.length > 2) ? params[2] : WiredSourceUtil.SOURCE_TRIGGER;
+        // Official layout: [user option, furni option]; the user source is the official slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.setDelay(settings.getDelay());
 
         return true;

@@ -174,12 +174,9 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(5);
-        message.appendInt(this.horizontalDirection);
-        message.appendInt(this.horizontalDistance);
-        message.appendInt(this.verticalDirection);
-        message.appendInt(this.verticalDistance);
-        message.appendInt(this.furniSource);
+        message.appendInt(2);
+        message.appendInt(this.getHorizontalOffset());
+        message.appendInt(this.getVerticalOffset());
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -190,15 +187,17 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
 
-        if (params.length < 5) {
+        // Official layout: [horizontal, vertical], each a signed number of tiles; the furni source is
+        // the official source slot.
+        if (params.length < 2) {
             throw new WiredSaveException("Invalid data");
         }
 
-        this.horizontalDirection = this.normalizeBinary(params[0], HORIZONTAL_POSITIVE);
-        this.horizontalDistance = this.normalizeDistance(params[1]);
-        this.verticalDirection = this.normalizeBinary(params[2], VERTICAL_POSITIVE);
-        this.verticalDistance = this.normalizeDistance(params[3]);
-        this.furniSource = params[4];
+        this.horizontalDirection = (params[0] < 0) ? HORIZONTAL_NEGATIVE : HORIZONTAL_POSITIVE;
+        this.horizontalDistance = this.normalizeDistance(Math.abs(params[0]));
+        this.verticalDirection = (params[1] < 0) ? VERTICAL_NEGATIVE : VERTICAL_POSITIVE;
+        this.verticalDistance = this.normalizeDistance(Math.abs(params[1]));
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int delay = settings.getDelay();
         if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20)) {

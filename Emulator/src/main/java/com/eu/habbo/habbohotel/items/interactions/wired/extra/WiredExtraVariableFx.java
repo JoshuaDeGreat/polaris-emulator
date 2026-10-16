@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredExecutionOrderUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxConfig;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxStatus;
 import com.eu.habbo.habbohotel.wired.variablefx.WiredVariableFxStyles;
@@ -33,7 +35,7 @@ import java.util.Map;
  * the three variable tokens and the icon, tab separated: override min, override max, audience,
  * icon. A token is {@code custom:<definition item id>}.
  */
-public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
+public abstract class WiredExtraVariableFx extends InteractionWiredExtra implements WiredOfficialVariableIds {
     public static final int SOURCE_USER = 0;
     public static final int SOURCE_FURNI = 1;
 
@@ -91,6 +93,11 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
     private int overrideMaxItemId = 0;
     private int audienceItemId = 0;
     private String icon = "";
+    // Official only, kept as they came: refresh mask, show on hover, renderer, fx stack order.
+    private int updateMask = 0;
+    private boolean showOnHover = false;
+    private int rendererParam = 0;
+    private int stackOrder = 0;
 
     protected WiredExtraVariableFx(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -313,27 +320,69 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeStringParam());
-        message.appendInt(PARAM_COUNT);
-        message.appendInt(this.source);
-        message.appendInt(this.visibility);
-        message.appendInt(this.showMode);
-        message.appendInt(this.showDurationMs);
-        message.appendInt(this.styleId);
-        message.appendInt(this.colorId);
-        message.appendInt(this.widthId);
-        message.appendInt(this.segments);
-        message.appendInt(this.defaultMin);
-        message.appendInt(this.defaultMax);
-        message.appendInt(this.overrideMinEnabled ? 1 : 0);
-        message.appendInt(this.overrideMaxEnabled ? 1 : 0);
-        message.appendInt(this.overrideMinTarget);
-        message.appendInt(this.overrideMaxTarget);
-        message.appendInt(this.audienceValue);
-        message.appendInt(this.categoryExtra);
+        int[] params = this.officialIntParams();
+        message.appendInt(params.length);
+        for (int param : params) message.appendInt(param);
         message.appendInt(0);
         message.appendInt(this.getCode());
         message.appendInt(0);
         message.appendInt(0);
+    }
+
+    /**
+     * The official int params (23): source (official target), visibility, show mode, update mask, show
+     * on hover, show duration, style, colour, width, renderer, default min (long), default max (long),
+     * override min on, override max on, override min target, override max target (the holder's
+     * official target, or global), audience value (long), segments, category extra, stack order.
+     */
+    int[] officialIntParams() {
+        int holder =
+                this.source == SOURCE_FURNI ? WiredVariableTargets.OFFICIAL_FURNI : WiredVariableTargets.OFFICIAL_USER;
+        return new int[] {
+            holder,
+            this.visibility,
+            this.showMode,
+            this.updateMask,
+            this.showOnHover ? 1 : 0,
+            this.showDurationMs,
+            this.styleId,
+            this.colorId,
+            this.widthId,
+            this.rendererParam,
+            hiWord(this.defaultMin),
+            this.defaultMin,
+            hiWord(this.defaultMax),
+            this.defaultMax,
+            this.overrideMinEnabled ? 1 : 0,
+            this.overrideMaxEnabled ? 1 : 0,
+            this.overrideMinTarget == OVERRIDE_TARGET_GLOBAL ? WiredVariableTargets.OFFICIAL_GLOBAL : holder,
+            this.overrideMaxTarget == OVERRIDE_TARGET_GLOBAL ? WiredVariableTargets.OFFICIAL_GLOBAL : holder,
+            hiWord(this.audienceValue),
+            this.audienceValue,
+            this.segments,
+            this.categoryExtra,
+            this.stackOrder
+        };
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return new String[] {
+            String.valueOf(this.overrideMinItemId),
+            String.valueOf(this.overrideMaxItemId),
+            String.valueOf(this.audienceItemId)
+        };
+    }
+
+    private static int hiWord(int value) {
+        return value < 0 ? -1 : 0;
+    }
+
+    /** An official long param, clamped to the int range this box keeps. */
+    private static int longParam(int[] params, int index, int fallback) {
+        if (params == null || index + 1 >= params.length) return fallback;
+        long value = ((long) params[index] << 32) | (params[index + 1] & 0xFFFFFFFFL);
+        return (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, value));
     }
 
     @Override
@@ -341,6 +390,10 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
         int[] params = settings.getIntParams();
         String[] tokens =
                 (settings.getStringParam() != null) ? settings.getStringParam().split(DELIM, -1) : new String[0];
+
+        if (params.length != PARAM_COUNT) {
+            return this.saveOfficial(params, tokens, settings.getVariableIds());
+        }
 
         this.source = (param(params, 0, SOURCE_USER) == SOURCE_FURNI) ? SOURCE_FURNI : SOURCE_USER;
         this.visibility =
@@ -377,30 +430,86 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
         return true;
     }
 
+    private boolean saveOfficial(int[] params, String[] tokens, String[] variableIds) throws WiredSaveException {
+        int holder = param(params, 0, WiredVariableTargets.OFFICIAL_USER);
+        int nextDefaultMin = longParam(params, 10, 0);
+        int nextDefaultMax = longParam(params, 12, DEFAULT_MAX_VALUE);
+        if (this.usesValueRange() && nextDefaultMax <= nextDefaultMin) {
+            throw new WiredSaveException("wiredfurni.params.variablefx.validation.range");
+        }
+
+        this.source = (holder == WiredVariableTargets.OFFICIAL_FURNI) ? SOURCE_FURNI : SOURCE_USER;
+        this.visibility =
+                clamp(param(params, 1, VISIBILITY_EVERYONE), VISIBILITY_ONLY_USER, VISIBILITY_HAS_VARIABLE_WITH_VALUE);
+        this.showMode = clamp(param(params, 2, SHOW_ALWAYS), SHOW_ALWAYS, SHOW_NEVER);
+        this.updateMask = clamp(param(params, 3, 0), 0, 15);
+        this.showOnHover = param(params, 4, 0) == 1;
+        this.showDurationMs =
+                clamp(param(params, 5, SHOW_DURATION_DEFAULT_MS), SHOW_DURATION_MIN_MS, SHOW_DURATION_MAX_MS);
+        this.styleId =
+                clamp(param(params, 6, 0), 0, Math.max(0, WiredVariableFxStyles.styleCount(this.getCategory()) - 1));
+        this.colorId = normalizeColor(param(params, 7, COLOR_NOT_APPLICABLE));
+        this.widthId = clamp(param(params, 8, WIDTH_MEDIUM), -1, 100);
+        this.rendererParam = clamp(param(params, 9, 0), -1, 201);
+        this.defaultMin = nextDefaultMin;
+        this.defaultMax = nextDefaultMax;
+        this.overrideMinEnabled = param(params, 14, 0) == 1;
+        this.overrideMaxEnabled = param(params, 15, 0) == 1;
+        this.overrideMinTarget = param(params, 16, holder) == WiredVariableTargets.OFFICIAL_GLOBAL
+                ? OVERRIDE_TARGET_GLOBAL
+                : OVERRIDE_TARGET_HOLDER;
+        this.overrideMaxTarget = param(params, 17, holder) == WiredVariableTargets.OFFICIAL_GLOBAL
+                ? OVERRIDE_TARGET_GLOBAL
+                : OVERRIDE_TARGET_HOLDER;
+        this.audienceValue = longParam(params, 18, 0);
+        this.segments = clamp(param(params, 20, 0), 0, SEGMENTS_MAX);
+        this.categoryExtra = param(params, 21, 0);
+        this.stackOrder = param(params, 22, 0);
+
+        // Ours: the variable tokens and the icon as text; an official save sends the ids apart.
+        boolean hasTokens = !token(tokens, 0).isEmpty()
+                || !token(tokens, 1).isEmpty()
+                || !token(tokens, 2).isEmpty();
+        this.overrideMinItemId = hasTokens ? customItemId(token(tokens, 0)) : officialId(variableIds, 0);
+        this.overrideMaxItemId = hasTokens ? customItemId(token(tokens, 1)) : officialId(variableIds, 1);
+        this.audienceItemId = hasTokens ? customItemId(token(tokens, 2)) : officialId(variableIds, 2);
+        this.icon = normalizeIcon(token(tokens, 3));
+        return true;
+    }
+
+    private static int officialId(String[] variableIds, int index) {
+        if (variableIds == null || index >= variableIds.length) return 0;
+        return customItemId(CUSTOM_TOKEN_PREFIX + (variableIds[index] == null ? "" : variableIds[index].trim()));
+    }
+
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.source,
-                        this.visibility,
-                        this.showMode,
-                        this.showDurationMs,
-                        this.styleId,
-                        this.colorId,
-                        this.widthId,
-                        this.segments,
-                        this.defaultMin,
-                        this.defaultMax,
-                        this.overrideMinEnabled,
-                        this.overrideMaxEnabled,
-                        this.overrideMinTarget,
-                        this.overrideMaxTarget,
-                        this.audienceValue,
-                        this.categoryExtra,
-                        this.overrideMinItemId,
-                        this.overrideMaxItemId,
-                        this.audienceItemId,
-                        this.icon));
+        JsonData data = new JsonData(
+                this.source,
+                this.visibility,
+                this.showMode,
+                this.showDurationMs,
+                this.styleId,
+                this.colorId,
+                this.widthId,
+                this.segments,
+                this.defaultMin,
+                this.defaultMax,
+                this.overrideMinEnabled,
+                this.overrideMaxEnabled,
+                this.overrideMinTarget,
+                this.overrideMaxTarget,
+                this.audienceValue,
+                this.categoryExtra,
+                this.overrideMinItemId,
+                this.overrideMaxItemId,
+                this.audienceItemId,
+                this.icon);
+        data.updateMask = this.updateMask;
+        data.showOnHover = this.showOnHover;
+        data.rendererParam = this.rendererParam;
+        data.stackOrder = this.stackOrder;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -435,6 +544,10 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
         this.overrideMaxItemId = Math.max(0, data.overrideMaxItemId);
         this.audienceItemId = Math.max(0, data.audienceItemId);
         this.icon = normalizeIcon(data.icon);
+        this.updateMask = clamp(data.updateMask, 0, 15);
+        this.showOnHover = data.showOnHover;
+        this.rendererParam = clamp(data.rendererParam, -1, 201);
+        this.stackOrder = data.stackOrder;
 
         if (room != null) WiredVariableFxSupport.ensure(room);
     }
@@ -461,6 +574,10 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
         this.overrideMaxItemId = 0;
         this.audienceItemId = 0;
         this.icon = "";
+        this.updateMask = 0;
+        this.showOnHover = false;
+        this.rendererParam = 0;
+        this.stackOrder = 0;
     }
 
     @Override
@@ -539,6 +656,11 @@ public abstract class WiredExtraVariableFx extends InteractionWiredExtra {
         int overrideMaxItemId;
         int audienceItemId;
         String icon;
+        // Official only, set after construction.
+        int updateMask;
+        boolean showOnHover;
+        int rendererParam;
+        int stackOrder;
 
         JsonData(
                 int source,

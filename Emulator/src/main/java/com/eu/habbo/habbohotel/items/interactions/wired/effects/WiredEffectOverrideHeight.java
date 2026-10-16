@@ -101,7 +101,7 @@ public class WiredEffectOverrideHeight extends InteractionWiredEffect {
         // Official slot order: the height first, then the two-way choice.
         this.height = normalizeHeight((params.length > 0) ? params[0] : 0);
         this.mode = ((params.length > 1) && params[1] == MODE_RELEASE) ? MODE_RELEASE : MODE_SET;
-        this.furniSource = normalizeFurniSource((params.length > 2) ? params[2] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.furniSource = normalizeFurniSource(settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER));
 
         int count = settings.getFurniIds().length;
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
@@ -198,10 +198,9 @@ public class WiredEffectOverrideHeight extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.height);
         message.appendInt(this.mode);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());

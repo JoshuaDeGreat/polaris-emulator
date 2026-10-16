@@ -123,10 +123,11 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.key);
+        // Official layout: [owner only, match mode, hide the message].
         message.appendInt(3);
+        message.appendInt(this.ownerOnly ? 1 : 0);
         message.appendInt(this.matchMode);
         message.appendInt(this.hideMessage ? 1 : 0);
-        message.appendInt(this.ownerOnly ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -136,9 +137,10 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
     @Override
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
-        this.matchMode = (params.length > 0) ? this.normalizeMatchMode(params[0]) : MATCH_CONTAINS;
-        this.hideMessage = (params.length > 1) && (params[1] == 1);
-        this.ownerOnly = (params.length > 2) && (params[2] == 1);
+        // Official layout: [owner only, match mode, hide the message].
+        this.ownerOnly = (params.length > 0) && (params[0] == 1);
+        this.matchMode = (params.length > 1) ? this.normalizeMatchMode(params[1]) : MATCH_CONTAINS;
+        this.hideMessage = (params.length > 2) && (params[2] == 1);
         this.key = (this.matchMode == MATCH_ALL_WORDS) ? "" : settings.getStringParam();
 
         return true;

@@ -54,8 +54,8 @@ public final class UserPreferencePackets {
 
     /**
      * Official layout: menu button, inspect button, play-test mode, a reserved int, wired whisper
-     * disabled, show all notifications, ui style. Only the whisper switch is persisted here; the
-     * other flags belong to the official wired menu the emulator does not model.
+     * disabled, show all notifications, ui style. Kept for plugins; the handler reads the whole packet
+     * with {@link #parseWiredMenuPreferences}.
      */
     public static boolean parseWiredWhisperDisabled(ClientMessage packet) {
         packet.readBoolean();
@@ -66,5 +66,43 @@ public final class UserPreferencePackets {
         packet.readBoolean();
         packet.readString();
         return wiredWhisperDisabled;
+    }
+
+    /** The official wired menu preferences (1226) as the server keeps them. */
+    public record WiredMenuPreferences(
+            boolean menuButton,
+            boolean inspectButton,
+            boolean playTestMode,
+            boolean wiredWhisperDisabled,
+            boolean showAllNotifications,
+            String uiStyle) {
+        static final int MAX_STYLE_LENGTH = 24;
+
+        /** {@code menu,inspect,playtest,showAll,style}; the whisper switch has its own column. */
+        public String encode() {
+            return bit(this.menuButton) + "," + bit(this.inspectButton) + "," + bit(this.playTestMode) + ","
+                    + bit(this.showAllNotifications) + "," + this.uiStyle;
+        }
+
+        private static String bit(boolean value) {
+            return value ? "1" : "0";
+        }
+    }
+
+    /** Reads the whole official wired menu preferences packet; the style is kept to a short name. */
+    public static WiredMenuPreferences parseWiredMenuPreferences(ClientMessage packet) {
+        boolean menuButton = packet.readBoolean();
+        boolean inspectButton = packet.readBoolean();
+        boolean playTestMode = packet.readBoolean();
+        packet.readInt();
+        boolean wiredWhisperDisabled = packet.readBoolean();
+        boolean showAllNotifications = packet.readBoolean();
+        String style = packet.readString();
+        style = style == null ? "" : style.replaceAll("[^A-Za-z0-9_]", "");
+        if (style.length() > WiredMenuPreferences.MAX_STYLE_LENGTH) {
+            style = style.substring(0, WiredMenuPreferences.MAX_STYLE_LENGTH);
+        }
+        return new WiredMenuPreferences(
+                menuButton, inspectButton, playTestMode, wiredWhisperDisabled, showAllNotifications, style);
     }
 }

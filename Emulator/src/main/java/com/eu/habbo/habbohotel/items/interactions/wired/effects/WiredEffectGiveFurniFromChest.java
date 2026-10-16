@@ -1,12 +1,14 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWiredFurniUtil;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -16,10 +18,10 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
-import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -29,12 +31,23 @@ import java.util.List;
  * Give Furni From Chest (furni classname {@code wf_act_give_furni}). Dispenses up to {@code amount}
  * copies of the selected {@link InteractionWiredChest}'s stored furni type to the resolved user(s),
  * decrementing + persisting the chest. Never gives more than the chest holds.
+ *
+ * <p>Official layout (46): the shared {@link WiredChestReward} ints with the iteration order (0 random,
+ * 1 oldest first, 2 newest first) as the sixth; furni slot 0 the chests, user slot 0 the rewarded
+ * users. A box saved before the official layout keeps taking the oldest furni first.
  */
-public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
+public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialVariableIds {
+    static final int ITERATION_RANDOM = 0;
+    static final int ITERATION_OLDEST = 1;
+    static final int ITERATION_NEWEST = 2;
+    private static final java.util.Random RANDOM = new java.util.Random();
+
     public static final WiredEffectType type = WiredEffectType.GIVE_FURNI_FROM_CHEST;
 
     private final List<Integer> chestIds = new ArrayList<>();
-    private int amount = 1;
+    private final WiredChestReward reward = new WiredChestReward();
+    private int iterationType = ITERATION_RANDOM;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectGiveFurniFromChest(ResultSet set, Item baseItem) throws SQLException {
@@ -49,7 +62,10 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
-        if (room == null || this.amount <= 0) return;
+        if (room == null) return;
+        Integer resolved = this.reward.resolveAmount(ctx, room, 1);
+        if (resolved == null || resolved <= 0) return;
+        int perUser = resolved;
 
         InteractionWiredChest chest = this.resolveChest(room);
         if (chest == null) return;
@@ -58,29 +74,26 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null || habbo.getClient() == null) continue;
 
-            ChestStorage contents = chest.getContents();
-            for (ChestStorage.Entry entry : new ArrayList<>(contents.entries())) {
-                if (entry.kind != ChestStorage.KIND_FURNI) continue;
+            // The stored rows themselves leave the chest (with their state), in the box's order.
+            List<ChestFurniStoredItem> removed =
+                    chest.getContents().removeFurniInOrder(this.iterationType, perUser, RANDOM);
+            if (removed.isEmpty()) break;
 
-                Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(entry.type);
-                if (baseItem == null) break;
-
-                int given = contents.take(ChestStorage.KIND_FURNI, entry.type, this.amount);
-                if (given > 0) {
-                    for (int i = 0; i < given; i++) {
-                        HabboItem created = Emulator.getGameEnvironment()
-                                .getItemManager()
-                                .createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
-                        if (created == null) continue;
-                        habbo.getClient().sendResponse(new AddHabboItemComposer(created));
-                        habbo.getInventory().getItemsComponent().addItem(created);
-                    }
-                    habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                    chest.persistContents(room);
-                    ChestNotifications.wired(chest, room, 1);
-                }
-                break;
-            }
+            int given = ChestWiredFurniUtil.giveStoredItemsToInventory(habbo, removed);
+            ChestTransactionLog.record(
+                    room.getId(),
+                    chest.getId(),
+                    ChestStorage.KIND_FURNI,
+                    ChestTransactionLog.TYPE_WITHDRAW,
+                    ChestTransactionLog.SOURCE_WIRED,
+                    habbo,
+                    -1,
+                    given,
+                    0,
+                    removed);
+            chest.persistContents(room);
+            ChestNotifications.wired(chest, room, given);
+            this.reward.showPopup(habbo, given);
         }
     }
 
@@ -103,11 +116,8 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        int[] params = settings.getIntParams();
-        if (params.length < 2) throw new WiredSaveException("invalid data");
-
-        this.amount = Math.max(1, params[0]);
-        this.userSource = params[1];
+        this.iterationType = normalizeIteration(this.reward.read(settings, 1, ITERATION_RANDOM));
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         this.chestIds.clear();
         if (settings.getFurniIds() != null) {
@@ -127,8 +137,10 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.amount, this.userSource, this.getDelay(), this.chestIds));
+        JsonData data = new JsonData(this.reward.amount, this.userSource, this.getDelay(), this.chestIds);
+        this.reward.writeTo(data);
+        data.iterationType = this.iterationType;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -141,7 +153,10 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
         JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
         if (data == null) return;
 
-        this.amount = Math.max(1, data.amount);
+        this.reward.amount = Math.max(1, data.amount);
+        this.reward.readFrom(data);
+        // A row saved before the official layout took the oldest furni first.
+        this.iterationType = normalizeIteration(data.iterationType == null ? ITERATION_OLDEST : data.iterationType);
         this.userSource = data.userSource;
         this.setDelay(data.delay);
         if (data.chestIds != null) {
@@ -159,10 +174,10 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
         }
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
-        message.appendInt(2);
-        message.appendInt(this.amount);
-        message.appendInt(this.userSource);
+        message.appendString(this.reward.popupText);
+        int[] params = this.reward.officialParams(this.iterationType);
+        message.appendInt(params.length);
+        for (int param : params) message.appendInt(param);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -172,7 +187,8 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
     @Override
     public void onPickUp() {
         this.chestIds.clear();
-        this.amount = 1;
+        this.reward.reset(1);
+        this.iterationType = ITERATION_RANDOM;
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.setDelay(0);
     }
@@ -182,7 +198,27 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
         return this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
     }
 
-    static class JsonData {
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {WiredSourceUtil.SOURCE_SELECTED};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userSource};
+    }
+
+    @Override
+    public String[] officialVariableIds() {
+        return this.reward.officialVariableIds();
+    }
+
+    private static int normalizeIteration(int iteration) {
+        return (iteration == ITERATION_OLDEST || iteration == ITERATION_NEWEST) ? iteration : ITERATION_RANDOM;
+    }
+
+    static class JsonData extends WiredChestReward.Stored {
+        Integer iterationType;
         int amount;
         int userSource;
         int delay;

@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
+public class WiredEffectFurniOnFurni extends InteractionWiredEffect implements WiredOfficialSelector {
     private static final double EPSILON = 0.0001D;
 
     private static final int SELECT_FURNI_ABOVE = 0;
@@ -85,9 +86,11 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
         int[] params = settings.getIntParams();
 
         this.selectionType = (params.length > 0) ? this.normalizeSelectionType(params[0]) : SELECT_FURNI_ABOVE;
-        this.furniSource = (params.length > 1) ? this.normalizeFurniSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.filterExisting = params.length > 2 && params[2] == 1;
-        this.invert = params.length > 3 && params[3] == 1;
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
 
         int count = settings.getFurniIds().length;
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
@@ -118,6 +121,26 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
 
         this.setDelay(settings.getDelay());
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -207,11 +230,9 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(4);
+        // Official layout: [selection type], the furni in the official source slot.
+        message.appendInt(1);
         message.appendInt(this.selectionType);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());

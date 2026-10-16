@@ -25,7 +25,8 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect implements 
     private static final String CACHE_LAST_ACTION_TIMESTAMP = "wired.last_user_action.timestamp";
     private static final long TRANSIENT_ACTION_WINDOW_MS = 5_000L;
     static final int OFFICIAL_ACTION_IDS = 2;
-    private static final int DEFAULT_ACTION = WiredUserActionType.WAVE;
+    // A fresh box selects sitting users, as officially.
+    private static final int DEFAULT_ACTION = WiredUserActionType.SIT;
 
     public static final WiredEffectType type = WiredEffectType.USERS_BY_ACTION_SELECTOR;
 
@@ -253,6 +254,13 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect implements 
                 return roomUnit.hasStatus(RoomUnitStatus.LAY);
             case WiredUserActionType.RELAX:
                 return roomUnit.isIdle();
+            // The states the official selector also reads off the avatar.
+            case WiredUserActionType.STAND:
+                return !roomUnit.hasStatus(RoomUnitStatus.SIT) && !roomUnit.hasStatus(RoomUnitStatus.LAY);
+            case WiredUserActionType.AWAKE:
+                return !roomUnit.isIdle();
+            case WiredUserActionType.WAVE:
+                return roomUnit.hasStatus(RoomUnitStatus.WAVE);
             case WiredUserActionType.SIGN:
                 return this.matchesSignState(roomUnit);
             case WiredUserActionType.DANCE:

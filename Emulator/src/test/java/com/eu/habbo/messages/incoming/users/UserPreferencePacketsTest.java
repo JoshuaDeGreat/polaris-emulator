@@ -57,6 +57,21 @@ class UserPreferencePacketsTest {
                 .string(""))));
     }
 
+    @Test
+    void readsAndEncodesTheWholeWiredMenuPreferences() {
+        UserPreferencePackets.WiredMenuPreferences preferences =
+                UserPreferencePackets.parseWiredMenuPreferences(message(buffer().bool(true)
+                        .bool(false)
+                        .bool(true)
+                        .integer(0)
+                        .bool(true)
+                        .bool(true)
+                        .string("volter<script>")));
+
+        assertTrue(preferences.wiredWhisperDisabled());
+        assertEquals("1,0,1,1,volterscript", preferences.encode());
+    }
+
     private static ClientMessage message(BufferBuilder builder) {
         return new ClientMessage(0, builder.value);
     }

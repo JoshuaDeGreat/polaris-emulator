@@ -20,6 +20,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
 import java.sql.ResultSet;
@@ -152,19 +153,51 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             editorToken += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayOptions, this.arrayFieldId));
         }
         message.appendString(editorToken);
-        message.appendInt(8);
-        message.appendInt(this.targetType);
+        // Official layout: [created, value changed, deleted, (bit 0 increased, 1 decreased, 2
+        // unchanged), origins (official bits, -1 every one), mode (0: the picked variable)]; ours
+        // follows: [variable target (official ids)].
+        message.appendInt(7);
         message.appendInt(this.createdEnabled ? 1 : 0);
         message.appendInt(this.valueChangedEnabled ? 1 : 0);
-        message.appendInt(this.increasedEnabled ? 1 : 0);
-        message.appendInt(this.decreasedEnabled ? 1 : 0);
-        message.appendInt(this.unchangedEnabled ? 1 : 0);
         message.appendInt(this.deletedEnabled ? 1 : 0);
-        message.appendInt(this.originMask);
+        message.appendInt(
+                (this.increasedEnabled ? 1 : 0) | (this.decreasedEnabled ? 2 : 0) | (this.unchangedEnabled ? 4 : 0));
+        message.appendInt(toOfficialOrigins(this.originMask));
+        message.appendInt(0);
+        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
         message.appendInt(0);
+    }
+
+    // Official origin bits: 0 this room, 1 another room, 2 inspection, 3 external. Ours: wired (this
+    // room), creator tools (inspection), web API (external); another room never happens here.
+    private static final int OFFICIAL_ORIGINS_ALL = -1;
+    private static final int OFFICIAL_ORIGIN_THIS_ROOM = 0;
+    private static final int OFFICIAL_ORIGIN_INSPECTION = 2;
+    private static final int OFFICIAL_ORIGIN_EXTERNAL = 3;
+
+    static int toOfficialOrigins(int ourMask) {
+        if (ourMask == WiredVariableChangeOrigin.MASK_ALL || ourMask == 0) return OFFICIAL_ORIGINS_ALL;
+        int official = 0;
+        if ((ourMask & (1 << WiredVariableChangeOrigin.WIRED)) != 0) official |= 1 << OFFICIAL_ORIGIN_THIS_ROOM;
+        if ((ourMask & (1 << WiredVariableChangeOrigin.CREATOR_TOOLS)) != 0) {
+            official |= 1 << OFFICIAL_ORIGIN_INSPECTION;
+        }
+        if ((ourMask & (1 << WiredVariableChangeOrigin.WEB_API)) != 0) official |= 1 << OFFICIAL_ORIGIN_EXTERNAL;
+        return official;
+    }
+
+    static int fromOfficialOrigins(int officialMask) {
+        if (officialMask < 0) return WiredVariableChangeOrigin.MASK_ALL;
+        int ours = 0;
+        if ((officialMask & (1 << OFFICIAL_ORIGIN_THIS_ROOM)) != 0) ours |= 1 << WiredVariableChangeOrigin.WIRED;
+        if ((officialMask & (1 << OFFICIAL_ORIGIN_INSPECTION)) != 0) {
+            ours |= 1 << WiredVariableChangeOrigin.CREATOR_TOOLS;
+        }
+        if ((officialMask & (1 << OFFICIAL_ORIGIN_EXTERNAL)) != 0) ours |= 1 << WiredVariableChangeOrigin.WEB_API;
+        return ours;
     }
 
     @Override
@@ -177,16 +210,18 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         int[] params = settings.getIntParams();
 
-        this.targetType = normalizeTargetType((params.length > 0) ? params[0] : TARGET_USER);
-        this.createdEnabled = (params.length <= 1) || (params[1] == 1);
-        this.valueChangedEnabled = (params.length <= 2) || (params[2] == 1);
-        this.increasedEnabled = (params.length <= 3) || (params[3] == 1);
-        this.decreasedEnabled = (params.length <= 4) || (params[4] == 1);
-        this.unchangedEnabled = (params.length <= 5) || (params[5] == 1);
-        this.deletedEnabled = (params.length <= 6) || (params[6] == 1);
-        this.originMask = (params.length > 7)
-                ? WiredVariableChangeOrigin.normalizeMask(params[7])
-                : WiredVariableChangeOrigin.MASK_ALL;
+        // Official layout (see serializeWiredData); our variable target follows the official ints.
+        this.createdEnabled = (params.length <= 0) || (params[0] == 1);
+        this.valueChangedEnabled = (params.length <= 1) || (params[1] == 1);
+        this.deletedEnabled = (params.length <= 2) || (params[2] == 1);
+        int changes = (params.length > 3) ? params[3] : 7;
+        this.increasedEnabled = (changes & 1) != 0;
+        this.decreasedEnabled = (changes & 2) != 0;
+        this.unchangedEnabled = (changes & 4) != 0;
+        this.originMask = WiredVariableChangeOrigin.normalizeMask(
+                fromOfficialOrigins((params.length > 4) ? params[4] : OFFICIAL_ORIGINS_ALL));
+        this.targetType = normalizeTargetType(WiredVariableTargets.fromOfficial(
+                (params.length > 6) ? params[6] : WiredVariableTargets.OFFICIAL_USER));
         String[] stringParts = settings.getStringParam() == null
                 ? new String[0]
                 : settings.getStringParam().split("\\t", 2);

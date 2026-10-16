@@ -4,6 +4,7 @@ import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffe
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.config;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.installPlatform;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.json;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -39,17 +40,41 @@ class WiredEffectFurniToFurniTest {
             installPlatform(platform, room);
             emulator.when(Emulator::getConfig).thenReturn(config);
 
-            box.saveData(
-                    new WiredSettings(
-                            new int[] {WiredSourceUtil.SOURCE_TRIGGER, WiredSourceUtil.SOURCE_TRIGGER},
-                            "",
-                            new int[] {301},
-                            0),
-                    null);
+            box.saveData(new WiredSettings(new int[0], "", new int[] {301}, 0), null);
         }
 
         assertEquals(
                 WiredSourceUtil.SOURCE_SELECTED, json(box).get("moveSource").getAsInt());
         assertEquals(301, json(box).getAsJsonArray("itemIds").get(0).getAsInt());
+    }
+
+    @Test
+    void theTargetPicksAreTheOfficialSecondPickList() throws Exception {
+        Room room = mock(Room.class);
+        HabboItem moved = mock(HabboItem.class);
+        when(moved.getId()).thenReturn(301);
+        when(room.getHabboItem(301)).thenReturn(moved);
+        HabboItem target = mock(HabboItem.class);
+        when(target.getId()).thenReturn(302);
+        when(room.getHabboItem(302)).thenReturn(target);
+        WiredEffectFurniToFurni box = new WiredEffectFurniToFurni(1, 1, base(), "", 0, 0);
+        ConfigurationManager config = config();
+
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class);
+                MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installPlatform(platform, room);
+            emulator.when(Emulator::getConfig).thenReturn(config);
+
+            WiredSettings settings = new WiredSettings(new int[0], "", new int[] {301}, 0);
+            settings.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTED});
+            settings.setFurniIds2(new int[] {302});
+            box.saveData(settings, null);
+        }
+
+        assertEquals(302, json(box).getAsJsonArray("targetItemIds").get(0).getAsInt());
+        assertArrayEquals(
+                new int[] {WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTED},
+                box.officialFurniSources());
+        assertArrayEquals(new int[] {302}, box.officialFurniIds2());
     }
 }

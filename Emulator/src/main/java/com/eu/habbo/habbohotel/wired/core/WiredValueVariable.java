@@ -29,6 +29,18 @@ public final class WiredValueVariable {
     /** The variable's value, or null when it is not defined or no holder of the target has it. */
     public static Integer read(
             WiredContext ctx, Room room, int target, int variableId, int furniSource, int userSource) {
+        return read(ctx, room, target, variableId, furniSource, Collections.emptyList(), userSource);
+    }
+
+    /** As {@link #read}, with the box's picked furni for a furni source of picks. */
+    public static Integer read(
+            WiredContext ctx,
+            Room room,
+            int target,
+            int variableId,
+            int furniSource,
+            java.util.Collection<HabboItem> picked,
+            int userSource) {
         if (room == null || variableId <= 0) return null;
 
         switch (target) {
@@ -54,7 +66,7 @@ public final class WiredValueVariable {
             }
             default -> {
                 if (room.getFurniVariableManager().getDefinitionInfo(variableId) == null) return null;
-                for (HabboItem item : WiredSourceUtil.resolveItems(ctx, furniSource, Collections.emptyList())) {
+                for (HabboItem item : WiredSourceUtil.resolveItems(ctx, furniSource, picked)) {
                     if (item != null && room.getFurniVariableManager().hasVariable(item.getId(), variableId)) {
                         return room.getFurniVariableManager().getCurrentValue(item.getId(), variableId);
                     }
@@ -62,6 +74,25 @@ public final class WiredValueVariable {
                 return null;
             }
         }
+    }
+
+    /** Our holder kind (0 user, 1 furni, 2 context) for an official variable target, or -1. */
+    public static int holderOf(int officialTarget) {
+        return switch (officialTarget) {
+            case TARGET_USER -> 0;
+            case TARGET_FURNI -> 1;
+            case TARGET_CONTEXT -> 2;
+            default -> -1;
+        };
+    }
+
+    /** The official variable target of our holder kind (0 user, 1 furni, 2 context). */
+    public static int officialOf(int holder) {
+        return switch (holder) {
+            case 1 -> TARGET_FURNI;
+            case 2 -> TARGET_CONTEXT;
+            default -> TARGET_USER;
+        };
     }
 
     /** A variable id from text, or 0. */

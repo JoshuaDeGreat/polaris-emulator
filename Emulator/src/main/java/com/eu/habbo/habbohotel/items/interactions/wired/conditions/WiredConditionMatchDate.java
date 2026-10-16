@@ -55,15 +55,17 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [useDay, useYear, weekday mask (bit 0 Monday), dayMin, dayMax, month mask (bit 0
+        // January), yearMin, yearMax]; an empty mask is every weekday or month, an exact value a range of one.
         message.appendInt(8);
-        message.appendInt(this.weekdayMask);
-        message.appendInt(this.dayMode);
+        message.appendInt(this.dayMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.yearMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.weekdayMask == ALL_WEEKDAYS_MASK ? 0 : this.weekdayMask >> 1);
         message.appendInt(this.dayFrom);
-        message.appendInt(this.dayTo);
-        message.appendInt(this.monthMask);
-        message.appendInt(this.yearMode);
+        message.appendInt(this.dayMode == MODE_RANGE ? this.dayTo : this.dayFrom);
+        message.appendInt(this.monthMask == ALL_MONTHS_MASK ? 0 : this.monthMask >> 1);
         message.appendInt(this.yearFrom);
-        message.appendInt(this.yearTo);
+        message.appendInt(this.yearMode == MODE_RANGE ? this.yearTo : this.yearFrom);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -74,16 +76,16 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
 
-        this.weekdayMask = (params.length > 0) ? this.normalizeWeekdayMask(params[0]) : ALL_WEEKDAYS_MASK;
-        this.dayMode = (params.length > 1) ? this.normalizeMode(params[1]) : MODE_SKIP;
-        this.dayFrom = (params.length > 2) ? this.normalizeDay(params[2]) : 1;
-        this.dayTo = (params.length > 3) ? this.normalizeDay(params[3]) : this.dayFrom;
-        this.monthMask = (params.length > 4) ? this.normalizeMonthMask(params[4]) : ALL_MONTHS_MASK;
-        this.yearMode = (params.length > 5) ? this.normalizeMode(params[5]) : MODE_SKIP;
+        this.weekdayMask = (params.length > 2) ? this.normalizeWeekdayMask(params[2] << 1) : ALL_WEEKDAYS_MASK;
+        this.dayFrom = (params.length > 3) ? this.normalizeDay(params[3]) : 1;
+        this.dayTo = (params.length > 4) ? this.normalizeDay(params[4]) : 31;
+        this.monthMask = (params.length > 5) ? this.normalizeMonthMask(params[5] << 1) : ALL_MONTHS_MASK;
         this.yearFrom = (params.length > 6)
                 ? this.normalizeYear(params[6])
                 : HotelDateTimeUtil.localDateNow().getYear();
         this.yearTo = (params.length > 7) ? this.normalizeYear(params[7]) : this.yearFrom;
+        this.dayMode = WiredConditionMatchTime.mode(params.length > 0 && params[0] == 1, this.dayFrom, this.dayTo);
+        this.yearMode = WiredConditionMatchTime.mode(params.length > 1 && params[1] == 1, this.yearFrom, this.yearTo);
 
         return true;
     }

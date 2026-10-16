@@ -172,9 +172,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.userSource);
+        message.appendInt(1);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -188,13 +186,15 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
 
         int[] params = settings.getIntParams();
-        this.furniSource = (params.length > 0)
-                ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0])
+        // Official layout: no int params of its own, the furni and users in the official source slots;
+        // our quantifier (0 all, 1 any) follows as param 0.
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? WiredFurniConditionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.userSource = (params.length > 1)
-                ? WiredFurniConditionInputGuard.normalizeUserSource(params[1])
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredFurniConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
+        this.quantifier = (params.length > 0) ? this.normalizeQuantifier(params[0]) : QUANTIFIER_ALL;
 
         this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
 

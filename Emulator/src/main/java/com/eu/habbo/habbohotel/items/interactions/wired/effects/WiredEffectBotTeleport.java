@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredBotSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserEffectComposer;
@@ -30,7 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class WiredEffectBotTeleport extends InteractionWiredEffect {
+public class WiredEffectBotTeleport extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_TELEPORT;
 
     private Set<HabboItem> items;
@@ -129,9 +130,7 @@ public class WiredEffectBotTeleport extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName);
-        message.appendInt(2);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.botSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -139,13 +138,24 @@ public class WiredEffectBotTeleport extends InteractionWiredEffect {
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.furniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource};
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         String botName = settings.getStringParam();
         int[] params = settings.getIntParams();
-        this.furniSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.botSource = (params.length > 1)
-                ? WiredBotSourceUtil.normalizeBotSource(params[1])
-                : WiredBotSourceUtil.SOURCE_BOT_NAME;
+        // Official: the bot name, no int params; the furni source and the bots (user slot 0) are the
+        // official source slots.
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.botSource =
+                WiredBotSourceUtil.normalizeBotSource(settings.userSource(0, WiredBotSourceUtil.SOURCE_BOT_NAME));
         int itemsCount = settings.getFurniIds().length;
 
         if (itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {

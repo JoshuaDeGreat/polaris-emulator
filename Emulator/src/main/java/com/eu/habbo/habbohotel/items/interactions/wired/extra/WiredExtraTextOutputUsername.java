@@ -48,8 +48,11 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
         int[] intParams = settings.getIntParams();
         String[] stringData = splitStringData(settings.getStringParam());
 
-        this.placeholderType = normalizePlaceholderType((intParams.length > 0) ? intParams[0] : TYPE_SINGLE);
-        this.userSource = normalizeUserSource((intParams.length > 1) ? intParams[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.placeholderType = (intParams.length > 0 && intParams[0] == 1) ? TYPE_MULTIPLE : TYPE_SINGLE;
+        this.userSource = normalizeUserSource(
+                settings.getUserSourceTypes().length > 0
+                        ? settings.getUserSourceTypes()[0]
+                        : WiredSourceUtil.SOURCE_TRIGGER);
         this.placeholderName = normalizePlaceholderName(stringData[0]);
         this.delimiter = normalizeDelimiter(stringData[1]);
 
@@ -70,9 +73,9 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.placeholderName + "\t" + this.delimiter);
-        message.appendInt(2);
-        message.appendInt(this.placeholderType);
-        message.appendInt(this.userSource);
+        // Official layout: [multiple (0 one, 1 all)], the users in the official source slot.
+        message.appendInt(1);
+        message.appendInt(this.placeholderType == TYPE_MULTIPLE ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);

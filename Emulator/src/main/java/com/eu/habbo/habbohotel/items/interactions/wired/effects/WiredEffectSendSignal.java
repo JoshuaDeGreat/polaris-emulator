@@ -16,11 +16,14 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,7 +38,14 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WiredEffectSendSignal extends InteractionWiredEffect {
+/**
+ * Official send signal (30) / negative send signal (37). Int params, official: {@code [split per furni,
+ * split per user]}, ours follows: {@code channel}. Furni source slot 0 is the antennas (0 = the
+ * triggering furni, 100 = the picks), slot 1 the furni to forward (100 = the second picks,
+ * {@code stuffIds2}); user source slot 0 the users to forward.
+ */
+public class WiredEffectSendSignal extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialSecondaryPicks {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectSendSignal.class);
 
     public static final WiredEffectType type = WiredEffectType.SEND_SIGNAL;
@@ -317,11 +327,6 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
                 item -> item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
         this.forwardItems.retainAll(forwardSnapshot);
 
-        String forwardString = forwardSnapshot.stream()
-                .filter(Objects::nonNull)
-                .map(item -> Integer.toString(item.getId()))
-                .collect(Collectors.joining(";"));
-
         message.appendBoolean(false);
         message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
         message.appendInt(itemsSnapshot.size());
@@ -330,12 +335,9 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         }
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(forwardString);
+        message.appendString("");
 
-        message.appendInt(6);
-        message.appendInt(antennaSource);
-        message.appendInt(furniForward);
-        message.appendInt(userForward);
+        message.appendInt(3);
         message.appendInt(signalPerFurni ? 1 : 0);
         message.appendInt(signalPerUser ? 1 : 0);
         message.appendInt(channel);
@@ -388,15 +390,15 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         }
 
         int[] params = settings.getIntParams();
-        int requestedAntennaSource = params.length > 0 ? params[0] : ANTENNA_PICKED;
-        if (requestedAntennaSource < ANTENNA_PICKED) {
-            requestedAntennaSource = ANTENNA_PICKED;
-        }
-        this.furniForward = normalizeSource(params.length > 1 ? params[1] : WiredSourceUtil.SOURCE_TRIGGER);
-        this.userForward = normalizeSource(params.length > 2 ? params[2] : WiredSourceUtil.SOURCE_TRIGGER);
-        this.signalPerFurni = params.length > 3 && params[3] == 1;
-        this.signalPerUser = params.length > 4 && params[4] == 1;
-        this.channel = params.length > 5 ? params[5] : 0;
+        int requestedAntennaSource =
+                (settings.furniSource(0, WiredSourceUtil.SOURCE_SELECTED) == WiredSourceUtil.SOURCE_TRIGGER)
+                        ? ANTENNA_TRIGGER
+                        : ANTENNA_PICKED;
+        this.furniForward = normalizeSource(settings.furniSource(1, WiredSourceUtil.SOURCE_TRIGGER));
+        this.userForward = normalizeSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
+        this.signalPerFurni = params.length > 0 && params[0] == 1;
+        this.signalPerUser = params.length > 1 && params[1] == 1;
+        this.channel = params.length > 2 ? params[2] : 0;
         this.antennaSource = requestedAntennaSource;
         // "Use the triggering furni" is a deliberate choice; picking antennas alongside it used to
         // silently turn it into the first picked antenna.
@@ -406,7 +408,12 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
         List<HabboItem> newForwardItems = new ArrayList<>();
         if (this.furniForward == WiredSourceUtil.SOURCE_SELECTED && room != null) {
-            newForwardItems = parseForwardItems(settings.getStringParam(), room);
+            // The official second picks; an older editor sent them as text.
+            int[] picks2 = settings.getFurniIds2();
+            newForwardItems = (picks2.length > 0)
+                    ? parseForwardItems(
+                            Arrays.stream(picks2).mapToObj(Integer::toString).collect(Collectors.joining(";")), room)
+                    : parseForwardItems(settings.getStringParam(), room);
         }
         if (newForwardItems.size() > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
             throw new WiredSaveException("Too many furni selected");
@@ -505,6 +512,25 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         this.signalPerUser = false;
         this.channel = 0;
         this.setDelay(0);
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {
+            (this.antennaSource == ANTENNA_TRIGGER) ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED,
+            this.furniForward
+        };
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.userForward};
+    }
+
+    @Override
+    public int[] officialFurniIds2() {
+        return new ArrayList<>(this.forwardItems)
+                .stream().mapToInt(HabboItem::getId).toArray();
     }
 
     private int normalizeSource(int source) {

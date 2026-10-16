@@ -91,6 +91,8 @@ public class HabboStats implements Runnable {
     public int chatScrollSpeed;
     public int onlineIndicatorPreference;
     public boolean wiredWhisperDisabled;
+    /** The official wired menu preferences as {@code UserPreferencePackets.WiredMenuPreferences} encodes them; "" until saved. */
+    public String wiredMenuPreferences = "";
     /** Official UserInfo.accountSafetyLocked / AccountSafetyLockStatusChange (1243). */
     public boolean safetyLocked;
     /** Official ModToolPreferences (31): the issue handler window geometry. */
@@ -204,6 +206,7 @@ public class HabboStats implements Runnable {
         this.onlineIndicatorPreference = UserPreferencePackets.sanitizeOnlineIndicatorPreference(
                 safeColumnInt(set, "online_indicator_preference", 0));
         this.wiredWhisperDisabled = "1".equals(safeColumnString(set, "wired_whisper_disabled", "0"));
+        this.wiredMenuPreferences = safeColumnString(set, "wired_menu_preferences", "");
         this.safetyLocked = "1".equals(safeColumnString(set, "safety_locked", "0"));
         this.modToolWindowX = safeColumnInt(set, "modtool_window_x", 0);
         this.modToolWindowY = safeColumnInt(set, "modtool_window_y", 0);
@@ -1304,9 +1307,19 @@ public class HabboStats implements Runnable {
     }
 
     private static final Set<String> PERSIST_FLAG_COLUMNS = Set.of(
-            "mentions_enabled", "mass_mentions_enabled", "wired_whisper_disabled", "safety_locked", "hide_profile");
+            "mentions_enabled",
+            "mass_mentions_enabled",
+            "wired_whisper_disabled",
+            "safety_locked",
+            "hide_profile",
+            "wired_menu_preferences");
 
     private void persistFlag(String column, boolean enabled) {
+        persistText(column, enabled ? "1" : "0");
+    }
+
+    /** One allow-listed users_settings text column (the flags are '0'/'1' texts). */
+    private void persistText(String column, String value) {
         if (!PERSIST_FLAG_COLUMNS.contains(column)) {
             LOGGER.error("Refusing to persist unknown users_settings column '{}'", column);
             return;
@@ -1315,7 +1328,7 @@ public class HabboStats implements Runnable {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "UPDATE users_settings SET `" + column + "` = ? WHERE user_id = ? LIMIT 1")) {
-            statement.setString(1, enabled ? "1" : "0");
+            statement.setString(1, value);
             statement.setInt(2, this.habboInfo.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -1358,6 +1371,12 @@ public class HabboStats implements Runnable {
     public void setWiredWhisperDisabled(boolean disabled) {
         this.wiredWhisperDisabled = disabled;
         persistFlag("wired_whisper_disabled", disabled);
+    }
+
+    /** The official wired menu preferences, already encoded and sanitized. */
+    public void setWiredMenuPreferences(String encoded) {
+        this.wiredMenuPreferences = encoded == null ? "" : encoded;
+        persistText("wired_menu_preferences", this.wiredMenuPreferences);
     }
 
     /** Official account safety lock: locking is what raises the toolbar badge. */

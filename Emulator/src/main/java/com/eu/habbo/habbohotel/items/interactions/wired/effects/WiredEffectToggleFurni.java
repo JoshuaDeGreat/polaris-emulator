@@ -157,9 +157,8 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.toggleType);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -183,13 +182,9 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
-        if (params.length > 1) {
-            this.toggleType = normalizeToggleType(params[0]);
-            this.furniSource = params[1];
-        } else {
-            this.toggleType = TOGGLE_TYPE_NEXT;
-            this.furniSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        // Official layout: [toggle type]; the furni source is the official source slot.
+        this.toggleType = (params.length > 0) ? normalizeToggleType(params[0]) : TOGGLE_TYPE_NEXT;
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int itemsCount = settings.getFurniIds().length;
 

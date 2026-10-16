@@ -160,10 +160,12 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.formatAltitude(this.altitude));
+        // Official layout: [altitude in hundredths (0-8000), comparison (0 less, 1 equal, 2 more)], the furni
+        // in the official source slot; our quantifier (0 all, 1 any) follows.
+        message.appendString("");
         message.appendInt(3);
+        message.appendInt((int) Math.round(this.altitude * 100));
         message.appendInt(this.comparison);
-        message.appendInt(this.furniSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -174,10 +176,13 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
-        this.comparison = (params.length > 0) ? this.normalizeComparison(params[0]) : COMPARISON_EQUAL;
-        this.furniSource = (params.length > 1) ? this.normalizeFurniSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
+        int hundredths = (params.length > 0) ? Math.clamp(params[0], 0, 8000) : 0;
+        this.altitude = this.normalizeAltitude(hundredths / 100.0D);
+        this.comparison = (params.length > 1) ? this.normalizeComparison(params[1]) : COMPARISON_EQUAL;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
-        this.altitude = this.parseAltitudeOrDefault(settings.getStringParam());
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
 
         int count = settings.getFurniIds().length;
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {

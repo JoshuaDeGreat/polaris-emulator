@@ -123,10 +123,10 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.username);
-        message.appendInt(5);
+        // Official layout: [type mask (1 Habbo, 2 pet, 4 bot)], the name in the string (empty: any), the
+        // users in the official source slot; our compare source and quantifier follow.
+        message.appendInt(3);
         message.appendInt(this.entityType);
-        message.appendInt(this.avatarMode);
-        message.appendInt(this.matchUserSource);
         message.appendInt(this.compareUserSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
@@ -142,12 +142,14 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         this.resetSettings();
 
         if (params.length > 0) this.entityType = this.normalizeEntityType(params[0]);
-        if (params.length > 1) this.avatarMode = this.normalizeAvatarMode(params[1]);
-        if (params.length > 2) this.matchUserSource = this.normalizePrimaryUserSource(params[2]);
-        if (params.length > 3) this.compareUserSource = this.normalizeCompareUserSource(params[3]);
-        if (params.length > 4) this.quantifier = this.normalizeQuantifier(params[4]);
+        if (params.length > 1) this.compareUserSource = this.normalizeCompareUserSource(params[1]);
+        if (params.length > 2) this.quantifier = this.normalizeQuantifier(params[2]);
+        if (settings.getUserSourceTypes().length > 0)
+            this.matchUserSource = this.normalizePrimaryUserSource(settings.getUserSourceTypes()[0]);
 
         this.username = this.normalizeUsername(settings.getStringParam());
+        // A name narrows the match to that name; without one any name matches.
+        this.avatarMode = this.username.isEmpty() ? AVATAR_MODE_ANY : AVATAR_MODE_CERTAIN;
 
         return true;
     }
@@ -266,7 +268,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
     }
 
     private boolean matchesEntityType(RoomUnit roomUnit) {
-        return roomUnit != null && roomUnit.getRoomUnitType().getTypeId() == this.entityType;
+        return roomUnit != null && (roomUnit.getRoomUnitType().getTypeId() & this.entityType) != 0;
     }
 
     private String getRoomUnitName(Room room, RoomUnit roomUnit) {
@@ -294,15 +296,9 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         return "";
     }
 
+    /** The official type mask 1-7: any of Habbo (1), pet (2) and bot (4); anything else is Habbo. */
     int normalizeEntityType(int value) {
-        switch (value) {
-            case ENTITY_HABBO:
-            case ENTITY_PET:
-            case ENTITY_BOT:
-                return value;
-            default:
-                return ENTITY_HABBO;
-        }
+        return value >= ENTITY_HABBO && value <= (ENTITY_HABBO | ENTITY_PET | ENTITY_BOT) ? value : ENTITY_HABBO;
     }
 
     int normalizeAvatarMode(int value) {

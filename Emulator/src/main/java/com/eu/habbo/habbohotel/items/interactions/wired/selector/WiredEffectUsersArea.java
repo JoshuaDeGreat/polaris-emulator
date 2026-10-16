@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -16,7 +17,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WiredEffectUsersArea extends InteractionWiredEffect {
+public class WiredEffectUsersArea extends InteractionWiredEffect implements WiredOfficialSelector {
 
     public static final WiredEffectType type = WiredEffectType.USERS_AREA_SELECTOR;
 
@@ -70,11 +71,31 @@ public class WiredEffectUsersArea extends InteractionWiredEffect {
         this.rootY = params[1];
         this.areaWidth = params[2];
         this.areaHeight = params[3];
-        this.filterExisting = params.length >= 5 && params[4] == 1;
-        this.invert = params.length >= 6 && params[5] == 1;
+        this.filterExisting = settings.isSelectorFilter();
+        this.invert = settings.isSelectorInvert();
         this.setDelay(settings.getDelay());
 
         return true;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
     }
 
     @Override
@@ -139,13 +160,11 @@ public class WiredEffectUsersArea extends InteractionWiredEffect {
         message.appendInt(this.getId());
         message.appendString("");
 
-        message.appendInt(6);
+        message.appendInt(4);
         message.appendInt(this.rootX);
         message.appendInt(this.rootY);
         message.appendInt(this.areaWidth);
         message.appendInt(this.areaHeight);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
 
         message.appendInt(0);
         message.appendInt(this.getType().code);

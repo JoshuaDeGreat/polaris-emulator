@@ -13,17 +13,26 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class WiredEffectFurniToFurni extends InteractionWiredEffect {
+/**
+ * Official move furni to furni (34): no int params. Furni source slot 0 is the furni to move (100 =
+ * the picks), slot 1 the target furni (100 = the second picks, {@code stuffIds2}). Internally the
+ * target's picks stay source 101.
+ */
+public class WiredEffectFurniToFurni extends InteractionWiredEffect
+        implements WiredOfficialSources, WiredOfficialSecondaryPicks {
     private static final int SOURCE_SECONDARY_SELECTED = 101;
     private static final String FURNI_SPLIT_REGEX = "[;,\\t]";
     private static final String FURNI_DELIMITER = ";";
@@ -168,10 +177,8 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.serializeIds(this.targetItems));
-        message.appendInt(2);
-        message.appendInt(this.moveSource);
-        message.appendInt(this.targetSource);
+        message.appendString("");
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -180,10 +187,8 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        this.moveSource =
-                (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.targetSource = this.normalizeTargetSource(
-                (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.moveSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.targetSource = this.normalizeTargetSource(settings.furniSource(1, WiredSourceUtil.SOURCE_TRIGGER));
 
         Room room = this.getRoom();
         if (room == null) {
@@ -215,7 +220,15 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
         List<HabboItem> newTargetItems = new ArrayList<>();
         if (this.targetSource == SOURCE_SECONDARY_SELECTED) {
-            newTargetItems.addAll(this.parseItems(settings.getStringParam(), room));
+            // The official second picks; an older editor sent them as text.
+            int[] picks2 = settings.getFurniIds2();
+            if (picks2.length > 0) {
+                newTargetItems.addAll(this.parseItems(
+                        Arrays.stream(picks2).mapToObj(Integer::toString).collect(Collectors.joining(FURNI_DELIMITER)),
+                        room));
+            } else {
+                newTargetItems.addAll(this.parseItems(settings.getStringParam(), room));
+            }
         }
 
         if (newTargetItems.size() > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
@@ -330,20 +343,26 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
         }
     }
 
-    private int normalizeTargetSource(int source) {
-        return (source == WiredSourceUtil.SOURCE_SELECTED) ? SOURCE_SECONDARY_SELECTED : source;
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {
+            this.moveSource,
+            (this.targetSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.targetSource
+        };
     }
 
-    private String serializeIds(List<HabboItem> items) {
-        if (items == null || items.isEmpty()) {
-            return "";
-        }
+    @Override
+    public int[] officialUserSources() {
+        return new int[0];
+    }
 
-        return items.stream()
-                .map(HabboItem::getId)
-                .distinct()
-                .map(String::valueOf)
-                .collect(Collectors.joining(FURNI_DELIMITER));
+    @Override
+    public int[] officialFurniIds2() {
+        return this.targetItems.stream().mapToInt(HabboItem::getId).toArray();
+    }
+
+    private int normalizeTargetSource(int source) {
+        return (source == WiredSourceUtil.SOURCE_SELECTED) ? SOURCE_SECONDARY_SELECTED : source;
     }
 
     static class JsonData {

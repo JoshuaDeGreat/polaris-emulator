@@ -200,6 +200,31 @@ public class ChestStorage {
         return removed;
     }
 
+    /**
+     * Removes up to {@code amount} stored furni rows in the official chest iteration order: 0 random,
+     * 1 oldest first, 2 newest first. Keeps the aggregate {@link #KIND_FURNI} entries in sync. Atomic.
+     */
+    public synchronized List<ChestFurniStoredItem> removeFurniInOrder(
+            int iterationType, int amount, java.util.Random random) {
+        List<ChestFurniStoredItem> removed = new ArrayList<>();
+        if (amount <= 0 || this.furniItems.isEmpty()) return removed;
+
+        List<ChestFurniStoredItem> order = new ArrayList<>(this.furniItems);
+        if (iterationType == 2) {
+            java.util.Collections.reverse(order);
+        } else if (iterationType != 1) {
+            java.util.Collections.shuffle(order, random);
+        }
+        for (ChestFurniStoredItem item : order) {
+            if (removed.size() >= amount) break;
+            if (this.furniItems.remove(item)) {
+                removed.add(item);
+                this.take(KIND_FURNI, item.baseItemId, 1);
+            }
+        }
+        return removed;
+    }
+
     /** Floor-item shortcut for legacy withdraw wire [baseItemId, amount]. */
     public synchronized List<ChestFurniStoredItem> removeFurniByBaseItemId(int baseItemId, int amount) {
         return removeFurniByType(false, baseItemId, "", amount);

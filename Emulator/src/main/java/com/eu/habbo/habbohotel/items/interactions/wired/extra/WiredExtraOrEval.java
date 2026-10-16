@@ -29,7 +29,7 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     public static final int MODE_EXACTLY = 5;
     public static final int MODE_MORE_THAN = 6;
     public static final int MIN_COMPARE_VALUE = 0;
-    public static final int MAX_COMPARE_VALUE = 100;
+    public static final int MAX_COMPARE_VALUE = 1000;
 
     private final Set<HabboItem> items;
     private int evaluationMode = MODE_ALL;
@@ -55,8 +55,14 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
 
-        this.evaluationMode = normalizeEvaluationMode((params.length > 0) ? params[0] : MODE_ALL);
-        this.furniSource = normalizeFurniSource((params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        int mode = (params.length > 0) ? params[0] : MODE_ALL;
+        this.evaluationMode = mode == -1
+                ? MODE_LESS_THAN + Math.clamp((params.length > 1) ? params[1] : 1, 0, 2)
+                : normalizeEvaluationMode(mode);
+        this.furniSource = normalizeFurniSource(
+                settings.getFurniSourceTypes().length > 0
+                        ? settings.getFurniSourceTypes()[0]
+                        : WiredSourceUtil.SOURCE_TRIGGER);
         this.compareValue =
                 normalizeCompareValue(this.evaluationMode, (params.length > 2) ? params[2] : this.compareValue);
         this.items.clear();
@@ -110,9 +116,12 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [mode (-1 counted, 0 all, 1 any, 2 not all, 3 none), counted mode (0 less,
+        // 1 exactly, 2 more), count]; the picked conditions' source is ours, in the furni slot.
+        boolean counted = this.evaluationMode >= MODE_LESS_THAN;
         message.appendInt(3);
-        message.appendInt(this.evaluationMode);
-        message.appendInt(this.furniSource);
+        message.appendInt(counted ? -1 : this.evaluationMode);
+        message.appendInt(counted ? this.evaluationMode - MODE_LESS_THAN : 0);
         message.appendInt(this.compareValue);
         message.appendInt(0);
         message.appendInt(CODE);

@@ -120,9 +120,8 @@ public class WiredEffectRemoveFurni extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.mode);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -133,7 +132,8 @@ public class WiredEffectRemoveFurni extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
         this.mode = (params.length > 0 && params[0] == MODE_DELETE) ? MODE_DELETE : MODE_RETURN;
-        this.furniSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_SELECTED;
+        // Ours: [mode]; the furni source is the official source slot.
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_SELECTED);
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {

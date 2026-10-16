@@ -31,6 +31,7 @@ public final class WiredAddonCodes {
             Map.entry(68, 19), // furni name placeholder
             Map.entry(113, 20), // custom contract
             Map.entry(136, 21), // projectile
+            Map.entry(97, 22), // jump strength (movement curve)
             Map.entry(79, 1000), // variable text converter
             Map.entry(82, 1001), // variable level up
             Map.entry(98, 1002), // variable time util
@@ -46,7 +47,6 @@ public final class WiredAddonCodes {
             Map.entry(128, 2002), // variables web api
             // Ours.
             Map.entry(0, 3000), // wf_label
-            Map.entry(97, 3001), // movement curve
             Map.entry(100, 3002), // currency chest
             Map.entry(101, 3003), // furni chest
             Map.entry(110, 3004), // contract payment

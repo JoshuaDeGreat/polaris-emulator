@@ -38,7 +38,9 @@ class WiredEffectClickSettingsTest {
     void savesTheTwoOptionsAndTheUserSourceClampedToWhatTheClientKnows() throws Exception {
         WiredEffectClickSettings box = new WiredEffectClickSettings(1, 1, base(), "", 0, 0);
 
-        box.saveData(settings(2, 1, 200), null);
+        WiredSettings picked = settings(2, 1);
+        when(picked.userSource(0, 0)).thenReturn(200); // the official user source slot
+        box.saveData(picked, null);
 
         assertEquals(2, json(box).get("userOption").getAsInt());
         assertEquals(1, json(box).get("furniOption").getAsInt());

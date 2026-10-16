@@ -30,6 +30,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -69,6 +70,8 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     private WiredArrayAddress arrayAddress = new WiredArrayAddress();
     private WiredArrayAddress referenceArrayAddress = new WiredArrayAddress();
     private String arrayReferenceConstant = "0";
+    /** Each target is compared with the reference variable it holds itself (official, WIN63-202610121624). */
+    protected boolean sameHolder = false;
 
     public WiredConditionVariableValueMatch(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -105,14 +108,17 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeStringData());
+        // Official layout: [target, comparison, operandIsVariable, operandHigh, operandLow, operandTarget,
+        // sameHolder], the furni and users in the official source slots; ours follow: the reference user
+        // and furni sources and the quantifier.
         message.appendInt(10);
-        message.appendInt(this.targetType);
-        message.appendInt(this.comparison);
+        message.appendInt(WiredVariableTargets.toOfficial(this.targetType));
+        message.appendInt(WiredVariableTargets.comparisonToOfficial(this.comparison));
         message.appendInt(this.referenceMode);
+        message.appendInt(this.referenceConstantValue < 0 ? -1 : 0);
         message.appendInt(this.referenceConstantValue);
-        message.appendInt(this.referenceTargetType);
-        message.appendInt(this.userSource);
-        message.appendInt(this.furniSource);
+        message.appendInt(WiredVariableTargets.toOfficial(this.referenceTargetType));
+        message.appendInt(this.sameHolder ? 1 : 0);
         message.appendInt(this.referenceUserSource);
         message.appendInt(this.referenceFurniSource);
         message.appendInt(this.quantifier);
@@ -129,13 +135,22 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
         int[] params = settings.getIntParams();
         String[] stringParts = this.parseStringData(settings.getStringParam());
-        int nextTargetType = normalizeTargetTypeExtended(param(params, 0, TARGET_USER));
-        int nextComparison = normalizeComparison(param(params, 1, COMPARISON_EQUAL));
+        int nextTargetType = normalizeTargetTypeExtended(
+                WiredVariableTargets.fromOfficial(param(params, 0, WiredVariableTargets.OFFICIAL_USER)));
+        int nextComparison = normalizeComparison(WiredVariableTargets.comparisonFromOfficial(param(params, 1, 1)));
         int nextReferenceMode = normalizeReferenceMode(param(params, 2, REFERENCE_CONSTANT));
-        int nextReferenceConstantValue = normalizeReferenceConstantValue(param(params, 3, 0));
-        int nextReferenceTargetType = normalizeTargetTypeExtended(param(params, 4, TARGET_USER));
-        int nextUserSource = normalizeUserSource(param(params, 5, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextFurniSource = normalizeFurniSource(param(params, 6, WiredSourceUtil.SOURCE_TRIGGER));
+        long operand = (((long) param(params, 3, 0)) << 32) | (param(params, 4, 0) & 0xFFFFFFFFL);
+        int nextReferenceConstantValue = normalizeReferenceConstantValue(
+                (int) Math.clamp(operand, -MAX_ABS_REFERENCE_CONSTANT, MAX_ABS_REFERENCE_CONSTANT));
+        int nextReferenceTargetType = normalizeTargetTypeExtended(
+                WiredVariableTargets.fromOfficial(param(params, 5, WiredVariableTargets.OFFICIAL_USER)));
+        boolean nextSameHolder = nextReferenceMode == REFERENCE_VARIABLE && param(params, 6, 0) == 1;
+        int nextUserSource = settings.getUserSourceTypes().length > 0
+                ? normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        int nextFurniSource = settings.getFurniSourceTypes().length > 0
+                ? normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
         int nextReferenceUserSource = normalizeUserSource(param(params, 7, WiredSourceUtil.SOURCE_TRIGGER));
         int nextReferenceFurniSource = normalizeReferenceFurniSource(param(params, 8, WiredSourceUtil.SOURCE_TRIGGER));
         int nextQuantifier = normalizeQuantifier(param(params, 9, QUANTIFIER_ALL));
@@ -192,6 +207,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         this.referenceUserSource = nextReferenceUserSource;
         this.referenceFurniSource = nextReferenceFurniSource;
         this.quantifier = nextQuantifier;
+        this.sameHolder = nextSameHolder;
         this.setVariableToken(nextVariableToken);
         this.setReferenceVariableToken(nextReferenceVariableToken);
         this.arrayAddress = nextArrayData.address;
@@ -254,6 +270,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                 this.toIds(this.selectedItems),
                 this.toIds(this.referenceSelectedItems));
         data.arrayData = new ArrayData(this.arrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant);
+        data.sameHolder = this.sameHolder;
         return WiredManager.getGson().toJson(data);
     }
 
@@ -292,6 +309,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         this.referenceUserSource = normalizeUserSource(data.referenceUserSource);
         this.referenceFurniSource = normalizeReferenceFurniSource(data.referenceFurniSource);
         this.quantifier = normalizeQuantifier(data.quantifier);
+        this.sameHolder = this.referenceMode == REFERENCE_VARIABLE && data.sameHolder;
         ArrayData arrayData = normalizeArrayData(data.arrayData);
         this.arrayAddress = arrayData.address;
         this.referenceArrayAddress = arrayData.referenceAddress;
@@ -316,6 +334,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         this.arrayAddress = new WiredArrayAddress();
         this.referenceArrayAddress = new WiredArrayAddress();
         this.arrayReferenceConstant = "0";
+        this.sameHolder = false;
         this.setReferenceVariableToken("");
     }
 
@@ -529,7 +548,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             String key = getInternalVariableKey(this.referenceVariableToken);
             if (!canUseUserInternalReference(key)) return null;
 
-            for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSource)) {
+            for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSourceInUse())) {
                 Integer value = this.readUserInternalValue(room, roomUnit, key);
                 if (value != null && roomUnit != null) snapshot.add(roomUnit.getId(), value);
             }
@@ -541,7 +560,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                 room.getUserVariableManager().getDefinitionInfo(this.referenceVariableItemId);
         if (definition == null || !definition.hasValue()) return null;
 
-        for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSource)) {
+        for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSourceInUse())) {
             if (roomUnit == null) continue;
 
             int holder = UserVariableHolders.of(room, roomUnit);
@@ -555,10 +574,14 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private ReferenceSnapshot furniReferences(WiredContext ctx, Room room) {
-        int source = (this.referenceFurniSource == SOURCE_SECONDARY_SELECTED)
-                ? WiredSourceUtil.SOURCE_SELECTED
-                : this.referenceFurniSource;
+        int source = this.sameHolder
+                ? this.furniSource
+                : (this.referenceFurniSource == SOURCE_SECONDARY_SELECTED)
+                        ? WiredSourceUtil.SOURCE_SELECTED
+                        : this.referenceFurniSource;
         if (source == WiredSourceUtil.SOURCE_SELECTED) this.refreshReferenceItems();
+        java.util.Collection<HabboItem> referenceItems =
+                this.sameHolder ? this.selectedItems : this.referenceSelectedItems;
 
         ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_FURNI);
 
@@ -566,7 +589,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             String key = getInternalVariableKey(this.referenceVariableToken);
             if (!canUseFurniInternalReference(key)) return null;
 
-            for (HabboItem item : WiredSourceUtil.resolveItems(ctx, source, this.referenceSelectedItems)) {
+            for (HabboItem item : WiredSourceUtil.resolveItems(ctx, source, referenceItems)) {
                 Integer value = this.readFurniInternalValue(room, item, key);
                 if (value != null && item != null) snapshot.add(item.getId(), value);
             }
@@ -578,7 +601,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                 room.getFurniVariableManager().getDefinitionInfo(this.referenceVariableItemId);
         if (definition == null || !definition.hasValue()) return null;
 
-        for (HabboItem item : WiredSourceUtil.resolveItems(ctx, source, this.referenceSelectedItems)) {
+        for (HabboItem item : WiredSourceUtil.resolveItems(ctx, source, referenceItems)) {
             if (item != null)
                 snapshot.add(
                         item.getId(),
@@ -708,9 +731,16 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         if (snapshot == null || snapshot.isEmpty()) return null;
         if (snapshot.targetType == destinationTarget && snapshot.values.containsKey(destinationEntityId))
             return snapshot.values.get(destinationEntityId);
+        // Same holder: a target without the reference variable has nothing to compare with.
+        if (this.sameHolder && snapshot.targetType == destinationTarget) return null;
         if (destinationIndex >= 0 && destinationIndex < snapshot.values.size())
             return new ArrayList<>(snapshot.values.values()).get(destinationIndex);
         return new ArrayList<>(snapshot.values.values()).get(0);
+    }
+
+    /** The user source the reference is read on: the targets' own with "same holder". */
+    private int referenceUserSourceInUse() {
+        return this.sameHolder ? this.userSource : this.referenceUserSource;
     }
 
     private boolean matchesComparison(Number currentValue, Number referenceValue) {
@@ -1029,6 +1059,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                 quantifier;
         String variableToken, referenceVariableToken;
         List<Integer> selectedItemIds, referenceSelectedItemIds;
+        boolean sameHolder;
         ArrayData arrayData;
 
         JsonData(

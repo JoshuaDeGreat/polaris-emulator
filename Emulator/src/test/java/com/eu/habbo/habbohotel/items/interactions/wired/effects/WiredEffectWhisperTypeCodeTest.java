@@ -33,7 +33,7 @@ class WiredEffectWhisperTypeCodeTest {
     @Test
     void giveHandItemAdvertisesItsOwnDialog() {
         assertEquals(
-                WiredActionCodes.official(WiredEffectType.EFFECT_ID.code),
+                WiredActionCodes.official(WiredEffectType.GIVE_HAND_ITEM.code),
                 advertisedCode(new WiredEffectGiveHandItem(1, 1, base(), "", 0, 0)));
     }
 

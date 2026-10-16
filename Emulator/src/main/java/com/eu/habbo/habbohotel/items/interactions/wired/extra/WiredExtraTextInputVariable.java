@@ -25,7 +25,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
     public static final int MAX_CAPTURER_NAME_LENGTH = 32;
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
-    private static final Pattern WRAPPED_PLACEHOLDER_PATTERN = Pattern.compile("^#(.*)#$");
+    private static final Pattern WRAPPED_PLACEHOLDER_PATTERN = Pattern.compile("^#\\((.*)\\)$|^#(.*)#$");
 
     private int variableItemId = 0;
     private String variableToken = "";
@@ -71,7 +71,8 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         this.variableItemId = nextVariableItemId;
         this.variableToken = nextVariableToken;
         this.capturerName = normalizeCapturerName(stringData[1]);
-        this.displayType = normalizeDisplayType((intParams.length > 0) ? intParams[0] : DISPLAY_NUMERIC);
+        // Official layout: [text mode 0/1].
+        this.displayType = (intParams.length > 0 && intParams[0] == 1) ? DISPLAY_TEXTUAL : DISPLAY_NUMERIC;
 
         if (!canUseTextualDisplay(room, this.variableItemId)) {
             this.displayType = DISPLAY_NUMERIC;
@@ -95,7 +96,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         message.appendInt(this.getId());
         message.appendString(this.variableToken + "\t" + this.capturerName);
         message.appendInt(1);
-        message.appendInt(this.getDisplayType(room));
+        message.appendInt(this.getDisplayType(room) == DISPLAY_TEXTUAL ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -162,7 +163,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
     }
 
     public String getPlaceholderToken() {
-        return this.capturerName.isEmpty() ? "" : "#" + this.capturerName + "#";
+        return this.capturerName.isEmpty() ? "" : "#(" + this.capturerName + ")";
     }
 
     public int getDisplayType(Room room) {
@@ -219,8 +220,9 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         }
 
         String normalized = value.trim().replace("\t", "").replace("\r", "").replace("\n", "");
-        if (WRAPPED_PLACEHOLDER_PATTERN.matcher(normalized).matches()) {
-            normalized = normalized.substring(1, normalized.length() - 1).trim();
+        java.util.regex.Matcher wrapped = WRAPPED_PLACEHOLDER_PATTERN.matcher(normalized);
+        if (wrapped.matches()) {
+            normalized = (wrapped.group(1) != null ? wrapped.group(1) : wrapped.group(2)).trim();
         }
 
         if (normalized.length() > MAX_CAPTURER_NAME_LENGTH) {

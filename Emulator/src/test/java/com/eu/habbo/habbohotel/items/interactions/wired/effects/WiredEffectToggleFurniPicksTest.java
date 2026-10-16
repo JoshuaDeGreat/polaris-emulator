@@ -49,8 +49,10 @@ class WiredEffectToggleFurniPicksTest {
             emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
             emulator.when(Emulator::getConfig).thenReturn(config);
 
-            assertTrue(toggle.saveData(
-                    new WiredSettings(new int[] {0, WiredSourceUtil.SOURCE_SELECTOR}, "", new int[] {1234}, -1), null));
+            // Official layout: [toggle type], the furni source in the official source slot.
+            WiredSettings settings = new WiredSettings(new int[] {0}, "", new int[] {1234}, -1);
+            settings.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+            assertTrue(toggle.saveData(settings, null));
         }
 
         String saved = toggle.getWiredData();

@@ -179,9 +179,8 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.triggerMode);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -193,8 +192,10 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         this.triggerMode = (settings.getIntParams().length > 0 && settings.getIntParams()[0] == MODE_SAVED_STATE)
                 ? MODE_SAVED_STATE
                 : MODE_ALL_STATES;
-        this.furniSource = (settings.getIntParams().length > 1)
-                ? this.normalizeFurniSource(settings.getIntParams()[1])
+        // Official: [mode] (state change, code 20; ours on the user toggle, code 4); the furni source
+        // is the official source slot.
+        this.furniSource = (settings.getFurniSourceTypes().length > 0)
+                ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : ((settings.getFurniIds().length > 0)
                         ? WiredSourceUtil.SOURCE_SELECTED
                         : WiredSourceUtil.SOURCE_TRIGGER);

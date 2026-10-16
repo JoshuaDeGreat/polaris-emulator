@@ -39,7 +39,7 @@ import java.util.Set;
  * enabler in the same room also names, for users still in the room, and within each user's
  * allowance per window. Saving it needs the value-granting wired permission.
  *
- * <p>Official layout (AIR code 45). String param: the achievement name, then, after a tab, the id of the
+ * <p>Official layout (AIR code 51). String param: the achievement name, then, after a tab, the id of the
  * variable the amount may come from. Int params {@code [mode, valueIsVariable, value, valueTarget]}:
  * the amount is the number, or that variable read once on the first holder of its target (0 furni,
  * read on the furni slot; 1 user, read on the second user slot; -10 global; -20 context). User slot 0

@@ -62,10 +62,11 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
 
         this.items.clear();
 
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        // Ours: [direction]; the furni source is the official source slot.
+        if (settings.getIntParams().length < 1) throw new WiredSaveException("invalid data");
 
         this.direction = ((settings.getIntParams()[0] % 8) + 8) % 8;
-        this.furniSource = settings.getIntParams()[1];
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int count = settings.getFurniIds().length;
 
@@ -156,9 +157,8 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.direction);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());

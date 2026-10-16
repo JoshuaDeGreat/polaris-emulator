@@ -38,6 +38,17 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
         // The score of the named team in the room's game, as Habbo asks it: whoever set the stack
         // off, and also when nobody did (a timer, a game ending). Before, the box went through the
         // users and failed without one, or for anyone who was not in that team.
+        // Team 0: the teams of the users (the triggering user by default), as officially.
+        if (this.teamType == TEAM_TRIGGERER) {
+            Room room = ctx.room();
+            return this.matchesQuantifier(this.resolveUsers(ctx, this.userSource), this.quantifier, roomUnit -> {
+                UserGameContext context = this.resolveUserGameContext(room, roomUnit);
+                return context != null
+                        && context.team != null
+                        && this.compareValue(context.team.getTotalScore(), this.score, this.comparison);
+            });
+        }
+
         Game game = this.resolveActiveRoomGame(ctx.room());
         if (game == null) {
             return false;
@@ -81,7 +92,7 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
             return;
         }
 
-        this.teamType = this.normalizeExplicitTeamType(data.teamType);
+        this.teamType = this.normalizeRankTeamType(data.teamType);
         this.comparison = this.normalizeComparison(data.comparison);
         this.score = this.normalizeScore(data.score);
         this.userSource = this.normalizeUserSource(data.userSource);
@@ -106,10 +117,12 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [team (0 the triggerer's team, 1-4), points, comparison (0 less, 1 equal, 2 more)];
+        // ours follow: the users whose team counts for team 0, and the quantifier.
         message.appendInt(5);
         message.appendInt(this.teamType);
-        message.appendInt(this.comparison);
         message.appendInt(this.score);
+        message.appendInt(this.comparison);
         message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
@@ -123,9 +136,9 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
         int[] params = settings.getIntParams();
         this.resetSettings();
 
-        if (params.length > 0) this.teamType = this.normalizeExplicitTeamType(params[0]);
-        if (params.length > 1) this.comparison = this.normalizeComparison(params[1]);
-        if (params.length > 2) this.score = this.normalizeScore(params[2]);
+        if (params.length > 0) this.teamType = this.normalizeRankTeamType(params[0]);
+        if (params.length > 1) this.score = this.normalizeScore(params[1]);
+        if (params.length > 2) this.comparison = this.normalizeComparison(params[2]);
         if (params.length > 3) this.userSource = this.normalizeUserSource(params[3]);
         if (params.length > 4) this.quantifier = this.normalizeQuantifier(params[4]);
 

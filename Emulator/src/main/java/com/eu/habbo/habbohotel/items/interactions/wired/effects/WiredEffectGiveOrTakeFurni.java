@@ -148,11 +148,10 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(4);
+        message.appendInt(3);
         message.appendInt(this.baseItemId);
         message.appendInt(this.quantity);
         message.appendInt(this.giveOrTake);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -181,7 +180,7 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         }
 
         int[] params = settings.getIntParams();
-        if (params.length < 4) {
+        if (params.length < 3) {
             throw new WiredSaveException("Invalid data");
         }
 
@@ -204,7 +203,8 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         this.baseItemId = nextBaseItemId;
         this.quantity = clampQuantity(params[1]);
         this.giveOrTake = nextMode;
-        this.userSource = params[3];
+        // Ours: [base item, quantity, give or take]; the user source is the official source slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.setDelay(delay);
 
         return true;

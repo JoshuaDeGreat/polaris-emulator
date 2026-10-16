@@ -44,7 +44,8 @@ class WiredInternalVariableChangedTest {
         when(environment.getRoomManager()).thenReturn(rooms);
         when(rooms.getRoom(anyInt())).thenReturn(room);
         WiredTriggerVariableChanged trigger = new WiredTriggerVariableChanged(91, 1, null, "", 0, 0);
-        WiredSettings settings = new WiredSettings(new int[] {0, 0, 1, 1, 1, 1, 0}, "internal:@effect", new int[0], 0);
+        WiredSettings settings = new WiredSettings(
+                new int[] {0, 1, 0, 7, -1, 0, 1}, "internal:@effect", new int[0], 0); // official layout, user target
 
         try (var emulator = mockStatic(Emulator.class)) {
             emulator.when(Emulator::getGameEnvironment).thenReturn(environment);

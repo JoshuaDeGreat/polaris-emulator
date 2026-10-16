@@ -11,11 +11,12 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class WiredTriggerBotReachedHabbo extends InteractionWiredTrigger {
+public class WiredTriggerBotReachedHabbo extends InteractionWiredTrigger implements WiredOfficialSources {
     public static final WiredTriggerType type = WiredTriggerType.BOT_REACHED_AVTR;
     private static final int BOT_SOURCE_NAME = 100;
     private static final int BOT_SOURCE_SELECTOR = 200;
@@ -45,8 +46,7 @@ public class WiredTriggerBotReachedHabbo extends InteractionWiredTrigger {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName);
-        message.appendInt(1);
-        message.appendInt(this.botSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -54,10 +54,21 @@ public class WiredTriggerBotReachedHabbo extends InteractionWiredTrigger {
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[0];
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource};
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings) {
         this.botName = settings.getStringParam();
-        this.botSource = (settings.getIntParams().length > 0)
-                ? this.normalizeBotSource(settings.getIntParams()[0])
+        // Official: no int params; the bot source is the official user source slot.
+        this.botSource = (settings.getUserSourceTypes().length > 0)
+                ? this.normalizeBotSource(settings.getUserSourceTypes()[0])
                 : BOT_SOURCE_NAME;
 
         return true;

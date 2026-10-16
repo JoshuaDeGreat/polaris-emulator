@@ -23,6 +23,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -31,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra {
+public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra implements WiredOfficialSources {
     protected static final int TARGET_USER = 0;
     protected static final int TARGET_FURNI = 1;
     protected static final int TARGET_CONTEXT = 2;
@@ -139,12 +141,19 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         String[] stringParts = parseStringData(settings.getStringParam());
         String nextVariableToken = normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : "");
         String nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
-        int nextSortBy = normalizeSortBy(param(params, 0, SORT_VALUE_HIGHEST));
-        int nextAmountMode = normalizeAmountMode(param(params, 1, AMOUNT_CONSTANT));
-        int nextAmountConstantValue = normalizeAmount(param(params, 2, 1));
-        int nextReferenceTargetType = normalizeReferenceTargetType(param(params, 3, TARGET_USER));
-        int nextReferenceUserSource = normalizeUserSource(param(params, 4, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextReferenceFurniSource = normalizeReferenceFurniSource(param(params, 5, WiredSourceUtil.SOURCE_TRIGGER));
+        // Official layout: [N, sort, N from a variable, its target (official ids)]; the sort and the
+        // N variable tokens as "sort\tN" text, the N variable's sources in the official slots.
+        int nextAmountConstantValue = normalizeAmount(param(params, 0, 1));
+        int nextSortBy = normalizeSortBy(param(params, 1, SORT_VALUE_HIGHEST));
+        int nextAmountMode = normalizeAmountMode(param(params, 2, AMOUNT_CONSTANT));
+        int nextReferenceTargetType = normalizeReferenceTargetType(
+                WiredVariableTargets.fromOfficial(param(params, 3, WiredVariableTargets.OFFICIAL_USER)));
+        int[] userSources = settings.getUserSourceTypes();
+        int[] furniSources = settings.getFurniSourceTypes();
+        int nextReferenceUserSource =
+                normalizeUserSource(userSources.length > 0 ? userSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextReferenceFurniSource = normalizeReferenceFurniSource(
+                furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
 
         if (!this.isValidMainVariable(room, nextVariableToken))
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
@@ -213,13 +222,11 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeStringData());
-        message.appendInt(6);
+        message.appendInt(4);
+        message.appendInt(this.amountConstantValue);
         message.appendInt(this.sortBy);
         message.appendInt(this.amountMode);
-        message.appendInt(this.amountConstantValue);
-        message.appendInt(this.referenceTargetType);
-        message.appendInt(this.referenceUserSource);
-        message.appendInt(this.referenceFurniSource);
+        message.appendInt(WiredVariableTargets.toOfficial(this.referenceTargetType));
         message.appendInt(0);
         message.appendInt(this.getCode());
         message.appendInt(0);
@@ -272,6 +279,16 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         this.referenceSelectedItems.clear();
         this.setVariableToken("");
         this.setReferenceVariableToken("");
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.referenceFurniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.referenceUserSource};
     }
 
     @Override

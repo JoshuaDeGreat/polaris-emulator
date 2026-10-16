@@ -107,12 +107,13 @@ class WiredEffectJoinTeamTest {
             WiredEffectJoinTeam box = new WiredEffectJoinTeam(1, 1, base(), "", 0, 0);
 
             box.saveData(
-                    new WiredSettings(new int[] {1, 3, 0, WiredEffectJoinTeam.MODE_SMALLEST}, "", new int[0], 0), null);
+                    new WiredSettings(new int[] {3, 1, WiredEffectJoinTeam.MODE_SMALLEST}, "", new int[0], 0), null);
             assertEquals(
                     WiredEffectJoinTeam.MODE_SMALLEST, json(box).get("joinMode").getAsInt());
             assertEquals("BLUE", json(box).get("team").getAsString());
 
-            box.saveData(new WiredSettings(new int[] {1, 3, 0, 9}, "", new int[0], 0), null);
+            // Official layout: [team, team type]; ours follows: [join mode].
+            box.saveData(new WiredSettings(new int[] {3, 1, 9}, "", new int[0], 0), null);
             assertEquals(
                     WiredEffectJoinTeam.MODE_CHOSEN, json(box).get("joinMode").getAsInt());
 

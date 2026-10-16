@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardCodec;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardConfig;
 import com.eu.habbo.habbohotel.wired.leaderboard.WiredLeaderboardSupport;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialVariableIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -31,7 +32,7 @@ import java.util.List;
  * followed by the 12 variable ids. After the usual addon fields comes the official editor context of
  * type 8: the published overlay id, this tile and the variables a leaderboard here can rank.
  */
-public class WiredExtraVariableLeaderboard extends InteractionWiredExtra {
+public class WiredExtraVariableLeaderboard extends InteractionWiredExtra implements WiredOfficialVariableIds {
     public static final int CODE = 1005;
     public static final int CONTEXT_TYPE = 8;
 
@@ -101,7 +102,8 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.stored != null ? WiredLeaderboardCodec.toWire(this.stored) : "");
+        // The official string fields; their variable ids go out as the definition's variable ids.
+        message.appendString(this.stored != null ? this.stored.stringParam() : "");
         message.appendInt(shown.intParams().length);
         for (int param : shown.intParams()) {
             message.appendInt(param);
@@ -131,9 +133,14 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra {
     }
 
     @Override
+    public String[] officialVariableIds() {
+        return this.stored != null && this.stored.variableIds() != null ? this.stored.variableIds() : new String[0];
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        WiredLeaderboardCodec.Stored wire =
-                WiredLeaderboardCodec.fromWire(settings.getIntParams(), settings.getStringParam());
+        WiredLeaderboardCodec.Stored wire = WiredLeaderboardCodec.fromSave(
+                settings.getIntParams(), settings.getStringParam(), settings.getVariableIds());
         if (wire == null || wire.stringParam().isEmpty()) {
             throw new WiredSaveException(errorKey("invalid_configuration"));
         }

@@ -70,9 +70,10 @@ public class WiredConditionTeamMember extends InteractionWiredCondition {
 
     protected boolean matchesTeam(Room room, RoomUnit roomUnit) {
         Habbo habbo = room.getHabbo(roomUnit);
-        return habbo != null
-                && habbo.getHabboInfo().getGamePlayer() != null
-                && habbo.getHabboInfo().getGamePlayer().getTeamColor().equals(this.teamColor);
+        if (habbo == null || habbo.getHabboInfo().getGamePlayer() == null) return false;
+        GameTeamColors team = habbo.getHabboInfo().getGamePlayer().getTeamColor();
+        // Team 0 is "in any team", as officially.
+        return this.teamColor == GameTeamColors.NONE ? team != GameTeamColors.NONE : team.equals(this.teamColor);
     }
 
     @Deprecated
@@ -130,9 +131,8 @@ public class WiredConditionTeamMember extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.teamColor.type);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -145,10 +145,12 @@ public class WiredConditionTeamMember extends InteractionWiredCondition {
         if (settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
         this.teamColor = WiredConditionInputGuard.normalizeTeamColorType(params[0], GameTeamColors.RED);
-        this.userSource = (params.length > 1)
-                ? WiredConditionInputGuard.normalizeUserSource(params[1])
+        // Official layout: [team (0 any team, 1-4)], the users in the official source slot; our
+        // quantifier (0 all, 1 any) follows as param 1.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ALL) : QUANTIFIER_ANY;
+        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ALL) : QUANTIFIER_ALL;
 
         return true;
     }

@@ -83,9 +83,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.roomIdText);
-        message.appendInt(2);
-        message.appendInt(this.userSource);
-        message.appendInt(this.furniSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -115,11 +113,10 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
         }
 
         int[] params = settings.getIntParams();
-        int users =
-                WiredMovementPayloadGuard.userSource((params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER);
-        int furni = (params.length > 1)
-                ? WiredMovementPayloadGuard.furniSource(params[1])
-                : WiredSourceUtil.SOURCE_SELECTED;
+        // Official: no int params; the user and furni sources are the official source slots. Our
+        // room id (text) and teleporter picks stay.
+        int users = WiredMovementPayloadGuard.userSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
+        int furni = WiredMovementPayloadGuard.furniSource(settings.furniSource(0, WiredSourceUtil.SOURCE_SELECTED));
 
         int[] furniIds = settings.getFurniIds();
         if (furniIds.length > WiredManager.MAXIMUM_FURNI_SELECTION) {

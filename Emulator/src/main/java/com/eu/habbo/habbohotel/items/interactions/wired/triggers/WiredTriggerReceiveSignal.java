@@ -167,11 +167,11 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(4);
+        // Ours (official has none): [channel, senders connected, the most senders].
+        message.appendInt(3);
         message.appendInt(channel);
         message.appendInt(senderCount);
         message.appendInt(RoomSpecialTypes.MAX_SENDERS_PER_RECEIVER);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -192,9 +192,9 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
 
         int[] params = settings.getIntParams();
         this.channel = params.length > 0 ? params[0] : 0;
-        this.furniSource = (params.length > 1)
-                ? this.normalizeFurniSource(params[params.length - 1])
-                : WiredSourceUtil.SOURCE_SELECTED;
+        // Official: no int params (ours: [channel]); the antenna source is the official source slot.
+        int[] furni = settings.getFurniSourceTypes();
+        this.furniSource = (furni.length > 0) ? this.normalizeFurniSource(furni[0]) : WiredSourceUtil.SOURCE_SELECTED;
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED && room != null) {
             for (int i = 0; i < count; i++) {

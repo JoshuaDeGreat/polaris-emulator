@@ -13655,6 +13655,11 @@
           "kind": "scalar",
           "type": "boolean",
           "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
         }
       ]
     },

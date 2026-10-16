@@ -168,12 +168,11 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
             s.append(item.wiredString()).append(";");
         }
         message.appendString(s.toString());
-        message.appendInt(5);
+        message.appendInt(4);
         message.appendInt(this.rewardTime);
         message.appendInt(this.uniqueRewards);
         message.appendInt(this.limit);
         message.appendInt(this.limitationInterval);
-        message.appendInt(this.userSource);
         message.appendInt(this.limit > 0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -197,12 +196,13 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         if (gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
-            if (settings.getIntParams().length < 5) throw new WiredSaveException("Invalid data");
+            // Official layout: [interval, unique, limit, n]; the user source is the official slot.
+            if (settings.getIntParams().length < 4) throw new WiredSaveException("Invalid data");
             this.rewardTime = settings.getIntParams()[0];
             this.uniqueRewards = settings.getIntParams()[1] == 1;
             this.limit = settings.getIntParams()[2];
-            this.limitationInterval = settings.getIntParams()[3];
-            this.userSource = settings.getIntParams()[4];
+            this.limitationInterval = Math.max(1, settings.getIntParams()[3]);
+            this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
             this.given.set(0);
 
             String data = settings.getStringParam();

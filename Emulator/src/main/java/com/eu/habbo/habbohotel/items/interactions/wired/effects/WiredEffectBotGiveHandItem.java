@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.threading.runnables.RoomUnitGiveHanditem;
@@ -24,7 +25,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
+public class WiredEffectBotGiveHandItem extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_GIVE_HANDITEM;
     private static final int BOT_SOURCE_NAME = 100;
 
@@ -50,10 +51,8 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName);
-        message.appendInt(3);
+        message.appendInt(1);
         message.appendInt(this.itemId);
-        message.appendInt(this.userSource);
-        message.appendInt(this.botSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -75,14 +74,23 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[] {};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource, this.userSource};
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("Missing item id");
+        // Official layout: [hand item]; the bots are user slot 0, ours the receivers in user slot 1.
+        if (settings.getIntParams().length < 1) throw new WiredSaveException("Missing item id");
 
         int itemId = this.normalizeHandItem(settings.getIntParams()[0]);
-        this.userSource = this.normalizeUserSource(settings.getIntParams()[1]);
-        this.botSource = (settings.getIntParams().length > 2)
-                ? this.normalizeBotSource(settings.getIntParams()[2])
-                : BOT_SOURCE_NAME;
+        this.botSource = this.normalizeBotSource(settings.userSource(0, BOT_SOURCE_NAME));
+        this.userSource = this.normalizeUserSource(settings.userSource(1, WiredSourceUtil.SOURCE_TRIGGER));
 
         String botName = settings.getStringParam();
 

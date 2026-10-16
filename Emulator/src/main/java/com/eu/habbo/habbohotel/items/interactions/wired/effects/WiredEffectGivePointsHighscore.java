@@ -64,8 +64,7 @@ public class WiredEffectGivePointsHighscore extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.amount + "");
-        message.appendInt(1);
-        message.appendInt(this.userSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -96,7 +95,8 @@ public class WiredEffectGivePointsHighscore extends InteractionWiredEffect {
 
         int[] params = settings.getIntParams();
         this.amount = nextAmount;
-        this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
+        // Official: no int params; the user source is the official source slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.setDelay(settings.getDelay());
 
         return true;

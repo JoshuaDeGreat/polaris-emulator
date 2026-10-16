@@ -67,7 +67,9 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
     }
 
     protected boolean matchesEffect(RoomUnit roomUnit) {
-        return roomUnit != null && roomUnit.getEffectId() == this.effectId;
+        // Effect 0 is "any effect", as officially.
+        return roomUnit != null
+                && (this.effectId == 0 ? roomUnit.getEffectId() != 0 : roomUnit.getEffectId() == this.effectId);
     }
 
     @Deprecated
@@ -136,9 +138,8 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.effectId);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -151,10 +152,11 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
         if (settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
         this.effectId = WiredUserConditionInputGuard.normalizeEffectId(params[0]);
-        this.userSource = (params.length > 1)
-                ? WiredUserConditionInputGuard.normalizeUserSource(params[1])
+        // Official layout: [effect (0 any)], the users in the official source slot; our quantifier follows.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ANY) : QUANTIFIER_ANY;
+        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ALL) : QUANTIFIER_ALL;
 
         return true;
     }

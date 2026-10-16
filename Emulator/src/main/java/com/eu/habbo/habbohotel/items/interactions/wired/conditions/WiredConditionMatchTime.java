@@ -19,6 +19,11 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
     private static final int MODE_EXACT = 1;
     private static final int MODE_RANGE = 2;
 
+    /** An official "use" flag and range as our mode: off, a single value, or a range. */
+    static int mode(boolean use, int from, int to) {
+        return !use ? MODE_SKIP : (from == to ? MODE_EXACT : MODE_RANGE);
+    }
+
     public static final WiredConditionType type = WiredConditionType.MATCH_TIME;
 
     private int hourMode = MODE_SKIP;
@@ -53,16 +58,18 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [useSeconds, useMinutes, useHours, secondMin, secondMax, minuteMin, minuteMax,
+        // hourMin, hourMax]; an exact value is a range of one.
         message.appendInt(9);
-        message.appendInt(this.hourMode);
-        message.appendInt(this.hourFrom);
-        message.appendInt(this.hourTo);
-        message.appendInt(this.minuteMode);
-        message.appendInt(this.minuteFrom);
-        message.appendInt(this.minuteTo);
-        message.appendInt(this.secondMode);
+        message.appendInt(this.secondMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.minuteMode != MODE_SKIP ? 1 : 0);
+        message.appendInt(this.hourMode != MODE_SKIP ? 1 : 0);
         message.appendInt(this.secondFrom);
-        message.appendInt(this.secondTo);
+        message.appendInt(this.secondMode == MODE_RANGE ? this.secondTo : this.secondFrom);
+        message.appendInt(this.minuteFrom);
+        message.appendInt(this.minuteMode == MODE_RANGE ? this.minuteTo : this.minuteFrom);
+        message.appendInt(this.hourFrom);
+        message.appendInt(this.hourMode == MODE_RANGE ? this.hourTo : this.hourFrom);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -73,15 +80,15 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
 
-        this.hourMode = (params.length > 0) ? this.normalizeMode(params[0]) : MODE_SKIP;
-        this.hourFrom = (params.length > 1) ? this.normalizeHour(params[1]) : 0;
-        this.hourTo = (params.length > 2) ? this.normalizeHour(params[2]) : this.hourFrom;
-        this.minuteMode = (params.length > 3) ? this.normalizeMode(params[3]) : MODE_SKIP;
-        this.minuteFrom = (params.length > 4) ? this.normalizeMinuteOrSecond(params[4]) : 0;
-        this.minuteTo = (params.length > 5) ? this.normalizeMinuteOrSecond(params[5]) : this.minuteFrom;
-        this.secondMode = (params.length > 6) ? this.normalizeMode(params[6]) : MODE_SKIP;
-        this.secondFrom = (params.length > 7) ? this.normalizeMinuteOrSecond(params[7]) : 0;
-        this.secondTo = (params.length > 8) ? this.normalizeMinuteOrSecond(params[8]) : this.secondFrom;
+        this.secondFrom = (params.length > 3) ? this.normalizeMinuteOrSecond(params[3]) : 0;
+        this.secondTo = (params.length > 4) ? this.normalizeMinuteOrSecond(params[4]) : 59;
+        this.minuteFrom = (params.length > 5) ? this.normalizeMinuteOrSecond(params[5]) : 0;
+        this.minuteTo = (params.length > 6) ? this.normalizeMinuteOrSecond(params[6]) : 59;
+        this.hourFrom = (params.length > 7) ? this.normalizeHour(params[7]) : 0;
+        this.hourTo = (params.length > 8) ? this.normalizeHour(params[8]) : 23;
+        this.secondMode = mode(params.length > 0 && params[0] == 1, this.secondFrom, this.secondTo);
+        this.minuteMode = mode(params.length > 1 && params[1] == 1, this.minuteFrom, this.minuteTo);
+        this.hourMode = mode(params.length > 2 && params[2] == 1, this.hourFrom, this.hourTo);
 
         return true;
     }

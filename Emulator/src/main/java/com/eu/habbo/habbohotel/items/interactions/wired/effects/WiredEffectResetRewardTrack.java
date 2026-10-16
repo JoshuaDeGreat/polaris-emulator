@@ -53,8 +53,7 @@ public class WiredEffectResetRewardTrack extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.trackId);
-        message.appendInt(1);
-        message.appendInt(this.userSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -74,8 +73,9 @@ public class WiredEffectResetRewardTrack extends InteractionWiredEffect {
 
         int[] params = settings.getIntParams();
         this.trackId = track;
-        this.userSource = WiredVariableOperand.normalizeUserSource(
-                params.length > 0 ? params[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        // Official: no int params; the user source is the official source slot.
+        this.userSource =
+                WiredVariableOperand.normalizeUserSource(settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER));
         this.setDelay(settings.getDelay());
         return true;
     }

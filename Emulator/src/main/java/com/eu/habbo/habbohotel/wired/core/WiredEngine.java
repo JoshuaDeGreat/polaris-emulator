@@ -421,6 +421,13 @@ public final class WiredEngine {
         // Determine which (regular) effects to execute
         List<IWiredEffect> toExecute;
 
+        // Execute in order wins over random and unseen on the same stack, as officially.
+        if (stack.executeInOrder()) {
+            debug(ctx.room(), "Ordered mode: executing effect batches in stack order by delay");
+            executeOrderedEffects(effects, ctx, currentTime);
+            return;
+        }
+
         if (stack.useRandom()) {
             WiredExtraRandom randomExtra = getRandomExtra(ctx.room(), stack);
             if (effects.isEmpty()) {
@@ -459,10 +466,6 @@ public final class WiredEngine {
                     debug(ctx.room(), "Unseen mode fallback: selected effect {}/{}", index + 1, effects.size());
                 }
             }
-        } else if (stack.executeInOrder()) {
-            debug(ctx.room(), "Ordered mode: executing effect batches in stack order by delay");
-            executeOrderedEffects(effects, ctx, currentTime);
-            return;
         } else {
             // Normal mode: preserve the physical stack order.
             // This matches the legacy handler behavior and avoids visual/state races

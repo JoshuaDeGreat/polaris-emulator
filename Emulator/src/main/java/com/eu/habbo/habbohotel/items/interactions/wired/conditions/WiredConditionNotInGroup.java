@@ -123,11 +123,13 @@ public class WiredConditionNotInGroup extends InteractionWiredCondition {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString("");
-        message.appendInt(4);
-        message.appendInt(this.userSource);
-        message.appendInt(this.groupType);
-        message.appendInt(this.selectedGroupId);
+        // Official layout: the group id in the string (empty: the room's group), no int params, the
+        // users in the official source slot; our quantifier follows as param 0.
+        message.appendString(
+                this.groupType == GROUP_SELECTED && this.selectedGroupId > 0
+                        ? String.valueOf(this.selectedGroupId)
+                        : "");
+        message.appendInt(1);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -138,10 +140,21 @@ public class WiredConditionNotInGroup extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0) ? this.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.groupType = (params.length > 1) ? this.normalizeGroupType(params[1]) : GROUP_CURRENT_ROOM;
-        this.selectedGroupId = (params.length > 2) ? this.normalizeSelectedGroupId(params[2]) : 0;
-        this.quantifier = (params.length > 3) ? this.normalizeQuantifier(params[3]) : QUANTIFIER_ALL;
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? this.normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        int groupId = 0;
+        try {
+            String text = settings.getStringParam() == null
+                    ? ""
+                    : settings.getStringParam().trim();
+            groupId = text.isEmpty() ? 0 : Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            groupId = 0;
+        }
+        this.selectedGroupId = this.normalizeSelectedGroupId(groupId);
+        this.groupType = this.selectedGroupId > 0 ? GROUP_SELECTED : GROUP_CURRENT_ROOM;
+        this.quantifier = (params.length > 0) ? this.normalizeQuantifier(params[0]) : QUANTIFIER_ALL;
         return true;
     }
 

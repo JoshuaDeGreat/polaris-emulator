@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -123,6 +124,22 @@ class WiredEffectChangeOpacityTest {
         when(malformed.getString("wired_data")).thenReturn("{broken");
         assertDoesNotThrow(() -> effect.loadWiredData(malformed, room));
         assertTrue(effect.requiresTriggeringUser());
+    }
+
+    @Test
+    void theDialogGetsTheOfficialLayoutWithTheTransparencyAndOurSecondsLast() throws Exception {
+        Room room = mock(Room.class);
+        when(room.getId()).thenReturn(55);
+        HabboItem target = item(5501, 55);
+        when(room.getHabboItem(5501)).thenReturn(target);
+        WiredEffectChangeOpacity effect = effect(target, room, 1, 35, 2, 3, 100, 201, true);
+
+        var body = WiredEffectProgressAchievementTest.body(effect);
+
+        // official [audience, transparency (100 - our opacity), click through, easing, target users]
+        assertArrayEquals(new int[] {1, 65, 1, 2, 0, 3}, body.params());
+        assertArrayEquals(new int[] {100}, effect.officialFurniSources());
+        assertArrayEquals(new int[] {201, 0}, effect.officialUserSources());
     }
 
     private static WiredEffectChangeOpacity effect(

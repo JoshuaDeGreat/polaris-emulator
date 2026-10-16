@@ -107,9 +107,11 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [team (0 the triggerer's team, 1-4), placement (0 first .. 3 fourth)]; ours follow:
+        // the users whose team counts for team 0, and the quantifier.
         message.appendInt(4);
         message.appendInt(this.teamType);
-        message.appendInt(this.placement);
+        message.appendInt(this.placement - 1);
         message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
@@ -124,7 +126,7 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
         this.resetSettings();
 
         if (params.length > 0) this.teamType = this.normalizeRankTeamType(params[0]);
-        if (params.length > 1) this.placement = this.normalizePlacement(params[1]);
+        if (params.length > 1) this.placement = this.normalizePlacement(params[1] + 1);
         if (params.length > 2) this.userSource = this.normalizeUserSource(params[2]);
         if (params.length > 3) this.quantifier = this.normalizeQuantifier(params[3]);
 

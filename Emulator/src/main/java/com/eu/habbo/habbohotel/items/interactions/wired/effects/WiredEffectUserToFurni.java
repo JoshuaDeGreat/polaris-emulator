@@ -32,7 +32,8 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
     private static final int WALKMODE_STOP = 2;
 
     public static final WiredEffectType type = WiredEffectType.USER_TO_FURNI;
-    private int walkMode = WALKMODE_CONTINUE;
+    // Official default for a new box; saved boxes keep theirs.
+    private int walkMode = WALKMODE_IF_CLOSER;
 
     public WiredEffectUserToFurni(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -139,7 +140,7 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
     @Override
     public void onPickUp() {
         super.onPickUp();
-        this.walkMode = WALKMODE_CONTINUE;
+        this.walkMode = WALKMODE_IF_CLOSER;
     }
 
     @Override
@@ -160,9 +161,7 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.userSource);
+        message.appendInt(1);
         message.appendInt(this.walkMode);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -186,12 +185,11 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        this.furniSource =
-                (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.userSource =
-                (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        // Official layout: [walk mode]; the furni and user sources are the official source slots.
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
         this.walkMode = this.normalizeWalkMode(
-                (settings.getIntParams().length > 2) ? settings.getIntParams()[2] : WALKMODE_CONTINUE);
+                (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WALKMODE_IF_CLOSER);
 
         if (settings.getFurniIds().length > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
             throw new WiredSaveException("Too many furni selected");

@@ -208,9 +208,8 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.action);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -221,12 +220,13 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
 
-        if (params.length < 2) {
+        // Official layout: [action]; the furni source is the official source slot.
+        if (params.length < 1) {
             throw new WiredSaveException("Invalid data");
         }
 
         this.action = this.normalizeAction(params[0]);
-        this.furniSource = params[1];
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int delay = settings.getDelay();
         if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20)) {

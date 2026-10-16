@@ -17,6 +17,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -140,9 +141,10 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
         this.amount = (params.length > 0) ? Math.max(0, params[0]) : 1;
-        this.comparison = (params.length > 1) ? WiredComparison.normalize(params[1]) : WiredComparison.GREATER_EQUAL;
-        this.amountMode = ((params.length > 2) && params[2] == AMOUNT_VARIABLE) ? AMOUNT_VARIABLE : AMOUNT_CONSTANT;
-        this.amountTarget = ((params.length > 3) && params[3] == TARGET_USER) ? TARGET_USER : TARGET_ROOM;
+        this.amountMode = ((params.length > 1) && params[1] == AMOUNT_VARIABLE) ? AMOUNT_VARIABLE : AMOUNT_CONSTANT;
+        this.amountTarget =
+                ((params.length > 2) && params[2] == WiredVariableTargets.OFFICIAL_USER) ? TARGET_USER : TARGET_ROOM;
+        this.comparison = (params.length > 3) ? WiredComparison.normalize(params[3]) : WiredComparison.GREATER_EQUAL;
         this.amountVariableToken = normalizeToken(settings.getStringParam());
 
         // A variable amount that names no variable would silently behave as a constant, so it is
@@ -230,11 +232,16 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.amountVariableToken);
+        // Official layout: [value, valueIsVariable, variable target (user 1, global -10), comparison]; the
+        // chests are the picks, the variable in the string.
         message.appendInt(4);
         message.appendInt(this.amount);
-        message.appendInt(this.comparison);
         message.appendInt(this.amountMode);
-        message.appendInt(this.amountTarget);
+        message.appendInt(
+                this.amountTarget == TARGET_USER
+                        ? WiredVariableTargets.OFFICIAL_USER
+                        : WiredVariableTargets.OFFICIAL_GLOBAL);
+        message.appendInt(this.comparison);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);

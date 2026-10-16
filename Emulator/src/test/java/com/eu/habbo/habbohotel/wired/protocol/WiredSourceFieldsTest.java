@@ -37,8 +37,9 @@ class WiredSourceFieldsTest {
             emulator.when(Emulator::getConfig).thenReturn(config);
 
             WiredEffectToggleFurni toggle = new WiredEffectToggleFurni(1, 1, mock(Item.class), "", 0, 0);
-            toggle.saveData(
-                    new WiredSettings(new int[] {0, WiredSourceUtil.SOURCE_SELECTOR}, "", new int[0], -1), null);
+            WiredSettings settings = new WiredSettings(new int[] {0}, "", new int[0], -1);
+            settings.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTOR});
+            toggle.saveData(settings, null);
 
             assertArrayEquals(new int[] {WiredSourceUtil.SOURCE_SELECTOR}, sources(toggle)[0]);
             assertArrayEquals(new int[0], sources(toggle)[1]);

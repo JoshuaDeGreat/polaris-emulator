@@ -17,7 +17,8 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
     public static final int MIN_DURATION_MS = 50;
     public static final int MAX_DURATION_MS = 2000;
 
-    private int durationMs = WiredMovementsComposer.DEFAULT_DURATION;
+    // A fresh box starts at the official 50 ms.
+    private int durationMs = MIN_DURATION_MS;
 
     public WiredExtraAnimationTime(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -99,7 +100,7 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
 
     @Override
     public void onPickUp() {
-        this.durationMs = WiredMovementsComposer.DEFAULT_DURATION;
+        this.durationMs = MIN_DURATION_MS;
     }
 
     @Override

@@ -17,6 +17,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
+public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_TALK_TO_AVATAR;
 
     private int mode;
@@ -34,6 +35,8 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
     private int botSource = WiredBotSourceUtil.SOURCE_BOT_NAME;
     private int bubbleWidthOverride = RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE;
+    /** Official "hide the bot name": kept with the box; drawing it needs the client chat bubble. */
+    private boolean hideBotName = false;
 
     public WiredEffectBotTalkToHabbo(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -52,11 +55,10 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.botName + "" + ((char) 9) + "" + this.message);
-        message.appendInt(4);
+        message.appendInt(3);
         message.appendInt(this.mode);
-        message.appendInt(this.userSource);
-        message.appendInt(this.botSource);
         message.appendInt(this.bubbleWidthOverride);
+        message.appendInt(this.hideBotName ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -78,17 +80,29 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
     }
 
     @Override
+    public int[] officialFurniSources() {
+        return new int[] {};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.botSource, this.userSource};
+    }
+
+    @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("Missing mode");
+        // Official layout: [whisper / talk, bubble width, hide the bot name]; the bots are user slot 0,
+        // the users talked to slot 1.
+        if (settings.getIntParams().length < 1) throw new WiredSaveException("Missing mode");
         int mode = settings.getIntParams()[0];
-        this.userSource = settings.getIntParams()[1];
-        this.botSource = (settings.getIntParams().length > 2)
-                ? WiredBotSourceUtil.normalizeBotSource(settings.getIntParams()[2])
-                : WiredBotSourceUtil.SOURCE_BOT_NAME;
+        this.botSource =
+                WiredBotSourceUtil.normalizeBotSource(settings.userSource(0, WiredBotSourceUtil.SOURCE_BOT_NAME));
+        this.userSource = settings.userSource(1, WiredSourceUtil.SOURCE_TRIGGER);
         this.bubbleWidthOverride = RoomChatMessage.normalizeBubbleWidthOverride(
-                (settings.getIntParams().length > 3)
-                        ? settings.getIntParams()[3]
+                (settings.getIntParams().length > 1)
+                        ? settings.getIntParams()[1]
                         : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
+        this.hideBotName = settings.getIntParams().length > 2 && settings.getIntParams()[2] == 1;
 
         if (mode != 0 && mode != 1) throw new WiredSaveException("Mode is invalid");
 
@@ -108,7 +122,7 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
         this.botName = data[0].substring(
                 0, Math.min(data[0].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
         this.message = data[1].substring(
-                0, Math.min(data[1].length(), Emulator.getConfig().getInt("hotel.wired.bot.message.max_length", 100)));
+                0, Math.min(data[1].length(), Emulator.getConfig().getInt("hotel.wired.bot.message.max_length", 400)));
         this.mode = mode;
         this.setDelay(delay);
 
@@ -183,15 +197,16 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.botName,
-                        this.mode,
-                        this.message,
-                        this.getDelay(),
-                        this.userSource,
-                        this.botSource,
-                        this.bubbleWidthOverride));
+        JsonData data = new JsonData(
+                this.botName,
+                this.mode,
+                this.message,
+                this.getDelay(),
+                this.userSource,
+                this.botSource,
+                this.bubbleWidthOverride);
+        data.hideBotName = this.hideBotName;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -214,6 +229,7 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
                     (jsonData.bubbleWidthOverride != null)
                             ? jsonData.bubbleWidthOverride
                             : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
+            this.hideBotName = jsonData.hideBotName;
         } else {
             String[] data = wiredData != null ? wiredData.split(((char) 9) + "") : new String[0];
 
@@ -238,6 +254,7 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.botSource = WiredBotSourceUtil.SOURCE_BOT_NAME;
         this.bubbleWidthOverride = RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE;
+        this.hideBotName = false;
         this.setDelay(0);
     }
 
@@ -256,6 +273,7 @@ public class WiredEffectBotTalkToHabbo extends InteractionWiredEffect {
         int userSource;
         Integer botSource;
         Integer bubbleWidthOverride;
+        boolean hideBotName;
 
         public JsonData(
                 String bot_name,

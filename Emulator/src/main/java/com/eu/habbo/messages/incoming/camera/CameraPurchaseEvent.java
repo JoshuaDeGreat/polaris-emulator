@@ -22,6 +22,13 @@ public class CameraPurchaseEvent extends MessageHandler {
     public static int CAMERA_PURCHASE_POINTS = 0;
     public static int CAMERA_PURCHASE_POINTS_TYPE = 5;
 
+    // A double click must not buy (and charge) twice: one purchase per second, as the other
+    // purchase handlers do. Buying another copy on purpose still works.
+    @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
     @Override
     public void handle() {
         this.packet.readString();

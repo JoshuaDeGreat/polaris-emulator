@@ -155,10 +155,10 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
         message.appendInt(this.getId());
         message.appendString("");
         message.appendInt(4);
-        message.appendInt(this.operator);
-        message.appendInt(this.furniSource);
+        message.appendInt(this.halfSecondSteps / 2);
         message.appendInt(this.minutes);
-        message.appendInt(this.halfSecondSteps);
+        message.appendInt(this.halfSecondSteps % 2);
+        message.appendInt(this.operator);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -169,14 +169,16 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
 
+        // Official layout: [whole seconds, minutes, half a second (0/1), operator]; the furni source is
+        // the official source slot.
         if (params.length < 4) {
             throw new WiredSaveException("Invalid data");
         }
 
-        this.operator = this.normalizeOperator(params[0]);
-        this.furniSource = params[1];
-        this.minutes = this.normalizeMinutes(params[2]);
-        this.halfSecondSteps = this.normalizeHalfSecondSteps(params[3]);
+        this.halfSecondSteps = this.normalizeHalfSecondSteps(Math.max(0, params[0]) * 2 + (params[2] == 1 ? 1 : 0));
+        this.minutes = this.normalizeMinutes(params[1]);
+        this.operator = this.normalizeOperator(params[3]);
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int delay = settings.getDelay();
         if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20)) {

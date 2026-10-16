@@ -39,6 +39,8 @@ public class MeMenuSettingsComposer extends MessageComposer {
         // Appended last so older clients, which stop reading earlier, are unaffected: whether the
         // extended profile is visible to others, in the same positive form as the flags above.
         this.response.appendBoolean(!this.habbo.getHabboStats().hideProfile);
+        // Then the stored wired menu preferences ("" until saved once), also last for older clients.
+        this.response.appendString(this.habbo.getHabboStats().wiredMenuPreferences);
         return this.response;
     }
 

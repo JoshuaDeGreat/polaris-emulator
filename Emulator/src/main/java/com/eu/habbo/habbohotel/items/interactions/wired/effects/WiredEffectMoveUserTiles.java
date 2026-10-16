@@ -168,10 +168,9 @@ public class WiredEffectMoveUserTiles extends InteractionWiredEffect {
         message.appendString("");
         // saveData reads the tile count as the fourth int; sending three left the dialog reopening
         // on one tile whatever had been saved.
-        message.appendInt(4);
+        message.appendInt(3);
         message.appendInt(this.movementDirection);
-        message.appendInt(this.rotationDirection);
-        message.appendInt(this.userSource);
+        message.appendInt(WiredEffectMoveRotateUser.toOfficialRotation(this.rotationDirection));
         message.appendInt(this.tileCount);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -195,7 +194,9 @@ public class WiredEffectMoveUserTiles extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 3) {
+        // Laid out as the official move user: [movement, rotation (9 / 10 for the turns)]; ours
+        // follows: [tiles]. The user source is the official source slot.
+        if (settings.getIntParams().length < 2) {
             throw new WiredSaveException("Invalid data");
         }
 
@@ -205,10 +206,11 @@ public class WiredEffectMoveUserTiles extends InteractionWiredEffect {
         }
 
         this.movementDirection = this.normalizeDirection(settings.getIntParams()[0]);
-        this.rotationDirection = this.normalizeRotation(settings.getIntParams()[1]);
-        this.userSource = settings.getIntParams()[2];
-        this.tileCount = (settings.getIntParams().length > 3)
-                ? this.normalizeTileCount(settings.getIntParams()[3])
+        this.rotationDirection =
+                this.normalizeRotation(WiredEffectMoveRotateUser.fromOfficialRotation(settings.getIntParams()[1]));
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.tileCount = (settings.getIntParams().length > 2)
+                ? this.normalizeTileCount(settings.getIntParams()[2])
                 : MIN_TILE_COUNT;
         this.setDelay(delay);
 

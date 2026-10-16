@@ -195,10 +195,9 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(4);
-        message.appendInt(this.teamType);
+        message.appendInt(3);
         message.appendInt(this.teamColor.type);
-        message.appendInt(this.userSource);
+        message.appendInt(this.teamType);
         message.appendInt(this.joinMode);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -222,23 +221,17 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        // Official layout: [team, team type]; ours follows: [join mode]. The user source is the official
+        // source slot.
+        if (settings.getIntParams().length < 1) throw new WiredSaveException("invalid data");
 
-        int teamType;
-        int userSource;
-        int joinMode = MODE_CHOSEN;
-        if (settings.getIntParams().length > 2) {
-            teamType = this.normalizeTeamType(settings.getIntParams()[0]);
-            userSource = settings.getIntParams()[2];
-            if (settings.getIntParams().length > 3) {
-                joinMode = normalizeJoinMode(settings.getIntParams()[3]);
-            }
-        } else {
-            teamType = TEAM_TYPE_WIRED;
-            userSource = settings.getIntParams()[1];
-        }
-
-        int team = (settings.getIntParams().length > 2) ? settings.getIntParams()[1] : settings.getIntParams()[0];
+        int team = settings.getIntParams()[0];
+        int teamType = (settings.getIntParams().length > 1)
+                ? this.normalizeTeamType(settings.getIntParams()[1])
+                : TEAM_TYPE_WIRED;
+        int joinMode =
+                (settings.getIntParams().length > 2) ? normalizeJoinMode(settings.getIntParams()[2]) : MODE_CHOSEN;
+        int userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         if (team < 1 || team > 4) throw new WiredSaveException("Team is invalid");
 

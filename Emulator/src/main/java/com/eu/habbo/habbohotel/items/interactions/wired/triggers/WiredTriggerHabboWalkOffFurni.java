@@ -140,8 +140,7 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(1);
-        message.appendInt(this.furniSource);
+        message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -156,8 +155,9 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         this.items.clear();
-        this.furniSource = (settings.getIntParams().length > 0)
-                ? this.normalizeFurniSource(settings.getIntParams()[0])
+        // Official: no int params; the furni source is the official source slot.
+        this.furniSource = (settings.getFurniSourceTypes().length > 0)
+                ? this.normalizeFurniSource(settings.getFurniSourceTypes()[0])
                 : ((settings.getFurniIds().length > 0)
                         ? WiredSourceUtil.SOURCE_SELECTED
                         : WiredSourceUtil.SOURCE_TRIGGER);

@@ -39,7 +39,8 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     private static final int DELIVERY_DEDUP_MAX = 50_000;
     private static final AtomicLong LAST_DEDUP_CLEANUP_MS = new AtomicLong();
     private static final ConcurrentHashMap<String, Long> DELIVERY_DEDUP = new ConcurrentHashMap<>();
-    private static final int DEFAULT_SHOW_MESSAGE_MAX_LENGTH = 200;
+    // The official show message editor takes 400 characters.
+    private static final int DEFAULT_SHOW_MESSAGE_MAX_LENGTH = 400;
     private static final int DEFAULT_SHOW_MESSAGE_MAX_LINES = 8;
 
     protected String message = "";
@@ -64,8 +65,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.message);
-        message.appendInt(4);
-        message.appendInt(this.userSource);
+        message.appendInt(3);
         message.appendInt(this.visibilitySelection);
         message.appendInt(this.bubbleStyle);
         message.appendInt(this.bubbleWidthOverride);
@@ -95,13 +95,14 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         String message = settings.getStringParam();
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.visibilitySelection = (params.length > 1 && params[1] == VISIBILITY_ALL_ROOM_USERS)
+        // Official layout: [visibility, style, bubble width]; the user source is the official slot.
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.visibilitySelection = (params.length > 0 && params[0] == VISIBILITY_ALL_ROOM_USERS)
                 ? VISIBILITY_ALL_ROOM_USERS
                 : VISIBILITY_SOURCE_USERS;
-        this.bubbleStyle = (params.length > 2) ? params[2] : RoomChatMessageBubbles.WIRED.getType();
+        this.bubbleStyle = (params.length > 1) ? params[1] : RoomChatMessageBubbles.WIRED.getType();
         this.bubbleWidthOverride = RoomChatMessage.normalizeBubbleWidthOverride(
-                (params.length > 3) ? params[3] : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
+                (params.length > 2) ? params[2] : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
 
         if (gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
             message = Emulator.getGameEnvironment().getWordFilter().filter(message, null);

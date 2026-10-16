@@ -89,9 +89,9 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
         message.appendInt(this.getId());
         message.appendString("");
         message.appendInt(3);
+        message.appendInt(this.halfSecondSteps / 2);
         message.appendInt(this.minutes);
-        message.appendInt(this.halfSecondSteps);
-        message.appendInt(this.furniSource);
+        message.appendInt(this.halfSecondSteps % 2);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -107,10 +107,15 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
 
-        this.minutes = (params.length > 0) ? this.normalizeMinutes(params[0]) : 0;
-        this.halfSecondSteps = (params.length > 1) ? this.normalizeHalfSecondSteps(params[1]) : 0;
-        this.furniSource = (params.length > 2)
-                ? this.normalizeFurniSource(params[2])
+        // Official layout: [whole seconds, minutes, half a second (0/1)]; the furni source is the
+        // official source slot.
+        int seconds = (params.length > 0) ? Math.max(0, params[0]) : 0;
+        int half = (params.length > 2 && params[2] == 1) ? 1 : 0;
+        this.minutes = (params.length > 1) ? this.normalizeMinutes(params[1]) : 0;
+        this.halfSecondSteps = this.normalizeHalfSecondSteps(seconds * 2 + half);
+        int[] furni = settings.getFurniSourceTypes();
+        this.furniSource = (furni.length > 0)
+                ? this.normalizeFurniSource(furni[0])
                 : ((settings.getFurniIds().length > 0)
                         ? WiredSourceUtil.SOURCE_SELECTED
                         : WiredSourceUtil.SOURCE_TRIGGER);

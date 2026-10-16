@@ -58,8 +58,11 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
         int[] intParams = settings.getIntParams();
         String[] stringData = splitStringData(settings.getStringParam());
 
-        this.placeholderType = normalizePlaceholderType((intParams.length > 0) ? intParams[0] : TYPE_SINGLE);
-        this.furniSource = normalizeFurniSource((intParams.length > 1) ? intParams[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.placeholderType = (intParams.length > 0 && intParams[0] == 1) ? TYPE_MULTIPLE : TYPE_SINGLE;
+        this.furniSource = normalizeFurniSource(
+                settings.getFurniSourceTypes().length > 0
+                        ? settings.getFurniSourceTypes()[0]
+                        : WiredSourceUtil.SOURCE_TRIGGER);
         this.placeholderName = normalizePlaceholderName(stringData[0]);
         this.delimiter = normalizeDelimiter(stringData[1]);
         this.items.clear();
@@ -114,9 +117,9 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.placeholderName + "\t" + this.delimiter);
-        message.appendInt(2);
-        message.appendInt(this.placeholderType);
-        message.appendInt(this.furniSource);
+        // Official layout: [multiple (0 one, 1 all)], the furni in the official source slot.
+        message.appendInt(1);
+        message.appendInt(this.placeholderType == TYPE_MULTIPLE ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);

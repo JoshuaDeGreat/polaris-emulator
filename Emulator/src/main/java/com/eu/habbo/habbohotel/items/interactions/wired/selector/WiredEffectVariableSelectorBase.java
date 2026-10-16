@@ -23,6 +23,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSelector;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -34,7 +36,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEffect {
+/**
+ * The official "with variable" selectors (AIR codes 17 and 18). Int params {@code [comparison,
+ * reference (0 none, 1 a value, 2 a variable), value high, value low, reference target, same holder]}
+ * with the official comparison and target numbers; the reference is read on the furni and user source
+ * slots, filter and invert are the official selector fields. String param: the variable, then a tab and
+ * the reference variable. Stored boxes keep our own numbering.
+ */
+public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEffect implements WiredOfficialSelector {
     protected static final int TARGET_USER = 0;
     protected static final int TARGET_FURNI = 1;
     protected static final int TARGET_CONTEXT = 2;
@@ -65,6 +74,9 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     protected int referenceFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
     protected boolean filterExisting = false;
     protected boolean invert = false;
+    /** Each candidate is compared with the reference variable it holds itself. */
+    protected boolean sameHolder = false;
+
     protected String variableToken = "";
     protected int variableItemId = 0;
     protected String referenceVariableToken = "";
@@ -134,15 +146,25 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         int[] params = settings.getIntParams();
         String[] stringParts = parseStringData(settings.getStringParam());
 
-        boolean nextSelectByValue = param(params, 0, 0) == 1;
-        int nextComparison = normalizeComparison(param(params, 1, COMPARISON_EQUAL));
-        int nextReferenceMode = normalizeReferenceMode(param(params, 2, REFERENCE_CONSTANT));
-        int nextReferenceConstantValue = param(params, 3, 0);
-        int nextReferenceTargetType = normalizeReferenceTargetType(param(params, 4, TARGET_USER));
-        int nextReferenceUserSource = normalizeUserSource(param(params, 5, WiredSourceUtil.SOURCE_TRIGGER));
-        int nextReferenceFurniSource = normalizeReferenceFurniSource(param(params, 6, WiredSourceUtil.SOURCE_TRIGGER));
-        boolean nextFilterExisting = param(params, 7, 0) == 1;
-        boolean nextInvert = param(params, 8, 0) == 1;
+        int nextComparison = normalizeComparison(WiredVariableTargets.comparisonFromOfficial(param(params, 0, 2)));
+        int reference = param(params, 1, 0);
+        boolean nextSelectByValue = reference == 1 || reference == 2;
+        int nextReferenceMode = reference == 2 ? REFERENCE_VARIABLE : REFERENCE_CONSTANT;
+        long value = (((long) param(params, 2, 0)) << 32) | (param(params, 3, 0) & 0xFFFFFFFFL);
+        int nextReferenceConstantValue = (int) Math.clamp(value, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        int nextReferenceTargetType = normalizeReferenceTargetType(
+                WiredVariableTargets.fromOfficial(param(params, 4, WiredVariableTargets.OFFICIAL_USER)));
+        boolean nextSameHolder = nextReferenceMode == REFERENCE_VARIABLE && param(params, 5, 0) == 1;
+        int nextReferenceUserSource = normalizeUserSource(
+                settings.getUserSourceTypes().length > 0
+                        ? settings.getUserSourceTypes()[0]
+                        : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextReferenceFurniSource = normalizeReferenceFurniSource(
+                settings.getFurniSourceTypes().length > 0
+                        ? settings.getFurniSourceTypes()[0]
+                        : WiredSourceUtil.SOURCE_TRIGGER);
+        boolean nextFilterExisting = settings.isSelectorFilter();
+        boolean nextInvert = settings.isSelectorInvert();
         String nextVariableToken =
                 normalizeVariableToken((stringParts.length > 0) ? stringParts[0] : settings.getStringParam());
         String nextReferenceVariableToken = normalizeVariableToken((stringParts.length > 1) ? stringParts[1] : "");
@@ -178,6 +200,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         this.referenceFurniSource = nextReferenceFurniSource;
         this.filterExisting = nextFilterExisting;
         this.invert = nextInvert;
+        this.sameHolder = nextSameHolder;
         this.setVariableToken(nextVariableToken);
         this.setReferenceVariableToken(nextReferenceVariableToken);
         this.setDelay(settings.getDelay());
@@ -199,23 +222,24 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     public String getWiredData() {
         this.refreshReferenceItems();
 
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.selectByValue,
-                        this.comparison,
-                        this.referenceMode,
-                        this.referenceConstantValue,
-                        this.referenceTargetType,
-                        this.referenceUserSource,
-                        this.referenceFurniSource,
-                        this.filterExisting,
-                        this.invert,
-                        this.variableToken,
-                        this.variableItemId,
-                        this.referenceVariableToken,
-                        this.referenceVariableItemId,
-                        this.toIds(this.referenceSelectedItems),
-                        this.getDelay()));
+        JsonData data = new JsonData(
+                this.selectByValue,
+                this.comparison,
+                this.referenceMode,
+                this.referenceConstantValue,
+                this.referenceTargetType,
+                this.referenceUserSource,
+                this.referenceFurniSource,
+                this.filterExisting,
+                this.invert,
+                this.variableToken,
+                this.variableItemId,
+                this.referenceVariableToken,
+                this.referenceVariableItemId,
+                this.toIds(this.referenceSelectedItems),
+                this.getDelay());
+        data.sameHolder = this.sameHolder;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -237,6 +261,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         this.referenceFurniSource = normalizeReferenceFurniSource(data.referenceFurniSource);
         this.filterExisting = data.filterExisting;
         this.invert = data.invert;
+        this.sameHolder = this.referenceMode == REFERENCE_VARIABLE && data.sameHolder;
         this.setVariableToken(normalizeVariableToken(
                 (data.variableToken != null)
                         ? data.variableToken
@@ -268,6 +293,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         this.referenceFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
         this.filterExisting = false;
         this.invert = false;
+        this.sameHolder = false;
         this.referenceSelectedItems.clear();
         this.setVariableToken("");
         this.setReferenceVariableToken("");
@@ -297,16 +323,13 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString(this.serializeStringData());
-        message.appendInt(9);
-        message.appendInt(this.selectByValue ? 1 : 0);
-        message.appendInt(this.comparison);
-        message.appendInt(this.referenceMode);
+        message.appendInt(6);
+        message.appendInt(WiredVariableTargets.comparisonToOfficial(this.comparison));
+        message.appendInt(!this.selectByValue ? 0 : (this.referenceMode == REFERENCE_VARIABLE ? 2 : 1));
+        message.appendInt(this.referenceConstantValue < 0 ? -1 : 0);
         message.appendInt(this.referenceConstantValue);
-        message.appendInt(this.referenceTargetType);
-        message.appendInt(this.referenceUserSource);
-        message.appendInt(this.referenceFurniSource);
-        message.appendInt(this.filterExisting ? 1 : 0);
-        message.appendInt(this.invert ? 1 : 0);
+        message.appendInt(WiredVariableTargets.toOfficial(this.referenceTargetType));
+        message.appendInt(this.sameHolder ? 1 : 0);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -331,8 +354,9 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         if (!this.selectByValue) return this.hasUserVariable(room, roomUnit);
 
         Integer currentValue = this.readUserValue(room, roomUnit);
-        Integer referenceValue =
-                this.resolveReferenceValue(references, roomUnit != null ? roomUnit.getId() : 0, TARGET_USER);
+        Integer referenceValue = this.sameHolder
+                ? this.ownUserReference(room, roomUnit)
+                : this.resolveReferenceValue(references, roomUnit != null ? roomUnit.getId() : 0, TARGET_USER);
 
         return this.matchesComparison(currentValue, referenceValue);
     }
@@ -341,9 +365,48 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         if (!this.selectByValue) return this.hasFurniVariable(room, item);
 
         Integer currentValue = this.readFurniValue(room, item);
-        Integer referenceValue = this.resolveReferenceValue(references, item != null ? item.getId() : 0, TARGET_FURNI);
+        Integer referenceValue = this.sameHolder
+                ? this.ownFurniReference(room, item)
+                : this.resolveReferenceValue(references, item != null ? item.getId() : 0, TARGET_FURNI);
 
         return this.matchesComparison(currentValue, referenceValue);
+    }
+
+    /** Same holder: the reference variable on this user, if it holds it. */
+    private Integer ownUserReference(Room room, RoomUnit roomUnit) {
+        if (room == null || roomUnit == null || this.referenceVariableItemId <= 0) return null;
+        int holder = UserVariableHolders.of(room, roomUnit);
+        return holder != 0 && room.getUserVariableManager().hasVariable(holder, this.referenceVariableItemId)
+                ? room.getUserVariableManager().getCurrentValue(holder, this.referenceVariableItemId)
+                : null;
+    }
+
+    /** Same holder: the reference variable on this furni, if it holds it. */
+    private Integer ownFurniReference(Room room, HabboItem item) {
+        if (room == null || item == null || this.referenceVariableItemId <= 0) return null;
+        return room.getFurniVariableManager().hasVariable(item.getId(), this.referenceVariableItemId)
+                ? room.getFurniVariableManager().getCurrentValue(item.getId(), this.referenceVariableItemId)
+                : null;
+    }
+
+    @Override
+    public boolean selectorFilter() {
+        return this.filterExisting;
+    }
+
+    @Override
+    public boolean selectorInvert() {
+        return this.invert;
+    }
+
+    @Override
+    public int[] officialFurniSources() {
+        return new int[] {this.referenceFurniSource};
+    }
+
+    @Override
+    public int[] officialUserSources() {
+        return new int[] {this.referenceUserSource};
     }
 
     private boolean hasUserVariable(Room room, RoomUnit roomUnit) {
@@ -868,6 +931,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         int referenceUserSource;
         int referenceFurniSource;
         boolean filterExisting;
+        boolean sameHolder;
         boolean invert;
         String variableToken;
         int variableItemId;

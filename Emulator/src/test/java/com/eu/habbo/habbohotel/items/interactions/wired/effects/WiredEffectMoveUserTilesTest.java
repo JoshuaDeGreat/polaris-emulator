@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 class WiredEffectMoveUserTilesTest {
 
     @Test
-    void theDialogGetsTheTileCountAsAFourthInt() throws Exception {
+    void theDialogGetsTheTileCountAsAThirdInt() throws Exception {
         WiredEffectMoveUserTiles box = new WiredEffectMoveUserTiles(77, 1, base(), "", 0, 0);
         box.loadWiredData(
                 row("{\"delay\":0,\"movementDirection\":2,\"rotationDirection\":8,\"userSource\":0,\"tileCount\":7}"),
@@ -42,10 +42,10 @@ class WiredEffectMoveUserTilesTest {
             packet.readInt();
             packet.readInt();
             packet.skipBytes(packet.readShort()); // the string slot
-            assertEquals(4, packet.readInt());
+            // official [move, rotation, tiles]; the user source is the official slot
+            assertEquals(3, packet.readInt());
             assertEquals(2, packet.readInt());
-            assertEquals(8, packet.readInt());
-            assertEquals(0, packet.readInt());
+            assertEquals(9, packet.readInt()); // our clockwise 8 is the official 9
             assertEquals(7, packet.readInt());
         } finally {
             packet.release();

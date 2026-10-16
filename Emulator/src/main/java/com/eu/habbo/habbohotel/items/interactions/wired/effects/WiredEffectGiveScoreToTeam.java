@@ -27,6 +27,10 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
     private int points;
     private int operation = OPERATION_ADD;
     private GameTeamColors teamColor = GameTeamColors.RED;
+    /** Official "times in game": how often this box scores for its team per round (0: unlimited). */
+    private int timesPerGame = WiredScorePerGame.UNLIMITED;
+
+    private final WiredScorePerGame scored = new WiredScorePerGame();
 
     public WiredEffectGiveScoreToTeam(
             int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
@@ -44,7 +48,7 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
             if (game != null && game.state.equals(GameState.RUNNING)) {
                 GameTeam team = game.getTeam(this.teamColor);
 
-                if (team != null) {
+                if (team != null && this.scored.tryCount(game, this.teamColor, this.timesPerGame)) {
                     team.addTeamScore(this.getAppliedAmount(team));
                 }
             }
@@ -59,8 +63,9 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.points, this.operation, this.teamColor, this.getDelay()));
+        JsonData data = new JsonData(this.points, this.operation, this.teamColor, this.getDelay());
+        data.timesPerGame = this.timesPerGame;
+        return WiredManager.getGson().toJson(data);
     }
 
     @Override
@@ -75,6 +80,7 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
             // dereferences it; an unknown team is the default one.
             this.teamColor = (data.team != null) ? data.team : GameTeamColors.RED;
             this.setDelay(data.delay);
+            this.timesPerGame = WiredScorePerGame.normalize(data.timesPerGame);
         } else {
             String[] data = set.getString("wired_data").split(";");
 
@@ -95,6 +101,7 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
         this.operation = OPERATION_ADD;
         this.teamColor = GameTeamColors.RED;
         this.setDelay(0);
+        this.timesPerGame = WiredScorePerGame.UNLIMITED;
     }
 
     @Override
@@ -110,9 +117,10 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
+        // Official layout: [points (negative to take them), times in game (0: unlimited), team].
         message.appendInt(3);
-        message.appendInt(this.points);
-        message.appendInt(this.operation);
+        message.appendInt(this.operation == OPERATION_REMOVE ? -this.points : this.points);
+        message.appendInt(this.timesPerGame);
         message.appendInt(this.teamColor.type);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -122,13 +130,16 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+        // Official layout: [points (negative to take them), times in game (0: unlimited), team].
         if (settings.getIntParams().length < 3) throw new WiredSaveException("Invalid data");
 
-        int points = settings.getIntParams()[0];
+        int signed = settings.getIntParams()[0];
+        int points = Math.abs(signed);
 
-        if (points < 1 || points > 100) throw new WiredSaveException("Points is invalid");
+        if (points < 1 || points > 1000) throw new WiredSaveException("Points is invalid");
 
-        int operation = this.normalizeOperation(settings.getIntParams()[1]);
+        int operation = (signed < 0) ? OPERATION_REMOVE : OPERATION_ADD;
+        this.timesPerGame = WiredScorePerGame.normalize(settings.getIntParams()[1]);
 
         int team = settings.getIntParams()[2];
 
@@ -164,6 +175,7 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
         int operation;
         GameTeamColors team;
         int delay;
+        int timesPerGame;
 
         public JsonData(int score, int operation, GameTeamColors team, int delay) {
             this.score = score;

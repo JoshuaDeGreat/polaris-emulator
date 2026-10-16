@@ -67,10 +67,8 @@ public class WiredEffectWalkToFurni extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(1);
         message.appendInt(this.fastTeleport ? 1 : 0);
-        message.appendInt(this.furniSource);
-        message.appendInt(this.userSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -93,15 +91,10 @@ public class WiredEffectWalkToFurni extends InteractionWiredEffect {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
-        if (params.length > 2) {
-            this.fastTeleport = params[0] == 1;
-            this.furniSource = params[1];
-            this.userSource = params[2];
-        } else {
-            this.fastTeleport = false;
-            this.furniSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
-            this.userSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        // Ours, laid out as the teleport: [fast]; the furni and user sources are the official slots.
+        this.fastTeleport = params.length > 0 && params[0] == 1;
+        this.furniSource = settings.furniSource(0, WiredSourceUtil.SOURCE_TRIGGER);
+        this.userSource = settings.userSource(0, WiredSourceUtil.SOURCE_TRIGGER);
 
         int itemsCount = settings.getFurniIds().length;
 

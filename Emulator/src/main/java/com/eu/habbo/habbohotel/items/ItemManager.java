@@ -428,6 +428,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRec
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterShort;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRoomInitialized;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerScoreAchieved;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins;
@@ -1194,6 +1195,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_leaderboard", WiredExtraVariableLeaderboard.class));
         this.interactionsList.add(new ItemInteraction("wf_label", WiredExtraLabel.class));
         this.interactionsList.add(new ItemInteraction("recolorable", InteractionRecolorable.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_room_initialized", WiredTriggerRoomInitialized.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {

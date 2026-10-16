@@ -95,6 +95,9 @@ public final class WiredEvent {
         /** Game starts */
         GAME_STARTS(WiredTriggerType.GAME_STARTS),
 
+        /** The room finished loading */
+        ROOM_INITIALIZED(WiredTriggerType.ROOM_INITIALIZED),
+
         /** Game ends */
         GAME_ENDS(WiredTriggerType.GAME_ENDS),
 

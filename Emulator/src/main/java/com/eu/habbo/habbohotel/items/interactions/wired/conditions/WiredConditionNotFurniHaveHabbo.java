@@ -152,9 +152,8 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(1);
         message.appendInt(this.all ? 1 : 0);
-        message.appendInt(this.furniSource);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -168,11 +167,10 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
 
         int[] params = settings.getIntParams();
         this.all = (params.length > 0) && (params[0] == 1);
-        this.furniSource = (params.length > 1)
-                ? WiredFurniConditionInputGuard.normalizeFurniSource(params[1])
-                : ((params.length > 0 && params[0] > 1)
-                        ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0])
-                        : WiredSourceUtil.SOURCE_TRIGGER);
+        // Official layout: param 0 "all"; the furni in the official source slot.
+        this.furniSource = settings.getFurniSourceTypes().length > 0
+                ? WiredFurniConditionInputGuard.normalizeFurniSource(settings.getFurniSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
 
         this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
 

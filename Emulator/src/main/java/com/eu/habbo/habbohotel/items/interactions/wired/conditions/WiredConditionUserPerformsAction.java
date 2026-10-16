@@ -131,9 +131,8 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         message.appendInt(this.getId());
         message.appendString(WiredUserActionType.extraString(
                 this.selectedAction, this.signFilterEnabled, this.signId, this.danceFilterEnabled, this.danceId));
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.selectedAction);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -148,8 +147,8 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         this.resetSettings();
 
         if (intParams.length > 0) this.selectedAction = normalizeAction(intParams[0]);
-        // Official: [action], the sign or dance extra in the string param; the user source and the
-        // quantifier still follow in the int params until the conditions get their official slots.
+        // Official: [action], the sign or dance extra in the string param, the users in the official
+        // source slot; our quantifier (0 all, 1 any) follows as param 1.
         int extra = WiredUserActionType.extraCode(this.selectedAction, settings.getStringParam());
         if (this.selectedAction == WiredUserActionType.SIGN && extra >= 0) {
             this.signFilterEnabled = true;
@@ -159,8 +158,9 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
             this.danceFilterEnabled = true;
             this.danceId = extra;
         }
-        if (intParams.length > 1) this.userSource = this.normalizeUserSource(intParams[1]);
-        if (intParams.length > 2) this.quantifier = normalizeQuantifier(intParams[2]);
+        if (settings.getUserSourceTypes().length > 0)
+            this.userSource = this.normalizeUserSource(settings.getUserSourceTypes()[0]);
+        if (intParams.length > 1) this.quantifier = normalizeQuantifier(intParams[1]);
 
         return true;
     }

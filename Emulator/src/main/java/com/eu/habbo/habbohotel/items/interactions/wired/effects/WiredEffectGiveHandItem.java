@@ -43,6 +43,6 @@ public class WiredEffectGiveHandItem extends WiredEffectWhisper {
 
     @Override
     public WiredEffectType getType() {
-        return WiredEffectType.EFFECT_ID;
+        return WiredEffectType.GIVE_HAND_ITEM;
     }
 }

@@ -46,9 +46,8 @@ public class WiredConditionActorDir extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.directionMask);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -61,8 +60,11 @@ public class WiredConditionActorDir extends InteractionWiredCondition {
         int[] params = settings.getIntParams();
 
         this.directionMask = (params.length > 0) ? this.normalizeDirectionMask(params[0]) : 0;
-        this.userSource = (params.length > 1) ? this.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
+        // Official layout: [direction mask], the users in the official source slot; our quantifier follows.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? this.normalizeUserSource(settings.getUserSourceTypes()[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1]) : QUANTIFIER_ALL;
 
         return true;
     }

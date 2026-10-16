@@ -47,9 +47,8 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(2);
         message.appendInt(this.handItem);
-        message.appendInt(this.userSource);
         message.appendInt(this.quantifier);
         message.appendInt(0);
         message.appendInt(this.getType().code);
@@ -62,10 +61,11 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
         if (settings.getIntParams().length < 1) return false;
         this.handItem = WiredUserConditionInputGuard.normalizeHandItemId(settings.getIntParams()[0]);
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 1)
-                ? WiredUserConditionInputGuard.normalizeUserSource(params[1])
+        // Official layout: [hand item (0 any)], the users in the official source slot; our quantifier follows.
+        this.userSource = settings.getUserSourceTypes().length > 0
+                ? WiredUserConditionInputGuard.normalizeUserSource(settings.getUserSourceTypes()[0])
                 : WiredSourceUtil.SOURCE_TRIGGER;
-        this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
+        this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1]) : QUANTIFIER_ALL;
 
         return true;
     }
@@ -148,7 +148,7 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
 
     protected boolean matchesAnyTarget(List<RoomUnit> targets) {
         for (RoomUnit roomUnit : targets) {
-            if (roomUnit != null && roomUnit.getHandItem() == this.handItem) {
+            if (this.matchesHandItem(roomUnit)) {
                 return true;
             }
         }
@@ -158,12 +158,18 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
 
     protected boolean matchesAllTargets(List<RoomUnit> targets) {
         for (RoomUnit roomUnit : targets) {
-            if (roomUnit == null || roomUnit.getHandItem() != this.handItem) {
+            if (!this.matchesHandItem(roomUnit)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /** Hand item 0 is "any hand item", as officially. */
+    protected boolean matchesHandItem(RoomUnit roomUnit) {
+        return roomUnit != null
+                && (this.handItem == 0 ? roomUnit.getHandItem() != 0 : roomUnit.getHandItem() == this.handItem);
     }
 
     protected int normalizeQuantifier(int value) {

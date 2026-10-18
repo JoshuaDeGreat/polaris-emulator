@@ -1332,6 +1332,36 @@ public class RoomManager {
         return this.roomSearchService.popularRoomsByCategory(count);
     }
 
+    /** Browse saved rooms, including empty rooms whose owners are offline. */
+    public Map<Integer, List<Room>> getSavedRoomsByCategory(int count, boolean showInvisible) {
+        Map<Integer, List<Room>> result = new HashMap<>();
+        if (count <= 0) return result;
+        Map<Integer, List<Integer>> idsByCategory = new HashMap<>();
+        try (Connection connection = this.openConnection()) {
+            for (RoomCategory category : this.roomCategories.values()) {
+                idsByCategory.put(category.getId(),
+                        NavigatorCategoryRoomQuery.findIds(connection, category.getId(), count, showInvisible));
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Could not load saved navigator category rooms", e);
+        }
+        // Release the listing connection before loadRoom obtains one from the same pool.
+        for (Map.Entry<Integer, List<Integer>> entry : idsByCategory.entrySet()) {
+            List<Room> rooms = new ArrayList<>();
+            for (int id : entry.getValue()) {
+                // Metadata only: do not load furniture, bots, pets or start a room cycle for browsing.
+                Room room = this.loadRoom(id);
+                if (room != null && !room.isPublicRoom() && room.getCategory() == entry.getKey()
+                        && (showInvisible || room.getState() != RoomState.INVISIBLE)) {
+                    rooms.add(room);
+                }
+            }
+            Collections.sort(rooms);
+            if (!rooms.isEmpty()) result.put(entry.getKey(), rooms);
+        }
+        return result;
+    }
+
     public ArrayList<Room> getRoomsWithName(String name) {
         ArrayList<Room> rooms = new ArrayList<>();
 

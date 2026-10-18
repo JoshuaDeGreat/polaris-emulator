@@ -10,6 +10,10 @@ RUN mvn -B -ntp -DskipTests package
 # Run the compiled game server
 FROM eclipse-temurin:25-jre
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends mariadb-client \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=build \

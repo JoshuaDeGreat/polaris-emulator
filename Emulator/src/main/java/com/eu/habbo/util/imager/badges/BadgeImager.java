@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 
 public class BadgeImager {
 
@@ -25,13 +26,28 @@ public class BadgeImager {
     final Map<String, BufferedImage> cachedImages = new HashMap<>();
 
     public BadgeImager() {
-        if (Emulator.getConfig().getBoolean("imager.internal.enabled")) {
+        if (this.isEnabled()) {
             if (this.reload()) {
                 LOGGER.info("Badge Imager -> Loaded!");
             } else {
                 LOGGER.warn("Badge Imager -> Disabled! Please check your configuration!");
             }
         }
+    }
+
+    /** Deployment override for clients that compose guild badges locally. */
+    private boolean isEnabled() {
+        return enabledFor(System.getenv("IMAGER_INTERNAL_ENABLED"),
+                Emulator.getConfig().getBoolean("imager.internal.enabled"));
+    }
+
+    static boolean enabledFor(String override, boolean configured) {
+        if (override == null || override.isBlank()) return configured;
+        return switch (override.trim().toLowerCase(Locale.ROOT)) {
+            case "true", "1" -> true;
+            case "false", "0" -> false;
+            default -> throw new IllegalArgumentException("IMAGER_INTERNAL_ENABLED must be true, false, 1 or 0");
+        };
     }
 
     public static BufferedImage deepCopy(BufferedImage bi) {
@@ -116,6 +132,7 @@ public class BadgeImager {
     }
 
     public synchronized boolean reload() {
+        if (!this.isEnabled()) return true;
         File file = new File(Emulator.getConfig().getValue("imager.location.badgeparts"));
         if (!file.exists()) {
             LOGGER.error("BadgeImager output folder: {} does not exist!", Emulator.getConfig().getValue("imager.location.badgeparts"));
@@ -150,6 +167,7 @@ public class BadgeImager {
     }
 
     public void generate(Guild guild) {
+        if (!this.isEnabled()) return;
         String badge = guild.getBadge();
         File outputFile;
         try {

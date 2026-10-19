@@ -291,7 +291,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         String turnstileToken = readString(body, "turnstileToken");
         if (!TurnstileVerifier.verify(turnstileToken, ip)) {
             AuthRateLimiter.recordFailure(ip);
-            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, errorPayload("Security check failed."));
+            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN,
+                    errorPayload("Security check failed. Please wait a moment, then refresh and try again."));
             return;
         }
 

@@ -39,15 +39,17 @@ public final class TurnstileVerifier {
             return false;
         }
 
-        StringBuilder form = new StringBuilder();
-        form.append("secret=").append(URLEncoder.encode(secret, StandardCharsets.UTF_8));
-        form.append("&response=").append(URLEncoder.encode(token, StandardCharsets.UTF_8));
-        if (remoteIp != null && !remoteIp.isEmpty()) {
-            form.append("&remoteip=").append(URLEncoder.encode(remoteIp, StandardCharsets.UTF_8));
-        }
-
         return RuntimeResilienceRuntime.executeExternal(
-                "turnstile", () -> verifyRemote(form.toString(), remoteIp), () -> false);
+                "turnstile", () -> verifyRemote(verificationBody(secret, token), remoteIp), () -> false);
+    }
+
+    static String verificationBody(String secret, String token) {
+        // remoteip is optional. The authentication peer may be a reverse proxy
+        // (for example Railway's 100.64.0.0/10 network), not the visitor who
+        // solved the challenge. Do not submit that address or trust arbitrary
+        // forwarded headers just for Turnstile. Token validation remains mandatory.
+        return "secret=" + URLEncoder.encode(secret, StandardCharsets.UTF_8)
+                + "&response=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
     }
 
     private static boolean verifyRemote(String form, String remoteIp) throws Exception {

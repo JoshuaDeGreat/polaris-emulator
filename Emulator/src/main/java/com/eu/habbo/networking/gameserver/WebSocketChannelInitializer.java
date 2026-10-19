@@ -111,6 +111,8 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline()
                 .addLast("blockingHttpAdmissionWired", BlockingHttpExecutionGroup.admissionHandler("wiredApiHandler"));
         ch.pipeline().addLast(blockingHttp, "wiredApiHandler", new WiredVariableApiHandler());
+        ch.pipeline().addLast("blockingHttpAdmissionPublicRooms", BlockingHttpExecutionGroup.admissionHandler("publicRoomGalleryHttpHandler"));
+        ch.pipeline().addLast(blockingHttp, "publicRoomGalleryHttpHandler", new com.eu.habbo.networking.gameserver.navigation.PublicRoomGalleryHttpHandler());
         ch.pipeline()
                 .addLast("blockingHttpAdmissionBadge", BlockingHttpExecutionGroup.admissionHandler("badgeHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "badgeHttpHandler", new BadgeHttpHandler());

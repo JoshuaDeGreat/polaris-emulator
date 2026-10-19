@@ -1,0 +1,50 @@
+name: VPS configuration safety checks
+
+on:
+  pull_request:
+    paths:
+      - "deploy/vps/**"
+      - ".github/workflows/vps-config-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # No environments, secrets, SSH credentials, or deployment permissions.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout untrusted PR without secrets
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Validate Compose syntax using throwaway values only
+        env:
+          MARIADB_IMAGE: mariadb:11.4
+          POLARIS_IMAGE: ghcr.io/example/polaris@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          DB_DATABASE: heavenhotel
+          DB_USERNAME: ci-check-only
+          DB_PASSWORD: not-a-real-secret
+          DB_ROOT_PASSWORD: not-a-real-secret
+        run: |
+          set -euo pipefail
+          docker compose --env-file deploy/vps/.env.example -f deploy/vps/compose.yaml config --quiet
+
+      - name: Ensure DB and Docker daemon are not published
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          config = yaml.safe_load(Path("deploy/vps/compose.yaml").read_text())
+          services = config["services"]
+          assert not services["mariadb"].get("ports"), "Database ports must stay private"
+          assert "docker.sock" not in str(config), "Do not mount Docker socket"
+          for port in services["polaris"].get("ports", []):
+              assert str(port).startswith("127.0.0.1:"), "Polaris must bind to localhost pending ingress review"
+          print("VPS configuration checks passed.")
+          PY

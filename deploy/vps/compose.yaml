@@ -1,0 +1,62 @@
+name: heaven-hotel
+
+# Security-first starter. This file does not deploy automatically.
+# The public website and WebSocket reverse proxy are configured separately.
+services:
+  mariadb:
+    image: ${MARIADB_IMAGE:?Choose a tested and pinned MariaDB image}
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:?Set DB_DATABASE}
+      MARIADB_USER: ${DB_USERNAME:?Set DB_USERNAME}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - hotel-private
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+
+  polaris:
+    # Use an explicitly approved GHCR image digest, not :latest.
+    image: ${POLARIS_IMAGE:?Set the approved Polaris image digest}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      DB_HOSTNAME: mariadb
+      DB_PORT: "3306"
+      DB_DATABASE: ${DB_DATABASE:?Set DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME:?Set DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    ports:
+      # Intentional loopback only: TLS/WebSockets terminate at a trusted proxy.
+      # Do not expose these directly until their required protocols are verified.
+      - "127.0.0.1:2096:2096"
+      - "127.0.0.1:30000:30000"
+    volumes:
+      - polaris-backups:/app/backups
+    networks:
+      - hotel-private
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 60s
+
+networks:
+  hotel-private:
+    driver: bridge
+
+volumes:
+  mariadb-data:
+  polaris-backups:

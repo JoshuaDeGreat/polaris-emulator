@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   validate:
-    # No environments, secrets, SSH credentials, or deployment permissions.
+    # PR-controlled code never receives production secrets or deployment permissions.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -30,21 +30,26 @@ jobs:
           DB_ROOT_PASSWORD: not-a-real-secret
         run: |
           set -euo pipefail
-          docker compose --env-file deploy/vps/.env.example -f deploy/vps/compose.yaml config --quiet
+          docker compose -f deploy/vps/compose.yaml config --quiet
 
-      - name: Ensure DB and Docker daemon are not published
+      - name: Confirm database and Docker API stay private
+        env:
+          MARIADB_IMAGE: mariadb:11.4
+          POLARIS_IMAGE: ghcr.io/example/polaris@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          DB_DATABASE: heavenhotel
+          DB_USERNAME: ci-check-only
+          DB_PASSWORD: not-a-real-secret
+          DB_ROOT_PASSWORD: not-a-real-secret
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import yaml
-
-          config = yaml.safe_load(Path("deploy/vps/compose.yaml").read_text())
-          services = config["services"]
+          docker compose -f deploy/vps/compose.yaml config --format json | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          services = data["services"]
           assert not services["mariadb"].get("ports"), "Database ports must stay private"
-          assert "docker.sock" not in str(config), "Do not mount Docker socket"
-          for port in services["polaris"].get("ports", []):
-              assert str(port).startswith("127.0.0.1:"), "Polaris must bind to localhost pending ingress review"
-          print("VPS configuration checks passed.")
-          PY
+          assert "docker.sock" not in str(data), "Docker socket must never be mounted"
+          for binding in services["polaris"].get("ports", []):
+              assert binding.get("host_ip") == "127.0.0.1", "Emulator ports must bind to loopback"
+          print("VPS private-network checks passed.")
+          '

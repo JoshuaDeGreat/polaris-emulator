@@ -1431,6 +1431,8 @@ public class CatalogManager {
             return;
         }
 
+        extradata = CatalogPosterData.resolve(item, extradata);
+
         synchronized (habbo.getHabboStats()) {
             if (habbo.getHabboStats().isPurchasingFurniture) {
                 habbo.getClient()

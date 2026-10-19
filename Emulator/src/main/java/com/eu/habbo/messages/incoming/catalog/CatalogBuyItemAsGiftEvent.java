@@ -283,6 +283,8 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         return;
                     }
 
+                    extraData = com.eu.habbo.habbohotel.catalog.CatalogPosterData.resolve(item, extraData);
+
                     if (item.getHabbiconId() > 0) {
                         this.client.sendResponse(
                                 new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));

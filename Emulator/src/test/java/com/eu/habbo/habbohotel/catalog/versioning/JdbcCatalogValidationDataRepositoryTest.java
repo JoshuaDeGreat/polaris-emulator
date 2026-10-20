@@ -20,9 +20,11 @@ class JdbcCatalogValidationDataRepositoryTest {
         stubIntegerColumn(connection, JdbcCatalogValidationDataRepository.HELD_CURRENCY_TYPES_SQL, "type", 5, 101, 102);
         stubStringColumn(connection, JdbcCatalogValidationDataRepository.CONFIGURED_CURRENCY_TYPES_SQL, "value");
         stubEmpty(connection, JdbcCatalogValidationDataRepository.LIMITED_SELLS_SQL);
+        stubIntegerColumn(connection, JdbcCatalogValidationDataRepository.HABBICON_OFFERS_SQL, "id", 20506);
 
-        Set<Integer> currencies =
-                new JdbcCatalogValidationDataRepository().load(connection).currencyTypes();
+        CatalogValidationReferenceData reference = new JdbcCatalogValidationDataRepository().load(connection);
+        Set<Integer> currencies = reference.currencyTypes();
+        assertTrue(reference.habbiconOfferIds().contains(20506));
 
         assertTrue(currencies.containsAll(Set.of(0, 5, 101, 102)), () -> "got " + currencies);
 
@@ -42,6 +44,7 @@ class JdbcCatalogValidationDataRepositoryTest {
                 "not a number",
                 null);
         stubEmpty(connection, JdbcCatalogValidationDataRepository.LIMITED_SELLS_SQL);
+        stubEmpty(connection, JdbcCatalogValidationDataRepository.HABBICON_OFFERS_SQL);
 
         Set<Integer> currencies =
                 new JdbcCatalogValidationDataRepository().load(connection).currencyTypes();

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,28 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class CatalogValidatorTest {
+
+    @Test
+    void acceptsOnlyTheExactSentinelForAnExistingHabbiconOffer() {
+        CatalogValidator validator = new CatalogValidator(
+                Set.of(100), Set.of(5), Map.of(), Set.of("default_3x3"), Set.of(10));
+        List<CatalogPageSnapshot> pages = List.of(page(2, -1, 0, true, true, "default_3x3", ""));
+        assertTrue(validator.validate(snapshot(pages, List.of(offer(10, 2, "0", 5, 0, 0, 0)))).valid());
+        assertFalse(validator.validate(snapshot(pages, List.of(offer(11, 2, "0", 5, 0, 0, 0)))).valid());
+        assertFalse(validator.validate(snapshot(pages, List.of(offer(10, 2, "0;404", 5, 0, 0, 0)))).valid());
+        assertFalse(validator.validate(snapshot(pages, List.of(offer(10, 2, "", 5, 0, 0, 0)))).valid());
+        assertFalse(validator.validate(snapshot(pages, List.of(offer(10, 2, "404", 5, 0, 0, 0)))).valid());
+    }
+
+    @Test
+    void aBuildersClubOfferCannotBorrowANormalHabbiconExemption() {
+        CatalogValidator validator = new CatalogValidator(
+                Set.of(), Set.of(), Map.of(), Set.of("default_3x3"), Set.of(10));
+        CatalogOfferSnapshot builderOffer = new CatalogOfferSnapshot(
+                CatalogPageType.BUILDER, 10, "0", 2, "Builder offer", 0, 0, 0, 1, 0, 0, -1, 0, "", true, false);
+        CatalogValidationReport report = validator.validate(snapshot(List.of(), List.of(builderOffer)));
+        assertTrue(report.issues().stream().anyMatch(issue -> issue.code().equals("OFFER_ITEM_INVALID")));
+    }
 
     @Test
     void acceptsAConsistentCatalogSnapshot() {

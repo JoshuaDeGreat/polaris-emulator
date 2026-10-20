@@ -7,16 +7,26 @@ public record CatalogValidationReferenceData(
         Set<Integer> itemDefinitionIds,
         Set<Integer> currencyTypes,
         Map<Integer, Integer> liveLimitedSells,
-        Set<String> supportedLayouts) {
+        Set<String> supportedLayouts,
+        Set<Integer> habbiconOfferIds) {
+
+    public CatalogValidationReferenceData(
+            Set<Integer> itemDefinitionIds,
+            Set<Integer> currencyTypes,
+            Map<Integer, Integer> liveLimitedSells,
+            Set<String> supportedLayouts) {
+        this(itemDefinitionIds, currencyTypes, liveLimitedSells, supportedLayouts, Set.of());
+    }
 
     public CatalogValidationReferenceData {
         itemDefinitionIds = Set.copyOf(itemDefinitionIds);
         currencyTypes = Set.copyOf(currencyTypes);
         liveLimitedSells = Map.copyOf(liveLimitedSells);
         supportedLayouts = Set.copyOf(supportedLayouts);
+        habbiconOfferIds = Set.copyOf(habbiconOfferIds);
     }
 
     public CatalogValidator validator() {
-        return new CatalogValidator(itemDefinitionIds, currencyTypes, liveLimitedSells, supportedLayouts);
+        return new CatalogValidator(itemDefinitionIds, currencyTypes, liveLimitedSells, supportedLayouts, habbiconOfferIds);
     }
 }

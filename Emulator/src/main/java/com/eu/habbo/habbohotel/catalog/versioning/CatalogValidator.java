@@ -17,16 +17,27 @@ public final class CatalogValidator {
     private final Set<Integer> currencyTypes;
     private final Map<Integer, Integer> liveLimitedSells;
     private final Set<String> supportedLayouts;
+    private final Set<Integer> habbiconOfferIds;
 
     public CatalogValidator(
             Set<Integer> itemDefinitionIds,
             Set<Integer> currencyTypes,
             Map<Integer, Integer> liveLimitedSells,
             Set<String> supportedLayouts) {
+        this(itemDefinitionIds, currencyTypes, liveLimitedSells, supportedLayouts, Set.of());
+    }
+
+    public CatalogValidator(
+            Set<Integer> itemDefinitionIds,
+            Set<Integer> currencyTypes,
+            Map<Integer, Integer> liveLimitedSells,
+            Set<String> supportedLayouts,
+            Set<Integer> habbiconOfferIds) {
         this.itemDefinitionIds = Set.copyOf(itemDefinitionIds);
         this.currencyTypes = Set.copyOf(currencyTypes);
         this.liveLimitedSells = Map.copyOf(liveLimitedSells);
         this.supportedLayouts = Set.copyOf(supportedLayouts);
+        this.habbiconOfferIds = Set.copyOf(habbiconOfferIds);
     }
 
     public CatalogValidationReport validate(CatalogVersionSnapshot snapshot) {
@@ -380,6 +391,12 @@ public final class CatalogValidator {
     }
 
     private void validateItemIds(CatalogOfferSnapshot offer, List<CatalogValidationIssue> issues) {
+        // Habbicons are non-furniture products. Only a live, valid Habbicon association
+        // permits the exact sentinel used by the loader; ordinary and BC offers still
+        // require real furniture, even if they happen to reuse the same numeric ID.
+        if (offer.catalogType() == CatalogPageType.NORMAL
+                && habbiconOfferIds.contains(offer.offerId())
+                && "0".equals(offer.itemIds())) return;
         if (offer.itemIds() == null || offer.itemIds().isBlank()) {
             add(
                     issues,

@@ -18,6 +18,8 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
     static final String CONFIGURED_CURRENCY_TYPES_SQL =
             "SELECT `value` FROM emulator_settings WHERE `key` LIKE '%points.type%'";
     static final String LIMITED_SELLS_SQL = "SELECT id, limited_sells FROM catalog_items WHERE limited_sells > 0";
+    static final String HABBICON_OFFERS_SQL =
+            "SELECT c.id FROM catalog_items c JOIN habbicons h ON h.id = c.habbicon_id WHERE c.habbicon_id > 0";
 
     @Override
     public CatalogValidationReferenceData load(Connection connection) throws SQLException {
@@ -27,7 +29,8 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
                 loadLimitedSells(connection),
                 java.util.Arrays.stream(CatalogPageLayouts.values())
                         .map(Enum::name)
-                        .collect(Collectors.toUnmodifiableSet()));
+                        .collect(Collectors.toUnmodifiableSet()),
+                loadIntegerColumn(connection, HABBICON_OFFERS_SQL, "id"));
     }
 
     private static Set<Integer> loadCurrencyTypes(Connection connection) throws SQLException {

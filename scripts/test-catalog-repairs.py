@@ -19,7 +19,7 @@ REPAIRS = [
 
 
 def fixture(database):
-    statements = [f"CREATE DATABASE {database};", f"USE {database};", "SET FOREIGN_KEY_CHECKS=0;",
+    statements = [f"CREATE DATABASE {database} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;", f"USE {database};", "SET FOREIGN_KEY_CHECKS=0;",
                   "CREATE TABLE users (id INT PRIMARY KEY, username VARCHAR(25), `rank` INT);",
                   "INSERT INTO users VALUES (99,'RepairTestAdmin',7);",
                   "CREATE TABLE catalog_id_sequences (entity_type VARCHAR(16), catalog_type VARCHAR(16), next_id BIGINT, PRIMARY KEY(entity_type,catalog_type));"]
@@ -31,7 +31,8 @@ def fixture(database):
             # MariaDB bootstrap has a 60 KB statement limit.
             for offset in range(0, len(values), 25):
                 statements.append(header + '\n' + ',\n'.join(values[offset:offset + 25]) + ';')
-    statements += ["SET FOREIGN_KEY_CHECKS=1;",
+    statements += ["ALTER TABLE catalog_items CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;",
+                   "SET FOREIGN_KEY_CHECKS=1;",
                    "INSERT INTO rooms(id,owner_id,owner_name,name) VALUES (50,99,'RepairTestAdmin','Existing player room');",
                    "INSERT INTO items(user_id,room_id,item_id) VALUES (99,50,11313);",
                    "CREATE TABLE saved_prices AS SELECT id,cost_credits,cost_points,points_type,limited_stack,limited_sells FROM catalog_items;",

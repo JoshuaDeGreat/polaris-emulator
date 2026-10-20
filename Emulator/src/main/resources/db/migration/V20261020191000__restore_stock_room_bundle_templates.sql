@@ -370,7 +370,7 @@ WHERE p.id = 1000 AND p.caption_save = 'dark_elegant_20' AND p.page_layout = 'ro
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -391,7 +391,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1000 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -404,7 +404,7 @@ WHERE p.id = 1000 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1000 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1000 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 
 -- Chill Modern Bundle: 93 original placements.
@@ -421,7 +421,7 @@ WHERE p.id = 1001 AND p.caption_save = 'chill_modern_20' AND p.page_layout = 'ro
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -442,7 +442,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1001 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -455,7 +455,7 @@ WHERE p.id = 1001 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1001 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1001 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 
 -- Piglet's Habitat Bundle: 30 original placements.
@@ -472,7 +472,7 @@ WHERE p.id = 1002 AND p.caption_save = 'pigglets_habitat20' AND p.page_layout = 
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -493,7 +493,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1002 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -506,7 +506,7 @@ WHERE p.id = 1002 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1002 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1002 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 
 -- Polar Bear's Habitat Bundle: 33 original placements.
@@ -523,7 +523,7 @@ WHERE p.id = 1003 AND p.caption_save = 'polarbear_habitat20' AND p.page_layout =
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -544,7 +544,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1003 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -557,7 +557,7 @@ WHERE p.id = 1003 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1003 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1003 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 
 -- Cat's Habitat Bundle: 43 original placements.
@@ -574,7 +574,7 @@ WHERE p.id = 1004 AND p.caption_save = 'cat_habitat20' AND p.page_layout = 'room
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -595,7 +595,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1004 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -608,7 +608,7 @@ WHERE p.id = 1004 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1004 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1004 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 
 -- Puppy's Habitat Bundle: 26 original placements.
@@ -625,7 +625,7 @@ WHERE p.id = 1005 AND p.caption_save = 'puppy_habitat20' AND p.page_layout = 'ro
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -646,7 +646,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1005 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -659,7 +659,7 @@ WHERE p.id = 1005 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1005 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1005 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 
 -- Terrier's Habitat Bundle: 35 original placements.
@@ -676,7 +676,7 @@ WHERE p.id = 1006 AND p.caption_save = 'terrier_habitat20' AND p.page_layout = '
   AND EXISTS (SELECT 1 FROM room_models WHERE name = 'model_a')
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -697,7 +697,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = 1006 AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -710,6 +710,6 @@ WHERE p.id = 1006 AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = 1006 AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = 1006 AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 
 DROP TEMPORARY TABLE catalog_bundle_source_20261020;

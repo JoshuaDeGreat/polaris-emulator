@@ -87,7 +87,7 @@ WHERE p.id = {page} AND p.caption_save = {q(caption)} AND p.page_layout = 'room_
   AND EXISTS (SELECT 1 FROM room_models WHERE name = {q(r['model'])})
   AND NOT EXISTS (
       SELECT 1 FROM catalog_bundle_source_20261020 s
-      LEFT JOIN items_base i ON i.item_name = s.item_name
+      LEFT JOIN items_base i ON BINARY i.item_name = BINARY s.item_name
       WHERE s.page_id = p.id AND i.id IS NULL
   );
 
@@ -108,7 +108,7 @@ INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data
 SELECT @bundle_owner_id, b.room_id, i.id, s.wall_pos, s.x, s.y, s.z, s.rot, s.extra_data, '', '0:0', 0
 FROM catalog_bundle_source_20261020 s
 JOIN catalog_bundle_repair_20261020 b ON b.page_id = s.page_id
-JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON i.item_name = s.item_name
+JOIN (SELECT item_name, MIN(id) id FROM items_base GROUP BY item_name) i ON BINARY i.item_name = BINARY s.item_name
 WHERE b.page_id = {page} AND b.room_id > 0 AND b.items_restored = 0
   AND NOT EXISTS (SELECT 1 FROM items existing WHERE existing.room_id = b.room_id);
 
@@ -121,7 +121,7 @@ WHERE p.id = {page} AND p.room_id = b.previous_room_id AND b.items_restored = 1;
 UPDATE catalog_items c JOIN catalog_bundle_repair_20261020 b ON b.offer_id = c.id
 JOIN catalog_pages p ON p.id = b.page_id AND p.room_id = b.room_id
 SET c.item_ids = CAST((SELECT MIN(item_id) FROM items WHERE room_id = b.room_id) AS CHAR)
-WHERE b.page_id = {page} AND b.items_restored = 1 AND c.item_ids = b.previous_item_ids;
+WHERE b.page_id = {page} AND b.items_restored = 1 AND BINARY c.item_ids = BINARY b.previous_item_ids;
 """)
     sql.append("DROP TEMPORARY TABLE catalog_bundle_source_20261020;\n")
     return "\n".join(sql)

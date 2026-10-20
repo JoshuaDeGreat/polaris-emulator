@@ -58,7 +58,10 @@ class MariaDbMigrationBackupTest {
         String command = String.join(" ", commands.getFirst());
         assertFalse(command.contains("very-secret-password"));
         assertTrue(commands.getFirst().get(1).startsWith("--defaults-extra-file="));
-        assertTrue(command.contains("--lock-all-tables"));
+        assertTrue(command.contains("--lock-tables"));
+        assertFalse(command.contains("--lock-all-tables"));
+        assertFalse(command.contains("--skip-lock-tables"));
+        assertFalse(command.contains("--single-transaction"));
         assertTrue(command.contains("--routines"));
         assertTrue(command.contains("--events"));
         assertTrue(command.contains("--triggers"));
@@ -67,6 +70,7 @@ class MariaDbMigrationBackupTest {
         String manifest = Files.readString(files(".sql.gz.json").getFirst());
         assertTrue(manifest.contains("\"pendingVersions\":[\"28\",\"29\"]"));
         assertTrue(manifest.contains("\"database\":\"polaris_prod\""));
+        assertTrue(manifest.contains("\"lockingMode\":\"database-tables\""));
         assertFalse(manifest.contains("very-secret-password"));
         assertFalse(manifest.contains("polaris\""));
     }

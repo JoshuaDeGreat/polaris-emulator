@@ -156,6 +156,7 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
             metadata.put("uncompressedBytes", result.uncompressedBytes());
             metadata.put("sha256", sha256);
             metadata.put("tool", options.executable());
+            metadata.put("lockingMode", "database-tables");
             Files.writeString(
                     manifestPart,
                     GSON.toJson(metadata) + System.lineSeparator(),
@@ -257,10 +258,13 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
     }
 
     private List<String> command(Path credentials) {
+        // This command dumps exactly one database. Scope its read locks to that database;
+        // --lock-all-tables uses FLUSH TABLES WITH READ LOCK and requires server-wide RELOAD.
+        // Keep locking enabled for the legacy non-transactional tables as well as InnoDB.
         return List.of(
                 options.executable(),
                 "--defaults-extra-file=" + credentials,
-                "--lock-all-tables",
+                "--lock-tables",
                 "--quick",
                 "--routines",
                 "--events",

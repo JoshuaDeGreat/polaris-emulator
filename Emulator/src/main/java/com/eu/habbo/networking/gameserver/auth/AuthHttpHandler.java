@@ -133,7 +133,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static boolean isOurRoute(String path) {
-        return path.equals(LOGIN_PATH)
+        return CommunityEndpoints.isRoute(path)
+                || path.equals(LOGIN_PATH)
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
                 || path.equals(LOGOUT_PATH)
@@ -153,6 +154,10 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void handle(ChannelHandlerContext ctx, FullHttpRequest req, String path) {
+        if (CommunityEndpoints.isRoute(path)) {
+            CommunityEndpoints.handle(ctx, req, path);
+            return;
+        }
         if (req.method() == HttpMethod.OPTIONS) {
             sendCors(ctx, req);
             return;

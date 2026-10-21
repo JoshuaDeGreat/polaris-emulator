@@ -44,6 +44,10 @@ final class StaticContentEndpoints {
         }
     }
 
+    static void invalidateNews() {
+        NEWS_CACHE = null;
+    }
+
     private StaticContentEndpoints() {
     }
 

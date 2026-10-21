@@ -414,7 +414,11 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         message.appendBoolean(false);
         message.appendString(this.name + ".png");
         message.appendString(this.itemId == null ? "" : this.itemId);
-        message.appendBoolean(this.haveOffer);
+        // Octane uses the final flag to enable individual purchases. The database
+        // have_offer flag controls multi-buy discounts, already serialized above
+        // as bundlePurchaseAllowed; it must not disable balloons, bundles or rares.
+        // Keep unresolved offers unavailable rather than advertising an empty purchase.
+        message.appendBoolean(this.habbiconId > 0 || !items.isEmpty());
     }
 
     @Override

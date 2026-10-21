@@ -5,7 +5,7 @@ FROM maven:3.10.0-eclipse-temurin-25 AS build
 WORKDIR /src
 COPY . .
 
-RUN mvn -B -ntp -Dtest=TurnstileVerifierResponseTest,PublicRoomGalleryTest,HousekeepingGalleryAccessTest,PublicRoomGalleryHttpHandlerTest,CatalogPosterDataTest,CatalogValidatorTest,JdbcCatalogValidationDataRepositoryTest,MariaDbMigrationBackupTest package
+RUN mvn -B -ntp -Dtest=TurnstileVerifierResponseTest,PublicRoomGalleryTest,HousekeepingGalleryAccessTest,PublicRoomGalleryHttpHandlerTest,CatalogPosterDataTest,CatalogPurchaseAvailabilityTest,CatalogValidatorTest,JdbcCatalogValidationDataRepositoryTest,MariaDbMigrationBackupTest package
 
 # Run the compiled game server
 FROM eclipse-temurin:25-jre

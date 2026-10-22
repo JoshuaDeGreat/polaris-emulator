@@ -30,12 +30,12 @@ final class EmailVerificationEndpoints {
             conn.setAutoCommit(false);
             try {
                 try (PreparedStatement lock = conn.prepareStatement(
-                        "SELECT requested_at FROM email_verification_tokens WHERE user_id = ? FOR UPDATE")) {
+                        "SELECT requested_at, email FROM email_verification_tokens WHERE user_id = ? FOR UPDATE")) {
                     lock.setInt(1, userId);
                     try (ResultSet rs = lock.executeQuery()) {
                         if (rs.next() && rs.getTimestamp(1).toInstant().isAfter(Instant.now().minusSeconds(120))) {
                             conn.rollback();
-                            return true; // Silent cooldown, do not send another email.
+                            return email.equalsIgnoreCase(rs.getString("email")); // Same-address cooldown only.
                         }
                     }
                 }

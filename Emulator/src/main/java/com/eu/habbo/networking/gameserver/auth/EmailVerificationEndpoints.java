@@ -169,6 +169,7 @@ final class EmailVerificationEndpoints {
             } finally {
                 conn.setAutoCommit(oldAutoCommit);
             }
+            PasswordResetEndpoints.evictGameSessions(userId);
             AvailabilityCache.invalidateEmail(email);
             JsonObject ok = new JsonObject();
             ok.addProperty("message", "Your email address is verified. Please log in again.");

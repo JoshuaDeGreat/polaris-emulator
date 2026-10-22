@@ -585,7 +585,28 @@ final class SessionEndpoints {
                             + fullUrl
                             + "\n\n" + "If you didn't request this you can safely ignore this email.";
 
-                    if (!submitResetEmail(() -> SmtpMailService.send(email, subject, message))) {
+                    if (!submitResetEmail(() -> {
+                        if (!SmtpMailService.send(email, subject, message)) {
+                            LOGGER.warn("[auth/forgot-password] recovery email delivery failed for user id={}", userId);
+                            // A failed send must not strand the user with an unusable token/cooldown.
+                            try (Connection cleanup = Emulator.getDatabase().getDataSource().getConnection()) {
+                                try (PreparedStatement delete = cleanup.prepareStatement(
+                                        "DELETE FROM password_resets WHERE user_id = ? AND token = ?")) {
+                                    delete.setInt(1, userId);
+                                    delete.setString(2, PasswordResetEndpoints.hashToken(token));
+                                    if (delete.executeUpdate() == 1) {
+                                        try (PreparedStatement release = cleanup.prepareStatement(
+                                                "UPDATE password_recovery_limits SET next_allowed_at = NOW() WHERE user_id = ?")) {
+                                            release.setInt(1, userId);
+                                            release.executeUpdate();
+                                        }
+                                    }
+                                }
+                            } catch (Exception cleanupError) {
+                                LOGGER.warn("[auth/forgot-password] failed to clear undelivered token", cleanupError);
+                            }
+                        }
+                    })) {
                         LOGGER.warn("Reset email queue is full; " + "dropping delivery task");
                     }
                 }

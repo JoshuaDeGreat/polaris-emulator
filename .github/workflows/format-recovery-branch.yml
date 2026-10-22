@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: true
       - uses: actions/setup-java@v6
         with:
@@ -22,7 +23,7 @@ jobs:
           cache: maven
       - name: Apply project Java formatting
         working-directory: Emulator
-        run: ./mvnw -B spotless:apply
+        run: ./mvnw -B spotless:apply -Dspotless.ratchetFrom=origin/main
       - name: Commit formatting changes to development branch only
         run: |
           if ! git diff --quiet; then

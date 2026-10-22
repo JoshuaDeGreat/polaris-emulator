@@ -303,6 +303,11 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (path.equals(FORGOT_PATH) && !AuthRateLimiter.tryProbe(ip)) {
+            sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many requests. Try again later."));
+            return;
+        }
+
         String turnstileToken = readString(body, "turnstileToken");
         if (!TurnstileVerifier.verify(turnstileToken, ip)) {
             AuthRateLimiter.recordFailure(ip);

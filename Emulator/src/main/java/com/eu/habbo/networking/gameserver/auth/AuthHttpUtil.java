@@ -79,6 +79,8 @@ public final class AuthHttpUtil {
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(bytes));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "no-store");
+        response.headers().set("Referrer-Policy", "no-referrer");
         response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
         applyCors(req, response);
         boolean keepAlive = isKeepAlive(req);

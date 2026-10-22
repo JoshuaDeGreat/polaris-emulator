@@ -556,7 +556,7 @@ final class SessionEndpoints {
                     }
 
                     String resetUrlBase =
-                            Emulator.getConfig().getValue("password.reset.url", "https://heavenhotel.uk/reset-password");
+                            Emulator.getConfig().getValue("password.reset.url", "https://heavenhotel.uk/client/?recovery=1");
                     String fullUrl = resetUrlBase + (resetUrlBase.contains("?") ? "&" : "?") + "token=" + token;
                     String subject = "Reset your Heaven Hotel password";
                     String message = "Hi " + username + ",\n\n"

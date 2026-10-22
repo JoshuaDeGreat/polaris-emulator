@@ -31,7 +31,8 @@ public final class SmtpMailService {
     }
 
     private static boolean sendWithResend(String toAddress, String subject, String body) throws Exception {
-        String key = Emulator.getConfig().getValue("resend.api_key", "").trim();
+        String key = System.getenv("RESEND_API_KEY");
+        key = key == null ? "" : key.trim();
         String from = Emulator.getConfig()
                 .getValue("smtp.from_address", "accounts@heavenhotel.uk")
                 .trim();
@@ -66,7 +67,11 @@ public final class SmtpMailService {
     }
 
     private static boolean sendDirect(String toAddress, String subject, String body) throws Exception {
-        String provider = Emulator.getConfig().getValue("smtp.provider", "own").toLowerCase();
+        String providerOverride = System.getenv("SMTP_PROVIDER");
+        String provider = (providerOverride == null || providerOverride.isBlank()
+                        ? Emulator.getConfig().getValue("smtp.provider", "own")
+                        : providerOverride)
+                .toLowerCase(java.util.Locale.ROOT);
         if ("resend".equals(provider)) return sendWithResend(toAddress, subject, body);
         String username = Emulator.getConfig().getValue("smtp.username", "");
         String password = Emulator.getConfig().getValue("smtp.password", "");

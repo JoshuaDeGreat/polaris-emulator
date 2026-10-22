@@ -225,21 +225,17 @@ final class AccountChangeEndpoints {
                 }
             }
 
-            try (PreparedStatement upd = conn.prepareStatement("UPDATE users SET mail = ? WHERE id = ? LIMIT 1")) {
-                upd.setString(1, newEmail);
-                upd.setInt(2, userId);
-                upd.executeUpdate();
+            if (!EmailVerificationEndpoints.request(userId, newEmail)) {
+                sendJson(ctx, req, HttpResponseStatus.SERVICE_UNAVAILABLE,
+                        errorPayload("Unable to send verification. Please try again later."));
+                return;
             }
 
-            if (currentEmail != null && !currentEmail.isEmpty()) AvailabilityCache.invalidateEmail(currentEmail);
-            AvailabilityCache.invalidateEmail(newEmail);
-
             AuthRateLimiter.recordSuccess(ip);
-            LOGGER.info("[auth/change-email] email updated for user id={} username='{}' ip='{}'", userId, username, ip);
+            LOGGER.info("[auth/change-email] verification requested for user id={}", userId);
 
             JsonObject ok = new JsonObject();
-            ok.addProperty("message", "Email updated successfully.");
-            ok.addProperty("email", newEmail);
+            ok.addProperty("message", "Check your new email for a verification link. Your current address stays unchanged until confirmed.");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("[auth/change-email] failed for user id=" + userId, e);

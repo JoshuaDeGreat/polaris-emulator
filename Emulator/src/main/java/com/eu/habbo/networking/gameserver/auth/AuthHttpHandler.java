@@ -78,6 +78,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String LOGIN_PATH = "/api/auth/login";
     static final String REGISTER_PATH = "/api/auth/register";
     static final String FORGOT_PATH = "/api/auth/forgot-password";
+    static final String RESET_PATH = "/api/auth/reset-password";
     static final String LOGOUT_PATH = "/api/auth/logout";
     static final String CHECK_EMAIL_PATH = "/api/auth/check-email";
     static final String CHECK_USERNAME_PATH = "/api/auth/check-username";
@@ -137,6 +138,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 || path.equals(LOGIN_PATH)
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
+                || path.equals(RESET_PATH)
                 || path.equals(LOGOUT_PATH)
                 || path.equals(CHECK_EMAIL_PATH)
                 || path.equals(CHECK_USERNAME_PATH)
@@ -256,6 +258,14 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (path.equals(RESET_PATH)) {
+            if (!AuthRateLimiter.tryProbe(ip)) {
+                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many requests. Try again later."));
+                return;
+            }
+            PasswordResetEndpoints.handleReset(ctx, req, body, ip);
+            return;
+        }
         if (path.equals(LOGOUT_PATH)) {
             SessionEndpoints.handleLogout(ctx, req, body);
             return;

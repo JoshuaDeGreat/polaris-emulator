@@ -557,7 +557,7 @@ final class SessionEndpoints {
 
                     String resetUrlBase =
                             Emulator.getConfig().getValue("password.reset.url", "https://heavenhotel.uk/client/?recovery=1");
-                    String fullUrl = resetUrlBase + (resetUrlBase.contains("?") ? "&" : "?") + "token=" + token;
+                    String fullUrl = resetUrlBase + "#token=" + token;
                     String subject = "Reset your Heaven Hotel password";
                     String message = "Hi " + username + ",\n\n"
                             + "Someone (hopefully you) requested a password reset for your Heaven Hotel account.\n"
@@ -571,7 +571,7 @@ final class SessionEndpoints {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Forgot-password query failed for email=" + email, e);
+            LOGGER.error("Forgot-password query failed", e);
         }
 
         sendJson(ctx, req, HttpResponseStatus.OK, ok);

@@ -16,7 +16,6 @@ import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HexFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +29,8 @@ final class PasswordResetEndpoints {
 
     static String hashToken(String token) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(token.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of()
+                    .formatHex(MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));
         } catch (java.security.NoSuchAlgorithmException impossible) {
             throw new IllegalStateException("SHA-256 unavailable", impossible);
         }
@@ -47,7 +46,10 @@ final class PasswordResetEndpoints {
             return;
         }
         if (password.length() < 8 || password.length() > 256 || !password.equals(confirm)) {
-            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.BAD_REQUEST,
                     errorPayload("Enter matching passwords of at least 8 and at most 256 characters."));
             return;
         }
@@ -82,7 +84,8 @@ final class PasswordResetEndpoints {
                     }
                 }
                 RememberJwtService.revokeAllForUser(conn, userId);
-                try (PreparedStatement delete = conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ?")) {
+                try (PreparedStatement delete =
+                        conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ?")) {
                     delete.setInt(1, userId);
                     delete.executeUpdate();
                 }
@@ -97,7 +100,8 @@ final class PasswordResetEndpoints {
                 SessionResumeManager.getInstance().disposeGhostSession(userId);
                 var active = Emulator.getGameServer().getGameClientManager().getHabbo(userId);
                 if (active != null && active.getClient() != null) {
-                    Emulator.getGameServer().getGameClientManager()
+                    Emulator.getGameServer()
+                            .getGameClientManager()
                             .disconnectWithReason(active.getClient(), DisconnectReasonComposer.LOGOUT);
                 }
             } catch (Exception disconnectError) {

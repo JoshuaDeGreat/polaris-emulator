@@ -2,6 +2,7 @@ package com.eu.habbo.networking.gameserver.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 import org.junit.jupiter.api.Test;
 
 class PasswordResetEndpointsTest {

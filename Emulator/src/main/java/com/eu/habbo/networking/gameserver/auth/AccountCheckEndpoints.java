@@ -1,34 +1,35 @@
 package com.eu.habbo.networking.gameserver.auth;
 
-import com.eu.habbo.Emulator;
-import com.google.gson.JsonObject;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.EMAIL_RE;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.USERNAME_RE;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.errorPayload;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.readString;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
+import com.eu.habbo.Emulator;
+import com.google.gson.JsonObject;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 final class AccountCheckEndpoints {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountCheckEndpoints.class);
 
-    private AccountCheckEndpoints() {
-    }
+    private AccountCheckEndpoints() {}
 
     static void handleCheckEmail(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         if (!AuthRateLimiter.tryProbe(ip)) {
             long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
-            sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
                     errorPayload("Too many requests. Try again in " + secs + "s."));
             return;
         }
@@ -48,13 +49,19 @@ final class AccountCheckEndpoints {
     static void handleCheckUsername(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         if (!AuthRateLimiter.tryProbe(ip)) {
             long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
-            sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
                     errorPayload("Too many requests. Try again in " + secs + "s."));
             return;
         }
         String username = readString(body, "username").trim();
         if (!USERNAME_RE.matcher(username).matches()) {
-            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.BAD_REQUEST,
                     errorPayload("Username must be 3-32 chars (letters, numbers, . _ -)."));
             return;
         }
@@ -65,8 +72,7 @@ final class AccountCheckEndpoints {
             taken = !cached;
         } else {
             try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(
-                         "SELECT 1 FROM users WHERE username = ? LIMIT 1")) {
+                    PreparedStatement stmt = conn.prepareStatement("SELECT 1 FROM users WHERE username = ? LIMIT 1")) {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     taken = rs.next();

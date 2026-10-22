@@ -226,7 +226,10 @@ final class AccountChangeEndpoints {
             }
 
             if (!EmailVerificationEndpoints.request(userId, newEmail)) {
-                sendJson(ctx, req, HttpResponseStatus.SERVICE_UNAVAILABLE,
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.SERVICE_UNAVAILABLE,
                         errorPayload("Unable to send verification. Please try again later."));
                 return;
             }
@@ -235,7 +238,9 @@ final class AccountChangeEndpoints {
             LOGGER.info("[auth/change-email] verification requested for user id={}", userId);
 
             JsonObject ok = new JsonObject();
-            ok.addProperty("message", "Check your new email for a verification link. Your current address stays unchanged until confirmed.");
+            ok.addProperty(
+                    "message",
+                    "Check your new email for a verification link. Your current address stays unchanged until confirmed.");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("[auth/change-email] failed for user id=" + userId, e);

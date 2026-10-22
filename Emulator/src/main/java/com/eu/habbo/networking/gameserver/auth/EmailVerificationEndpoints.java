@@ -5,6 +5,7 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.errorPayload;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.mintResetToken;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.readString;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
+
 import com.eu.habbo.Emulator;
 import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 /** Email ownership proof. Never switch a player's address before proof of control. */
 final class EmailVerificationEndpoints {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailVerificationEndpoints.class);
+
     private EmailVerificationEndpoints() {}
 
     static boolean request(int userId, String email) {
@@ -37,7 +39,10 @@ final class EmailVerificationEndpoints {
                         "SELECT requested_at, email FROM email_verification_tokens WHERE user_id = ? FOR UPDATE")) {
                     lock.setInt(1, userId);
                     try (ResultSet rs = lock.executeQuery()) {
-                        if (rs.next() && rs.getTimestamp(1).toInstant().isAfter(Instant.now().minusSeconds(120))) {
+                        if (rs.next()
+                                && rs.getTimestamp(1)
+                                        .toInstant()
+                                        .isAfter(Instant.now().minusSeconds(120))) {
                             conn.rollback();
                             return email.equalsIgnoreCase(rs.getString("email")); // Same-address cooldown only.
                         }
@@ -79,7 +84,8 @@ final class EmailVerificationEndpoints {
     static void handleRequest(ChannelHandlerContext ctx, FullHttpRequest req, String ip) {
         String authorization = req.headers().get(HttpHeaderNames.AUTHORIZATION);
         String bearer = authorization != null && authorization.regionMatches(true, 0, "Bearer ", 0, 7)
-                ? authorization.substring(7).trim() : "";
+                ? authorization.substring(7).trim()
+                : "";
         int userId = AccessTokenService.verify(bearer);
         if (userId <= 0) {
             sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Log in to verify your email."));
@@ -90,8 +96,8 @@ final class EmailVerificationEndpoints {
             return;
         }
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement stmt = conn.prepareStatement(
-                        "SELECT mail, email_verified_at FROM users WHERE id = ? LIMIT 1")) {
+                PreparedStatement stmt =
+                        conn.prepareStatement("SELECT mail, email_verified_at FROM users WHERE id = ? LIMIT 1")) {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next() && rs.getTimestamp("email_verified_at") == null) {
@@ -122,8 +128,8 @@ final class EmailVerificationEndpoints {
             String email = null;
             int userId = 0;
             try {
-                try (PreparedStatement lookup = conn.prepareStatement(
-                        "SELECT user_id, email FROM email_verification_tokens "
+                try (PreparedStatement lookup =
+                        conn.prepareStatement("SELECT user_id, email FROM email_verification_tokens "
                                 + "WHERE token_hash = ? AND expires_at > NOW() FOR UPDATE")) {
                     lookup.setString(1, PasswordResetEndpoints.hashToken(token));
                     try (ResultSet rs = lookup.executeQuery()) {
@@ -135,11 +141,15 @@ final class EmailVerificationEndpoints {
                 }
                 if (userId == 0) {
                     conn.rollback();
-                    sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Invalid or expired verification link."));
+                    sendJson(
+                            ctx,
+                            req,
+                            HttpResponseStatus.BAD_REQUEST,
+                            errorPayload("Invalid or expired verification link."));
                     return;
                 }
-                try (PreparedStatement update = conn.prepareStatement(
-                        "UPDATE users SET mail = ?, email_verified_at = NOW(), "
+                try (PreparedStatement update =
+                        conn.prepareStatement("UPDATE users SET mail = ?, email_verified_at = NOW(), "
                                 + "auth_ticket = '', auth_ticket_expires_at = NULL, "
                                 + "access_token_version = access_token_version + 1 WHERE id = ?")) {
                     update.setString(1, email);
@@ -147,8 +157,8 @@ final class EmailVerificationEndpoints {
                     if (update.executeUpdate() != 1) throw new SQLException("Missing verification account");
                 }
                 RememberJwtService.revokeAllForUser(conn, userId);
-                try (PreparedStatement delete = conn.prepareStatement(
-                        "DELETE FROM email_verification_tokens WHERE user_id = ?")) {
+                try (PreparedStatement delete =
+                        conn.prepareStatement("DELETE FROM email_verification_tokens WHERE user_id = ?")) {
                     delete.setInt(1, userId);
                     delete.executeUpdate();
                 }
@@ -166,7 +176,10 @@ final class EmailVerificationEndpoints {
         } catch (Exception e) {
             // Unique mail constraint can reject an address claimed since the request was issued.
             LOGGER.error("[auth/email-verification] confirmation failed", e);
-            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.BAD_REQUEST,
                     errorPayload("Verification could not be completed. Request another link."));
         }
     }

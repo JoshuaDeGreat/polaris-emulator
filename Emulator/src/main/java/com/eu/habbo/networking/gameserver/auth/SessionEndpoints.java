@@ -437,9 +437,13 @@ final class SessionEndpoints {
                         boolean userTaken = existingUser != null && existingUser.equalsIgnoreCase(username);
                         boolean mailTaken = existingMail != null && existingMail.equalsIgnoreCase(email);
                         String message;
-                        if (userTaken && mailTaken) message = "These registration details cannot be used. Please choose another username or email.";
+                        if (userTaken && mailTaken)
+                            message =
+                                    "These registration details cannot be used. Please choose another username or email.";
                         else if (userTaken) message = "That Habbo name is already in use.";
-                        else message = "These registration details cannot be used. Please choose another email or sign in.";
+                        else
+                            message =
+                                    "These registration details cannot be used. Please choose another email or sign in.";
                         sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
                         return;
                     }
@@ -537,8 +541,8 @@ final class SessionEndpoints {
                 "Email sent! If an account matches that address you'll find a reset link in your inbox shortly (check spam if it doesn't show up within a minute).");
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement stmt =
-                        conn.prepareStatement("SELECT id, username FROM users WHERE mail = ? AND email_verified_at IS NOT NULL LIMIT 1")) {
+                PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT id, username FROM users WHERE mail = ? AND email_verified_at IS NOT NULL LIMIT 1")) {
             stmt.setString(1, email);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -575,8 +579,8 @@ final class SessionEndpoints {
                         ins.executeUpdate();
                     }
 
-                    String resetUrlBase =
-                            Emulator.getConfig().getValue("password.reset.url", "https://heavenhotel.uk/client/?recovery=1");
+                    String resetUrlBase = Emulator.getConfig()
+                            .getValue("password.reset.url", "https://heavenhotel.uk/client/?recovery=1");
                     String fullUrl = resetUrlBase + "#token=" + token;
                     String subject = "Reset your Heaven Hotel password";
                     String message = "Hi " + username + ",\n\n"
@@ -589,7 +593,8 @@ final class SessionEndpoints {
                         if (!SmtpMailService.send(email, subject, message)) {
                             LOGGER.warn("[auth/forgot-password] recovery email delivery failed for user id={}", userId);
                             // A failed send must not strand the user with an unusable token/cooldown.
-                            try (Connection cleanup = Emulator.getDatabase().getDataSource().getConnection()) {
+                            try (Connection cleanup =
+                                    Emulator.getDatabase().getDataSource().getConnection()) {
                                 try (PreparedStatement delete = cleanup.prepareStatement(
                                         "DELETE FROM password_resets WHERE user_id = ? AND token = ?")) {
                                     delete.setInt(1, userId);
@@ -608,7 +613,8 @@ final class SessionEndpoints {
                         }
                     })) {
                         LOGGER.warn("[auth/forgot-password] recovery queue is full");
-                        try (Connection cleanup = Emulator.getDatabase().getDataSource().getConnection()) {
+                        try (Connection cleanup =
+                                Emulator.getDatabase().getDataSource().getConnection()) {
                             try (PreparedStatement delete = cleanup.prepareStatement(
                                     "DELETE FROM password_resets WHERE user_id = ? AND token = ?")) {
                                 delete.setInt(1, userId);

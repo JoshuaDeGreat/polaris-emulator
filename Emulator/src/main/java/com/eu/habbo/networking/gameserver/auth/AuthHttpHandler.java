@@ -272,7 +272,11 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
         if (path.equals(RESET_PATH)) {
             if (!AuthRateLimiter.tryProbe(ip)) {
-                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many requests. Try again later."));
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many requests. Try again later."));
                 return;
             }
             PasswordResetEndpoints.handleReset(ctx, req, body, ip);
@@ -316,14 +320,21 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
 
         if (path.equals(FORGOT_PATH) && !AuthRateLimiter.tryProbe(ip)) {
-            sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many requests. Try again later."));
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many requests. Try again later."));
             return;
         }
 
         String turnstileToken = readString(body, "turnstileToken");
         if (!TurnstileVerifier.verify(turnstileToken, ip)) {
             AuthRateLimiter.recordFailure(ip);
-            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.FORBIDDEN,
                     errorPayload("Security check failed. Please wait a moment, then refresh and try again."));
             return;
         }

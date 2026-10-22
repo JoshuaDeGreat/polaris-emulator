@@ -1,14 +1,8 @@
 package com.eu.habbo.networking.gameserver.auth;
 
 import com.eu.habbo.Emulator;
-import com.google.gson.JsonObject;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import com.eu.habbo.resilience.RuntimeResilienceRuntime;
+import com.google.gson.JsonObject;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.PasswordAuthentication;
@@ -16,6 +10,12 @@ import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +32,11 @@ public final class SmtpMailService {
 
     private static boolean sendWithResend(String toAddress, String subject, String body) throws Exception {
         String key = Emulator.getConfig().getValue("resend.api_key", "").trim();
-        String from = Emulator.getConfig().getValue("smtp.from_address", "accounts@heavenhotel.uk").trim();
-        String fromName = Emulator.getConfig().getValue("smtp.from_name", "Heaven Hotel").trim();
+        String from = Emulator.getConfig()
+                .getValue("smtp.from_address", "accounts@heavenhotel.uk")
+                .trim();
+        String fromName =
+                Emulator.getConfig().getValue("smtp.from_name", "Heaven Hotel").trim();
         if (key.isEmpty() || toAddress == null || toAddress.isBlank() || from.isEmpty()) {
             LOGGER.error("Resend delivery unavailable: missing API key, recipient or sender");
             return false;

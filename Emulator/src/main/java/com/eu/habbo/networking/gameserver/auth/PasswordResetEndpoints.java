@@ -36,6 +36,20 @@ final class PasswordResetEndpoints {
         }
     }
 
+    static void evictGameSessions(int userId) {
+        try {
+            SessionResumeManager.getInstance().disposeGhostSession(userId);
+            var active = Emulator.getGameServer().getGameClientManager().getHabbo(userId);
+            if (active != null && active.getClient() != null) {
+                Emulator.getGameServer()
+                        .getGameClientManager()
+                        .disconnectWithReason(active.getClient(), DisconnectReasonComposer.LOGOUT);
+            }
+        } catch (Exception disconnectError) {
+            LOGGER.error("[auth] game session eviction failed for user id={}", userId, disconnectError);
+        }
+    }
+
     static void handleReset(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         String token = readString(body, "token").trim();
         String password = readString(body, "newPassword");
@@ -96,17 +110,7 @@ final class PasswordResetEndpoints {
             } finally {
                 conn.setAutoCommit(previousAutoCommit);
             }
-            try {
-                SessionResumeManager.getInstance().disposeGhostSession(userId);
-                var active = Emulator.getGameServer().getGameClientManager().getHabbo(userId);
-                if (active != null && active.getClient() != null) {
-                    Emulator.getGameServer()
-                            .getGameClientManager()
-                            .disconnectWithReason(active.getClient(), DisconnectReasonComposer.LOGOUT);
-                }
-            } catch (Exception disconnectError) {
-                LOGGER.error("[auth/reset-password] session eviction failed for user id={}", userId, disconnectError);
-            }
+            evictGameSessions(userId);
             LOGGER.info("[auth/reset-password] credentials updated for user id={}", userId);
             JsonObject ok = new JsonObject();
             ok.addProperty("message", "Your password has been changed. You can now log in.");

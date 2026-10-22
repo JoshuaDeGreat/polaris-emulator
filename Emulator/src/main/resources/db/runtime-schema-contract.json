@@ -25,6 +25,7 @@
     "catalog_items_limited": ["catalog_item_id", "item_id", "number", "timestamp", "user_id"],
     "catalog_manager_history": ["actor_id", "changes_json", "created_at", "id", "operation_id", "request_fingerprint", "revision", "source", "summary"],
     "catalog_manager_state": ["revision", "singleton_id", "updated_at"],
+    "catalog_nonlimited_sales_backup_20261018": ["captured_at", "catalog_item_id", "limited_sells", "limited_stack"],
     "catalog_page_order_repair_20261020": ["catalog_type", "new_order", "old_order", "page_id", "parent_id"],
     "catalog_pages": ["caption", "caption_save", "catalog_mode", "club_only", "enabled", "icon_color", "icon_image", "id", "includes", "min_rank", "order_num", "page_headline", "page_layout", "page_special", "page_teaser", "page_text1", "page_text2", "page_text_details", "page_text_teaser", "parent_id", "room_id", "vip_only", "visible"],
     "catalog_pages_bc": ["caption", "enabled", "icon_color", "icon_image", "id", "order_num", "page_headline", "page_layout", "page_special", "page_teaser", "page_text1", "page_text2", "page_text_details", "page_text_teaser", "parent_id", "visible"],

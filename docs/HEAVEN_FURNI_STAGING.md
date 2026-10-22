@@ -50,3 +50,19 @@ The dedicated `.github/workflows/heaven-furni-importer.yml` workflow runs isolat
 ## Asset-source discovery limitation
 
 The connected Cloudflare API lists `octane-game-assets` and `octane-furniture-icons` Workers, but this does not establish that a reconstructable full local static-asset source directory exists. The workers' script-content read endpoint returned no script content for these Workers in the connected API. Do not assume we can safely publish a partial asset overlay or recover missing existing files via a Worker listing. Obtain the actual complete original deployment directories (or an integrity-verified backup) before a public publish.
+
+
+## Wrangler source discovery (read-only)
+
+Cloudflare confirms `octane-game-assets` and `octane-furniture-icons` were published as static-only Workers using Wrangler on 18 October 2026. Both versions have CORS `Access-Control-Allow-Origin: *`. This verifies their deployment type, **not** that the original complete upload directories are recoverable from the Worker API.
+
+On the Windows PC used for the original uploads, find the original full directories, then run:
+
+```powershell
+python scripts/audit_heaven_asset_sources.py `
+  --game-assets-root "C:\FULL\PATH\TO\GAME-ASSET-DIRECTORY" `
+  --icons-root "C:\FULL\PATH\TO\ICON-DIRECTORY" `
+  --output ".\heaven-asset-source-audit.json"
+```
+
+Replace the placeholder directories; none are known to be the canonical source yet. The audit reports total files and bytes, bundle and icon counts, and a FurnitureData SHA-256. The status `SOURCE_LAYOUT_VALID_NOT_DEPLOY_VERIFIED` verifies *local structure only*. It must **never** be interpreted as proof the directories match the complete live Worker asset manifests. Do not run `wrangler deploy` based solely on this report.

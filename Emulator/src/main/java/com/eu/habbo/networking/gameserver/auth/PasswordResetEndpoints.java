@@ -69,46 +69,10 @@ final class PasswordResetEndpoints {
         }
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
-            boolean previousAutoCommit = conn.getAutoCommit();
-            conn.setAutoCommit(false);
-            int userId = 0;
-            try {
-                try (PreparedStatement lookup = conn.prepareStatement(
-                        "SELECT user_id FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1 FOR UPDATE")) {
-                    lookup.setString(1, hashToken(token));
-                    try (ResultSet rs = lookup.executeQuery()) {
-                        if (rs.next()) userId = rs.getInt("user_id");
-                    }
-                }
-                if (userId <= 0) {
-                    conn.rollback();
-                    sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload(INVALID_LINK));
-                    return;
-                }
-
-                try (PreparedStatement update = conn.prepareStatement(
-                        "UPDATE users SET password = ?, auth_ticket = '', auth_ticket_expires_at = NULL, "
-                                + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
-                    update.setString(1, PasswordHasher.hash(password, 12));
-                    update.setInt(2, userId);
-                    if (update.executeUpdate() != 1) {
-                        conn.rollback();
-                        sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload(INVALID_LINK));
-                        return;
-                    }
-                }
-                RememberJwtService.revokeAllForUser(conn, userId);
-                try (PreparedStatement delete =
-                        conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ?")) {
-                    delete.setInt(1, userId);
-                    delete.executeUpdate();
-                }
-                conn.commit();
-            } catch (Exception error) {
-                conn.rollback();
-                throw error;
-            } finally {
-                conn.setAutoCommit(previousAutoCommit);
+            int userId = consumeToken(conn, token, password);
+            if (userId <= 0) {
+                sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload(INVALID_LINK));
+                return;
             }
             evictGameSessions(userId);
             LOGGER.info("[auth/reset-password] credentials updated for user id={}", userId);
@@ -119,5 +83,56 @@ final class PasswordResetEndpoints {
             LOGGER.error("[auth/reset-password] failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
+    }
+
+    /** Applies all credential changes atomically; returns zero for an expired or spent token. */
+    static int consumeToken(Connection conn, String token, String password) throws Exception {
+        boolean previousAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        int userId = 0;
+        try {
+            try (PreparedStatement lookup = conn.prepareStatement(
+                    "SELECT user_id FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1 FOR UPDATE")) {
+                lookup.setString(1, hashToken(token));
+                try (ResultSet rs = lookup.executeQuery()) {
+                    if (rs.next()) userId = rs.getInt("user_id");
+                }
+            }
+            if (userId <= 0) {
+                conn.rollback();
+                return 0;
+            }
+
+            try (PreparedStatement update = conn.prepareStatement(
+                    "UPDATE users SET password = ?, auth_ticket = '', auth_ticket_expires_at = NULL, "
+                            + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
+                update.setString(1, PasswordHasher.hash(password, 12));
+                update.setInt(2, userId);
+                if (update.executeUpdate() != 1) {
+                    conn.rollback();
+                    return 0;
+                }
+            }
+            RememberJwtService.revokeAllForUser(conn, userId);
+            try (PreparedStatement delete =
+                    conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ?")) {
+                delete.setInt(1, userId);
+                delete.executeUpdate();
+            }
+            // A password reset cancels pending mailbox changes as well as login credentials.
+            // Otherwise a previously issued link could change the recovered account's email.
+            try (PreparedStatement delete =
+                    conn.prepareStatement("DELETE FROM email_verification_tokens WHERE user_id = ?")) {
+                delete.setInt(1, userId);
+                delete.executeUpdate();
+            }
+            conn.commit();
+        } catch (Exception error) {
+            conn.rollback();
+            throw error;
+        } finally {
+            conn.setAutoCommit(previousAutoCommit);
+        }
+        return userId;
     }
 }

@@ -507,6 +507,9 @@ final class SessionEndpoints {
 
             AvailabilityCache.invalidateEmail(email);
             AvailabilityCache.invalidateUsername(username);
+            if (newUserId > 0 && !EmailVerificationEndpoints.request(newUserId, email)) {
+                LOGGER.warn("[auth/register] email verification could not be queued for user id={}", newUserId);
+            }
 
             JsonObject ok = new JsonObject();
             ok.addProperty(
@@ -535,12 +538,29 @@ final class SessionEndpoints {
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement stmt =
-                        conn.prepareStatement("SELECT id, username FROM users WHERE mail = ? LIMIT 1")) {
+                        conn.prepareStatement("SELECT id, username FROM users WHERE mail = ? AND email_verified_at IS NOT NULL LIMIT 1")) {
             stmt.setString(1, email);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int userId = rs.getInt("id");
                     String username = rs.getString("username");
+                    // A database email field alone is not evidence of mailbox ownership.
+                    // Enforce a per-account cooldown atomically in the database.
+                    try (PreparedStatement insertLimit = conn.prepareStatement(
+                            "INSERT IGNORE INTO password_recovery_limits (user_id, next_allowed_at) "
+                                    + "VALUES (?, '1970-01-01 00:00:01')")) {
+                        insertLimit.setInt(1, userId);
+                        insertLimit.executeUpdate();
+                    }
+                    try (PreparedStatement claim = conn.prepareStatement(
+                            "UPDATE password_recovery_limits SET next_allowed_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE) "
+                                    + "WHERE user_id = ? AND next_allowed_at <= NOW()")) {
+                        claim.setInt(1, userId);
+                        if (claim.executeUpdate() != 1) {
+                            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                            return;
+                        }
+                    }
                     String token = mintResetToken();
                     long expiresAt = Instant.now().getEpochSecond() + 20L * 60L; // 20 minutes
 

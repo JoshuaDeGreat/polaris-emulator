@@ -30,3 +30,23 @@ The tool checks that the new sprite ID/classname are absent from the existing co
 6. Have a reviewed new Flyway migration, a rollback plan, and a test item purchase/placement/re-entry before publishing to production.
 
 Tests: `cd scripts; python -m unittest test_habboassets_furni_import test_stage_heaven_furni`. The 10 tests run entirely offline, with synthetic fixtures.
+
+
+## Offline release preflight and CI
+
+After staging, run:
+
+```powershell
+python scripts/verify_heaven_furni_release.py `
+  --package .\review-demo-sofa `
+  --stage .\review-stage-demo-sofa `
+  --report .\review-demo-sofa-preflight.json
+```
+
+The result `OFFLINE_CHECKS_PASSED_NOT_DEPLOY_APPROVAL` **does not authorize publication**. The script verifies the package hashes, staged asset copies, merged FurnitureData hash and classname/sprite correspondence, but makes **no live Railway or Cloudflare checks**. A `BLOCKED` result must be investigated, not bypassed.
+
+The dedicated `.github/workflows/heaven-furni-importer.yml` workflow runs isolated Python syntax and tests on PRs, pushes to `main`, and manual dispatch. GitHub workflow checks are separate from validating a *real* furniture bundle and the user's canonical complete static-asset sources. Do not expose HabboAssets API tokens as build artifacts or PR comments.
+
+## Asset-source discovery limitation
+
+The connected Cloudflare API lists `octane-game-assets` and `octane-furniture-icons` Workers, but this does not establish that a reconstructable full local static-asset source directory exists. The workers' script-content read endpoint returned no script content for these Workers in the connected API. Do not assume we can safely publish a partial asset overlay or recover missing existing files via a Worker listing. Obtain the actual complete original deployment directories (or an integrity-verified backup) before a public publish.

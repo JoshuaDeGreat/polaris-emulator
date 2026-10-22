@@ -8,6 +8,8 @@ on:
       - "scripts/test_habboassets_furni_import.py"
       - "scripts/test_stage_heaven_furni.py"
       - "scripts/verify_heaven_furni_release.py"
+      - "scripts/audit_heaven_asset_sources.py"
+      - "scripts/test_audit_heaven_asset_sources.py"
       - "scripts/test_verify_heaven_furni_release.py"
       - ".github/workflows/heaven-furni-importer.yml"
   push:
@@ -18,6 +20,8 @@ on:
       - "scripts/test_habboassets_furni_import.py"
       - "scripts/test_stage_heaven_furni.py"
       - "scripts/verify_heaven_furni_release.py"
+      - "scripts/audit_heaven_asset_sources.py"
+      - "scripts/test_audit_heaven_asset_sources.py"
       - "scripts/test_verify_heaven_furni_release.py"
       - ".github/workflows/heaven-furni-importer.yml"
   workflow_dispatch:
@@ -37,7 +41,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile tools
-        run: python -m compileall -q scripts/habboassets_furni_import.py scripts/stage_heaven_furni.py scripts/verify_heaven_furni_release.py
+        run: python -m compileall -q scripts/habboassets_furni_import.py scripts/stage_heaven_furni.py scripts/verify_heaven_furni_release.py scripts/audit_heaven_asset_sources.py
       - name: Run offline furniture tests
         working-directory: scripts
-        run: python -m unittest -v test_habboassets_furni_import test_stage_heaven_furni test_verify_heaven_furni_release
+        run: python -m unittest -v test_habboassets_furni_import test_stage_heaven_furni test_verify_heaven_furni_release test_audit_heaven_asset_sources

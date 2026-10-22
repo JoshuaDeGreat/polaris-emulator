@@ -15,8 +15,8 @@ This feature is intentionally developed on `feature/heaven-password-recovery` wh
 
 ## Required deployment settings
 Add these settings to Polaris configuration via a secure secrets mechanism (do not commit a real key):
-- `smtp.provider=resend`
-- `resend.api_key=<Resend sending API key>`
+- Hosting environment variable `SMTP_PROVIDER=resend` (or the equivalent non-secret emulator setting)
+- Hosting environment secret `RESEND_API_KEY=<Resend sending API key>` **(never store this key in the emulator database)**
 - `smtp.from_address=accounts@heavenhotel.uk`
 - `smtp.from_name=Heaven Hotel`
 - `password.reset.url=https://heavenhotel.uk/client/?recovery=1`

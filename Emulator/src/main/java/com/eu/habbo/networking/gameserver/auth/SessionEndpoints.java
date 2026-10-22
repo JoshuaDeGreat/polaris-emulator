@@ -437,9 +437,9 @@ final class SessionEndpoints {
                         boolean userTaken = existingUser != null && existingUser.equalsIgnoreCase(username);
                         boolean mailTaken = existingMail != null && existingMail.equalsIgnoreCase(email);
                         String message;
-                        if (userTaken && mailTaken) message = "That Habbo name and email are already in use.";
+                        if (userTaken && mailTaken) message = "These registration details cannot be used. Please choose another username or email.";
                         else if (userTaken) message = "That Habbo name is already in use.";
-                        else message = "That email address is already in use.";
+                        else message = "These registration details cannot be used. Please choose another email or sign in.";
                         sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
                         return;
                     }

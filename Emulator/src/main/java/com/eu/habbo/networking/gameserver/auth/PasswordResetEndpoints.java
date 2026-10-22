@@ -5,6 +5,8 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.readString;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -90,6 +92,16 @@ final class PasswordResetEndpoints {
                 throw error;
             } finally {
                 conn.setAutoCommit(previousAutoCommit);
+            }
+            try {
+                SessionResumeManager.getInstance().disposeGhostSession(userId);
+                var active = Emulator.getGameServer().getGameClientManager().getHabbo(userId);
+                if (active != null && active.getClient() != null) {
+                    Emulator.getGameServer().getGameClientManager()
+                            .disconnectWithReason(active.getClient(), DisconnectReasonComposer.LOGOUT);
+                }
+            } catch (Exception disconnectError) {
+                LOGGER.error("[auth/reset-password] session eviction failed for user id={}", userId, disconnectError);
             }
             LOGGER.info("[auth/reset-password] credentials updated for user id={}", userId);
             JsonObject ok = new JsonObject();

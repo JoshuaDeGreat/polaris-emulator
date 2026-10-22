@@ -542,26 +542,26 @@ final class SessionEndpoints {
                     int userId = rs.getInt("id");
                     String username = rs.getString("username");
                     String token = mintResetToken();
-                    long expiresAt = Instant.now().getEpochSecond() + 60L * 60L; // 1h
+                    long expiresAt = Instant.now().getEpochSecond() + 20L * 60L; // 20 minutes
 
                     try (PreparedStatement ins = conn.prepareStatement(
                             "INSERT INTO password_resets (user_id, token, expires_at, created_ip) "
                                     + "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
                                     + "token = VALUES(token), expires_at = VALUES(expires_at), created_ip = VALUES(created_ip)")) {
                         ins.setInt(1, userId);
-                        ins.setString(2, token);
+                        ins.setString(2, PasswordResetEndpoints.hashToken(token));
                         ins.setTimestamp(3, Timestamp.from(Instant.ofEpochSecond(expiresAt)));
                         ins.setString(4, ip == null ? "" : ip);
                         ins.executeUpdate();
                     }
 
                     String resetUrlBase =
-                            Emulator.getConfig().getValue("password.reset.url", "http://localhost/reset-password");
+                            Emulator.getConfig().getValue("password.reset.url", "https://heavenhotel.uk/reset-password");
                     String fullUrl = resetUrlBase + (resetUrlBase.contains("?") ? "&" : "?") + "token=" + token;
-                    String subject = "Reset your Habbo password";
+                    String subject = "Reset your Heaven Hotel password";
                     String message = "Hi " + username + ",\n\n"
-                            + "Someone (hopefully you) requested a password reset for your Habbo account.\n"
-                            + "Click the link below within the next hour to choose a new password:\n\n"
+                            + "Someone (hopefully you) requested a password reset for your Heaven Hotel account.\n"
+                            + "Click the link below within 20 minutes to choose a new password:\n\n"
                             + fullUrl
                             + "\n\n" + "If you didn't request this you can safely ignore this email.";
 

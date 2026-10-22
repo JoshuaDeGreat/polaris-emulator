@@ -38,29 +38,10 @@ final class AccountCheckEndpoints {
             return;
         }
 
-        Boolean cached = AvailabilityCache.lookupEmail(email);
-        boolean taken;
-        if (cached != null) {
-            taken = !cached;
-        } else {
-            try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(
-                         "SELECT 1 FROM users WHERE mail = ? LIMIT 1")) {
-                stmt.setString(1, email);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    taken = rs.next();
-                }
-            } catch (Exception e) {
-                LOGGER.error("check-email failed", e);
-                sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
-                return;
-            }
-            AvailabilityCache.storeEmail(email, !taken);
-        }
-
+        // Do not reveal whether an email is attached to an existing player.
+        // Uniqueness is still enforced at registration.
         JsonObject res = new JsonObject();
-        res.addProperty("available", !taken);
-        if (taken) res.addProperty("error", "This email is already in use.");
+        res.addProperty("available", true);
         sendJson(ctx, req, HttpResponseStatus.OK, res);
     }
 

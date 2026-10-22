@@ -114,8 +114,7 @@ final class PasswordResetEndpoints {
                 }
             }
             RememberJwtService.revokeAllForUser(conn, userId);
-            try (PreparedStatement delete =
-                    conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ?")) {
+            try (PreparedStatement delete = conn.prepareStatement("DELETE FROM password_resets WHERE user_id = ?")) {
                 delete.setInt(1, userId);
                 delete.executeUpdate();
             }

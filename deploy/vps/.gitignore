@@ -1,0 +1,10 @@
+# No production secrets, dumps, or server credentials in public GitHub.
+.env
+.env.*
+!.env.example
+backups/
+*.sql
+*.sql.gz
+*.pem
+*.key
+id_*

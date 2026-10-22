@@ -1,0 +1,55 @@
+name: VPS configuration safety checks
+
+on:
+  pull_request:
+    paths:
+      - "deploy/vps/**"
+      - ".github/workflows/vps-config-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # PR-controlled code never receives production secrets or deployment permissions.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout untrusted PR without secrets
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Validate Compose syntax using throwaway values only
+        env:
+          MARIADB_IMAGE: mariadb:11.4
+          POLARIS_IMAGE: ghcr.io/example/polaris@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          DB_DATABASE: heavenhotel
+          DB_USERNAME: ci-check-only
+          DB_PASSWORD: not-a-real-secret
+          DB_ROOT_PASSWORD: not-a-real-secret
+        run: |
+          set -euo pipefail
+          docker compose -f deploy/vps/compose.yaml config --quiet
+
+      - name: Confirm database and Docker API stay private
+        env:
+          MARIADB_IMAGE: mariadb:11.4
+          POLARIS_IMAGE: ghcr.io/example/polaris@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          DB_DATABASE: heavenhotel
+          DB_USERNAME: ci-check-only
+          DB_PASSWORD: not-a-real-secret
+          DB_ROOT_PASSWORD: not-a-real-secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f deploy/vps/compose.yaml config --format json | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          services = data["services"]
+          assert not services["mariadb"].get("ports"), "Database ports must stay private"
+          assert "docker.sock" not in str(data), "Docker socket must never be mounted"
+          for binding in services["polaris"].get("ports", []):
+              assert binding.get("host_ip") == "127.0.0.1", "Emulator ports must bind to loopback"
+          print("VPS private-network checks passed.")
+          '

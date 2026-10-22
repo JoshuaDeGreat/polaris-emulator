@@ -1,6 +1,10 @@
 package com.eu.habbo.networking.gameserver.auth;
 
-import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.*;
+import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.EMAIL_RE;
+import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.errorPayload;
+import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.mintResetToken;
+import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.readString;
+import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 import com.eu.habbo.Emulator;
 import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandlerContext;

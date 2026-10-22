@@ -1,6 +1,13 @@
 package com.eu.habbo.networking.gameserver.auth;
 
 import com.eu.habbo.Emulator;
+import com.google.gson.JsonObject;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import com.eu.habbo.resilience.RuntimeResilienceRuntime;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
@@ -23,8 +30,41 @@ public final class SmtpMailService {
                 "smtp", () -> sendDirect(toAddress, subject, body), () -> false);
     }
 
+    private static boolean sendWithResend(String toAddress, String subject, String body) throws Exception {
+        String key = Emulator.getConfig().getValue("resend.api_key", "").trim();
+        String from = Emulator.getConfig().getValue("smtp.from_address", "accounts@heavenhotel.uk").trim();
+        String fromName = Emulator.getConfig().getValue("smtp.from_name", "Heaven Hotel").trim();
+        if (key.isEmpty() || toAddress == null || toAddress.isBlank() || from.isEmpty()) {
+            LOGGER.error("Resend delivery unavailable: missing API key, recipient or sender");
+            return false;
+        }
+
+        JsonObject payload = new JsonObject();
+        payload.addProperty("from", fromName + " <" + from + ">");
+        payload.addProperty("to", toAddress);
+        payload.addProperty("subject", subject);
+        payload.addProperty("text", body);
+        HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.resend.com/emails"))
+                .timeout(Duration.ofSeconds(12))
+                .header("Authorization", "Bearer " + key)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString(), StandardCharsets.UTF_8))
+                .build();
+        HttpResponse<String> response = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build()
+                .send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            // Never log the key, the recipient address or the full response body.
+            LOGGER.warn("Resend email delivery failed with HTTP {}", response.statusCode());
+            return false;
+        }
+        return true;
+    }
+
     private static boolean sendDirect(String toAddress, String subject, String body) throws Exception {
         String provider = Emulator.getConfig().getValue("smtp.provider", "own").toLowerCase();
+        if ("resend".equals(provider)) return sendWithResend(toAddress, subject, body);
         String username = Emulator.getConfig().getValue("smtp.username", "");
         String password = Emulator.getConfig().getValue("smtp.password", "");
         String fromAddr = Emulator.getConfig().getValue("smtp.from_address", username);

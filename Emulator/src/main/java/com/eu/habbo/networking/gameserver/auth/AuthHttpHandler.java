@@ -79,6 +79,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String REGISTER_PATH = "/api/auth/register";
     static final String FORGOT_PATH = "/api/auth/forgot-password";
     static final String RESET_PATH = "/api/auth/reset-password";
+    static final String VERIFY_EMAIL_PATH = "/api/auth/verify-email";
+    static final String REQUEST_EMAIL_VERIFICATION_PATH = "/api/auth/request-email-verification";
     static final String LOGOUT_PATH = "/api/auth/logout";
     static final String CHECK_EMAIL_PATH = "/api/auth/check-email";
     static final String CHECK_USERNAME_PATH = "/api/auth/check-username";
@@ -139,6 +141,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
                 || path.equals(RESET_PATH)
+                || path.equals(VERIFY_EMAIL_PATH)
+                || path.equals(REQUEST_EMAIL_VERIFICATION_PATH)
                 || path.equals(LOGOUT_PATH)
                 || path.equals(CHECK_EMAIL_PATH)
                 || path.equals(CHECK_USERNAME_PATH)
@@ -258,6 +262,14 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (path.equals(VERIFY_EMAIL_PATH)) {
+            EmailVerificationEndpoints.handleConfirm(ctx, req, body, ip);
+            return;
+        }
+        if (path.equals(REQUEST_EMAIL_VERIFICATION_PATH)) {
+            EmailVerificationEndpoints.handleRequest(ctx, req, ip);
+            return;
+        }
         if (path.equals(RESET_PATH)) {
             if (!AuthRateLimiter.tryProbe(ip)) {
                 sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS, errorPayload("Too many requests. Try again later."));

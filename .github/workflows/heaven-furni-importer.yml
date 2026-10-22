@@ -1,0 +1,43 @@
+name: Heaven furniture importer checks
+
+on:
+  pull_request:
+    paths:
+      - "scripts/habboassets_furni_import.py"
+      - "scripts/stage_heaven_furni.py"
+      - "scripts/test_habboassets_furni_import.py"
+      - "scripts/test_stage_heaven_furni.py"
+      - "scripts/verify_heaven_furni_release.py"
+      - "scripts/test_verify_heaven_furni_release.py"
+      - ".github/workflows/heaven-furni-importer.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/habboassets_furni_import.py"
+      - "scripts/stage_heaven_furni.py"
+      - "scripts/test_habboassets_furni_import.py"
+      - "scripts/test_stage_heaven_furni.py"
+      - "scripts/verify_heaven_furni_release.py"
+      - "scripts/test_verify_heaven_furni_release.py"
+      - ".github/workflows/heaven-furni-importer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  furniture-import-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile tools
+        run: python -m compileall -q scripts/habboassets_furni_import.py scripts/stage_heaven_furni.py scripts/verify_heaven_furni_release.py
+      - name: Run offline furniture tests
+        working-directory: scripts
+        run: python -m unittest -v test_habboassets_furni_import test_stage_heaven_furni test_verify_heaven_furni_release

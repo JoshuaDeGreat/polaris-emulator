@@ -67,9 +67,9 @@ final class EmailVerificationEndpoints {
             }
             String url = Emulator.getConfig().getValue("email.verify.url", "https://heavenhotel.uk/client/?verify=1")
                     + "#token=" + token;
-            String text = "Welcome to Heaven Hotel!\\n\\nConfirm that you control this email address "
-                    + "by opening this link within 30 minutes:\\n\\n" + url
-                    + "\\n\\nIf you did not request this, ignore the message.";
+            String text = "Welcome to Heaven Hotel!\n\nConfirm that you control this email address "
+                    + "by opening this link within 30 minutes:\n\n" + url
+                    + "\n\nIf you did not request this, ignore the message.";
             return SessionEndpoints.submitResetEmail(() -> {
                 if (!SmtpMailService.send(email, "Verify your Heaven Hotel email", text)) {
                     LOGGER.warn("[auth/email-verification] delivery failed for user id={}", userId);

@@ -27,9 +27,7 @@ final class BuildersClubCatalogOfferResolver {
         // the offer to actually be present on the selected Builders Club page.
         if (pageId == -1) return item;
         CatalogPage requestedPage =
-                pageId == item.getPageId()
-                        ? sourcePage
-                        : catalog.getCatalogPage(pageId, CatalogPageType.BUILDER);
+                pageId == item.getPageId() ? sourcePage : catalog.getCatalogPage(pageId, CatalogPageType.BUILDER);
 
         if (requestedPage == null || !requestedPage.isEnabled() || !requestedPage.isVisible()) return null;
         if (!requestedPage.getCatalogItems().containsKey(item.getId())) return null;

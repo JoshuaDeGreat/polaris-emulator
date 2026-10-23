@@ -60,6 +60,7 @@ final class WebsiteAccountEndpoints {
                 }}
             }
             profile.add("rooms", rooms);
+            profile.addProperty("canAccessStaff", WebsiteStaffAccess.canAccessStaff(userId));
             profile.addProperty("canEditNews", WebsiteStaffAccess.find(userId) != null);
             AuthHttpUtil.sendJson(ctx, req, HttpResponseStatus.OK, profile);
         } catch (SQLException e) {

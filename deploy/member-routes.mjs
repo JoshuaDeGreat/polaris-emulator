@@ -37,7 +37,7 @@ export async function memberRoute(request,page,fetcher=fetch){
    resultHeaders.set('Set-Cookie',COOKIE+'='+data.accessToken+'; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age='+age);
    return new Response('{"ok":true}',{headers:resultHeaders});
   }
-  if(path==='/api/site/logout'&&response.ok)resultHeaders.set('Set-Cookie',clearCookie());
+  if(path==='/api/site/logout'&&(response.ok||response.status===401)){resultHeaders.set('Set-Cookie',clearCookie());return new Response('{"ok":true}',{headers:resultHeaders});}
   return new Response(response.body,{status:response.status,headers:resultHeaders});
  }catch{return staffError(502,'Your account is temporarily unavailable. Please try again.');}
 }

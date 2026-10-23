@@ -12,7 +12,7 @@ files['/index.html'].body=files['/index.html'].body.replace('href="https://polar
 files['/config.js'].body=files['/config.js'].body.replace('staffReady: false','staffReady: false').replace("staffUrl: 'https://polaris-polaris-hotel.up.railway.app/community/staff'","staffUrl: 'https://heavenhotel.uk/staff'");
 files['/robots.txt'].body=files['/robots.txt'].body.replace('Allow: /','Allow: /\nDisallow: /staff\nDisallow: /api/community/staff/');
 files['/index.html'].body=files['/index.html'].body.replace('class="login-link" data-enter href="https://play.heavenhotel.uk/"','class="login-link" id="accountNavLink" href="/account"');
-files['/app.js'].body+='\nfetch("/api/site/account",{credentials:"same-origin",cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{if(!p)return;document.querySelector("#accountNavLink").textContent="My account →";document.querySelector("#staffLink").hidden=!p.canEditNews;}).catch(()=>{});\n';
+files['/app.js'].body+='\nfetch("/api/site/account",{credentials:"same-origin",cache:"no-store"}).then(r=>r.ok?r.json():null).then(p=>{if(!p)return;document.querySelector("#accountNavLink").textContent="My account →";document.querySelector("#staffLink").hidden=!p.canAccessStaff;}).catch(()=>{});\n';
 files['/robots.txt'].body+='Disallow: /account\nDisallow: /api/site/\n';
 source=source.slice(0,start)+JSON.stringify(files)+source.slice(end);
 const unexport=text=>text.replace(/export (const|async function|function) /g,'$1 ');

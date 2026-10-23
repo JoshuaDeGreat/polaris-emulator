@@ -2,8 +2,6 @@ package com.eu.habbo.messages.incoming.catalog;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
-import com.eu.habbo.habbohotel.catalog.CatalogPage;
-import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRecolorable;
@@ -65,7 +63,8 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
             }
         }
 
-        CatalogItem catalogItem = resolveCatalogItem(pageId, offerId);
+        CatalogItem catalogItem = BuildersClubCatalogOfferResolver.resolve(
+                Emulator.getGameEnvironment().getCatalogManager(), pageId, offerId);
         Item baseItem = resolveBaseItem(catalogItem, FurnitureType.WALL);
 
         if (catalogItem == null || baseItem == null || WiredWebApiOwnership.isWebApiItem(baseItem)) {
@@ -109,37 +108,6 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
         }
 
         BuildersClubRoomSupport.sendPlacementStatusForPool(room, placementUserId);
-    }
-
-    private CatalogItem resolveCatalogItem(int pageId, int offerId) {
-        CatalogItem buildersClubItem =
-                Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offerId, CatalogPageType.BUILDER);
-
-        if (buildersClubItem != null) {
-            return buildersClubItem;
-        }
-
-        int catalogItemId =
-                Emulator.getGameEnvironment().getCatalogManager().offerDefs.get(offerId);
-
-        if (catalogItemId > 0) {
-            return Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(catalogItemId);
-        }
-
-        CatalogPage page =
-                Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, CatalogPageType.BUILDER);
-
-        if (page == null) {
-            return null;
-        }
-
-        for (CatalogItem catalogItem : page.getCatalogItems().values()) {
-            if (catalogItem.getOfferId() == offerId) {
-                return catalogItem;
-            }
-        }
-
-        return null;
     }
 
     private Item resolveBaseItem(CatalogItem catalogItem, FurnitureType expectedType) {

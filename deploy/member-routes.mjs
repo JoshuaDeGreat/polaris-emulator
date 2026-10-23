@@ -25,7 +25,7 @@ export async function memberRoute(request,page,fetcher=fetch){
  if(method==='POST'&&!/^application\/json(?:\s*;|$)/i.test(request.headers.get('content-type')||''))return staffError(415,'Use JSON.');
  const token=websiteCookie(request);if(privateRoute&&!token)return staffError(401,'Please sign in to your account.');
  let body;if(method==='POST'){try{body=await staffBody(request,8192);}catch{return staffError(413,'Request is too large.');}}
- const headers=new Headers({Accept:'application/json'});if(privateRoute)headers.set('Authorization','Bearer '+token);if(method==='POST'){headers.set('Origin',WEBSITE_UPSTREAM);headers.set('Content-Type','application/json');}
+ const headers=new Headers({Accept:'application/json'});const clientIp=request.headers.get('CF-Connecting-IP');if(clientIp)headers.set('CF-Connecting-IP',clientIp);if(privateRoute)headers.set('Authorization','Bearer '+token);if(method==='POST'){headers.set('Origin',WEBSITE_UPSTREAM);headers.set('Content-Type','application/json');}
  try{
   const response=await fetcher(WEBSITE_UPSTREAM+target,{method,headers,body,redirect:'manual',signal:AbortSignal.timeout(15000)});
   if(response.status>=300&&response.status<400)return staffError(502,'The account service returned an unexpected redirect.');

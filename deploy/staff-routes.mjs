@@ -25,7 +25,7 @@ export async function staffRoute(request,page,fetcher=fetch){
  const auth=request.headers.get('authorization')||'';
  if(news&&!/^Bearer \S+$/.test(auth))return staffError(403,'Sign in with an authorized staff account.');
  let body;if(request.method==='POST'){try{body=await staffBody(request,login?8192:50000);}catch{return staffError(413,'Request is too large.');}}
- const headers=new Headers({Accept:'application/json'});if(news)headers.set('Authorization',auth);
+ const headers=new Headers({Accept:'application/json'});const clientIp=request.headers.get('CF-Connecting-IP');if(clientIp)headers.set('CF-Connecting-IP',clientIp);if(news)headers.set('Authorization',auth);
  if(request.method==='POST'){headers.set('Content-Type','application/json');headers.set('Origin',STAFF_API_ORIGIN);}
  try{
   const response=await fetcher(STAFF_API_ORIGIN+path,{method:request.method,headers,body,redirect:'manual',signal:AbortSignal.timeout(15000)});

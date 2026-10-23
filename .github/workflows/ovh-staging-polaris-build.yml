@@ -1,0 +1,58 @@
+name: OVH staging Polaris build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ovh-staging-polaris-build
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Build and test Polaris (no deployment)
+    runs-on: ubuntu-24.04
+    environment: ovh-staging
+    timeout-minutes: 45
+    steps:
+      - name: Checkout current hotel development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/heaven-password-recovery
+          persist-credentials: false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: Emulator/pom.xml
+
+      - name: Build with targeted regression tests
+        working-directory: Emulator
+        run: |
+          bash ./mvnw -B -ntp \
+            -Dtest=WebsiteSessionServiceTest,WebsiteAccountEndpointsTest,WebsiteStaffAccessTest,CommunityEndpointsTest,TurnstileVerifierResponseTest,PublicRoomGalleryTest,HousekeepingGalleryAccessTest,PublicRoomGalleryHttpHandlerTest,CatalogPosterDataTest,CatalogPurchaseAvailabilityTest,CatalogValidatorTest,JdbcCatalogValidationDataRepositoryTest,MariaDbMigrationBackupTest \
+            package
+
+      - name: Confirm runnable JAR exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(Emulator/target/*-jar-with-dependencies.jar)
+          if [[ ${#files[@]} -ne 1 || ! -s "${files[0]}" ]]; then
+            echo "::error::Expected one nonempty Polaris jar-with-dependencies artifact."
+            exit 1
+          fi
+          sha256sum "${files[0]}"
+
+      - name: Upload staging build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polaris-staging-jar
+          path: Emulator/target/*-jar-with-dependencies.jar
+          if-no-files-found: error
+          retention-days: 7

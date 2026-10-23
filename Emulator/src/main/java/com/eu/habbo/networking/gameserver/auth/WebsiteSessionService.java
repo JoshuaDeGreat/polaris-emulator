@@ -37,7 +37,7 @@ final class WebsiteSessionService {
                 if(!row.next()||!MessageDigest.isEqual(row.getString("credential_hash").getBytes(StandardCharsets.US_ASCII),digest(row.getString("password")).getBytes(StandardCharsets.US_ASCII)))return 0;
                 return row.getInt("user_id");
             }
-        }catch(SQLException e){org.slf4j.LoggerFactory.getLogger(WebsiteSessionService.class).warn("Website session lookup failed");return 0;}
+        }catch(SQLException e){org.slf4j.LoggerFactory.getLogger(WebsiteSessionService.class).warn("Website session lookup failed");throw new IllegalStateException("Website session service unavailable",e);}
     }
     static void revoke(String token)throws SQLException {
         if(!validFormat(token))return;

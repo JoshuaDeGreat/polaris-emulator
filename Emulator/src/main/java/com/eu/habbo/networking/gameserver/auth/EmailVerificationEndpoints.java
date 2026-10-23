@@ -71,7 +71,7 @@ final class EmailVerificationEndpoints {
                     + "by opening this link within 30 minutes:\n\n" + url
                     + "\n\nIf you did not request this, ignore the message.";
             return SessionEndpoints.submitResetEmail(() -> {
-                if (!SmtpMailService.send(email, "Verify your Heaven Hotel email", text)) {
+                if (!SmtpMailService.send(email, "Verify your Heaven Hotel email", text, AccountEmailTemplate.emailVerification(url))) {
                     LOGGER.warn("[auth/email-verification] delivery failed for user id={}", userId);
                 }
             });

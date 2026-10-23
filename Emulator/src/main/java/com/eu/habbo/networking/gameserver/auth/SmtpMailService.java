@@ -10,6 +10,8 @@ import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMultipart;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -26,11 +28,15 @@ public final class SmtpMailService {
     private SmtpMailService() {}
 
     public static boolean send(String toAddress, String subject, String body) {
-        return RuntimeResilienceRuntime.executeExternal(
-                "smtp", () -> sendDirect(toAddress, subject, body), () -> false);
+        return send(toAddress, subject, body, null);
     }
 
-    private static boolean sendWithResend(String toAddress, String subject, String body) throws Exception {
+    public static boolean send(String toAddress, String subject, String body, String html) {
+        return RuntimeResilienceRuntime.executeExternal(
+                "smtp", () -> sendDirect(toAddress, subject, body, html), () -> false);
+    }
+
+    private static boolean sendWithResend(String toAddress, String subject, String body, String html) throws Exception {
         String key = System.getenv("RESEND_API_KEY");
         key = key == null ? "" : key.trim();
         String from = Emulator.getConfig()
@@ -48,6 +54,7 @@ public final class SmtpMailService {
         payload.addProperty("to", toAddress);
         payload.addProperty("subject", subject);
         payload.addProperty("text", body);
+        if (html != null) payload.addProperty("html", html);
         HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.resend.com/emails"))
                 .timeout(Duration.ofSeconds(12))
                 .header("Authorization", "Bearer " + key)
@@ -66,13 +73,13 @@ public final class SmtpMailService {
         return true;
     }
 
-    private static boolean sendDirect(String toAddress, String subject, String body) throws Exception {
+    private static boolean sendDirect(String toAddress, String subject, String body, String html) throws Exception {
         String providerOverride = System.getenv("SMTP_PROVIDER");
         String provider = (providerOverride == null || providerOverride.isBlank()
                         ? Emulator.getConfig().getValue("smtp.provider", "own")
                         : providerOverride)
                 .toLowerCase(java.util.Locale.ROOT);
-        if ("resend".equals(provider)) return sendWithResend(toAddress, subject, body);
+        if ("resend".equals(provider)) return sendWithResend(toAddress, subject, body, html);
         String username = Emulator.getConfig().getValue("smtp.username", "");
         String password = Emulator.getConfig().getValue("smtp.password", "");
         String fromAddr = Emulator.getConfig().getValue("smtp.from_address", username);
@@ -141,7 +148,18 @@ public final class SmtpMailService {
         message.setFrom(new InternetAddress(fromAddr, fromName, "UTF-8"));
         message.addRecipient(Message.RecipientType.TO, new InternetAddress(toAddress));
         message.setSubject(subject, "UTF-8");
-        message.setText(body, "UTF-8");
+        if (html == null) {
+            message.setText(body, "UTF-8");
+        } else {
+            MimeBodyPart plainPart = new MimeBodyPart();
+            plainPart.setText(body, "UTF-8");
+            MimeBodyPart htmlPart = new MimeBodyPart();
+            htmlPart.setText(html, "UTF-8", "html");
+            MimeMultipart alternative = new MimeMultipart("alternative");
+            alternative.addBodyPart(plainPart);
+            alternative.addBodyPart(htmlPart);
+            message.setContent(alternative);
+        }
 
         Transport.send(message);
         return true;

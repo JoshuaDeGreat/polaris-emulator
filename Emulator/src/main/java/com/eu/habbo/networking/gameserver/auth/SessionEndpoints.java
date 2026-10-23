@@ -590,7 +590,7 @@ final class SessionEndpoints {
                             + "\n\n" + "If you didn't request this you can safely ignore this email.";
 
                     if (!submitResetEmail(() -> {
-                        if (!SmtpMailService.send(email, subject, message)) {
+                        if (!SmtpMailService.send(email, subject, message, AccountEmailTemplate.passwordReset(username, fullUrl))) {
                             LOGGER.warn("[auth/forgot-password] recovery email delivery failed for user id={}", userId);
                             // A failed send must not strand the user with an unusable token/cooldown.
                             try (Connection cleanup =

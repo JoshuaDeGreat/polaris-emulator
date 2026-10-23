@@ -259,6 +259,14 @@ final class SessionEndpoints {
     }
 
     static void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        handleLogin(ctx, req, body, ip, false);
+    }
+
+    static void handleWebsiteLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        handleLogin(ctx, req, body, ip, true);
+    }
+
+    private static void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip, boolean website) {
         String username = readString(body, "username").trim();
         String password = readString(body, "password");
         boolean rememberMe = readBoolean(body, "remember", false) || readBoolean(body, "rememberMe", false);
@@ -331,6 +339,16 @@ final class SessionEndpoints {
 
                     if (!passesMaintenanceGate(ctx, req, rs.getInt("rank"), "auth/login", userId)) {
                         AuthRateLimiter.recordSuccess(ip);
+                        return;
+                    }
+
+                    if (website) {
+                        AuthRateLimiter.recordSuccess(ip);
+                        WebsiteSessionService.Issued access = WebsiteSessionService.issue(conn, userId, stored);
+                        JsonObject response = new JsonObject();
+                        response.addProperty("accessToken", access.token());
+                        response.addProperty("accessTokenExpiresAt", access.expiresAt());
+                        AuthHttpUtil.sendJson(ctx, req, HttpResponseStatus.OK, response);
                         return;
                     }
 

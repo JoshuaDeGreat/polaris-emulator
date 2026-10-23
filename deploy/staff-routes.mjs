@@ -1,7 +1,7 @@
 const STAFF_API_ORIGIN='https://polaris-polaris-hotel.up.railway.app';
-const STAFF_SECURITY={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','X-Robots-Tag':'noindex, nofollow','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"};
-function staffError(status,error){return new Response(JSON.stringify({error}),{status,headers:{...STAFF_SECURITY,'Content-Type':'application/json; charset=utf-8'}});}
-async function staffBody(request,max){
+export const STAFF_SECURITY={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','X-Robots-Tag':'noindex, nofollow','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"};
+export function staffError(status,error){return new Response(JSON.stringify({error}),{status,headers:{...STAFF_SECURITY,'Content-Type':'application/json; charset=utf-8'}});}
+export async function staffBody(request,max){
  if(Number(request.headers.get('content-length'))>max)throw Error('too-large');
  if(!request.body)return new Uint8Array();
  const reader=request.body.getReader(),chunks=[];let n=0;

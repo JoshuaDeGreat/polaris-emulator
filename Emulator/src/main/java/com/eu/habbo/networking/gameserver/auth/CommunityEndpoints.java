@@ -69,10 +69,10 @@ final class CommunityEndpoints {
                 return;
             }
             String auth = req.headers().get(HttpHeaderNames.AUTHORIZATION, "");
-            int userId = auth.startsWith("Bearer ") ? AccessTokenService.verify(auth.substring(7)) : 0;
-            Habbo operator = userId > 0 ? Emulator.getGameEnvironment().getHabboManager().getHabbo(userId) : null;
-            if (!HousekeepingGalleryAccess.canUse(operator)) {
-                json(ctx, req, HttpResponseStatus.FORBIDDEN, error("Stay logged into the hotel with Housekeeping hotel permission, then sign in here."), false);
+            int userId = auth.startsWith("Bearer ") ? WebsiteSessionService.authenticate(auth.substring(7)) : 0;
+            WebsiteStaffAccess.Staff operator = WebsiteStaffAccess.find(userId);
+            if (operator == null) {
+                json(ctx, req, HttpResponseStatus.FORBIDDEN, error("Your account does not have access to the news desk."), false);
                 return;
             }
             if (req.method() == HttpMethod.GET) {
@@ -111,9 +111,9 @@ final class CommunityEndpoints {
                 }
             }
             StaticContentEndpoints.invalidateNews();
-            HousekeepingAuditLog.log(operator.getHabboInfo().getId(), operator.getHabboInfo().getUsername(),
+            HousekeepingAuditLog.log(operator.id(), operator.username(),
                     "hotel.news.save", "news", id, AuthHttpUtil.readString(body,"title"),
-                    "enabled=" + body.get("enabled").getAsBoolean(), operator.getHabboInfo().getIpLogin());
+                    "enabled=" + body.get("enabled").getAsBoolean(), AuthHttpUtil.resolveClientIp(ctx, req));
             json(ctx, req, HttpResponseStatus.OK, news(true), false);
         } catch (IllegalArgumentException ex) {
             json(ctx, req, HttpResponseStatus.BAD_REQUEST, error("Check the article fields. Use plain text and HTTPS image/link URLs."), publicFeed);

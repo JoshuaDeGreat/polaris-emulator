@@ -75,6 +75,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         return configured > 0 ? configured : fallback;
     }
 
+    static final String WEBSITE_LOGIN_PATH = "/api/auth/website-login";
     static final String LOGIN_PATH = "/api/auth/login";
     static final String REGISTER_PATH = "/api/auth/register";
     static final String FORGOT_PATH = "/api/auth/forgot-password";
@@ -138,6 +139,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private static boolean isOurRoute(String path) {
         return CommunityEndpoints.isRoute(path)
                 || path.equals(LOGIN_PATH)
+                || path.equals(WEBSITE_LOGIN_PATH)
+                || WebsiteAccountEndpoints.isRoute(path)
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
                 || path.equals(RESET_PATH)
@@ -160,6 +163,9 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void handle(ChannelHandlerContext ctx, FullHttpRequest req, String path) {
+        if (WebsiteAccountEndpoints.isRoute(path)) {
+            WebsiteAccountEndpoints.handle(ctx, req, path); return;
+        }
         if (CommunityEndpoints.isRoute(path)) {
             CommunityEndpoints.handle(ctx, req, path);
             return;
@@ -340,6 +346,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
 
         switch (path) {
+            case WEBSITE_LOGIN_PATH -> SessionEndpoints.handleWebsiteLogin(ctx, req, body, ip);
             case LOGIN_PATH -> SessionEndpoints.handleLogin(ctx, req, body, ip);
             case REGISTER_PATH -> SessionEndpoints.handleRegister(ctx, req, body, ip);
             case FORGOT_PATH -> SessionEndpoints.handleForgot(ctx, req, body, ip);

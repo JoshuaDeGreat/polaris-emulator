@@ -1,0 +1,115 @@
+name: OVH staging Octane build and transfer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ovh-staging-octane-transfer
+  cancel-in-progress: false
+
+jobs:
+  transfer:
+    name: Build pinned Octane and transfer static files
+    runs-on: ubuntu-24.04
+    environment: ovh-staging
+    timeout-minutes: 45
+    env:
+      OVH_HOST: ${{ secrets.OVH_VPS_HOST }}
+      OVH_KEY_B64: ${{ secrets.OVH_DEPLOY_SSH_KEY_B64 }}
+      EXPECTED_FINGERPRINT: SHA256:9uEzPHDpmC7ToX1eNxt/4YOwkCswzsw/Dxhrj12Fj6U
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+      RELEASE: octane-f1a08360
+    steps:
+      # Build again inside the Polaris repo because OVH credentials are scoped
+      # to this repo's ovh-staging environment, not the Octane repository.
+      - name: Checkout verified Octane revision
+        uses: actions/checkout@v4
+        with:
+          repository: JoshuaDeGreat/octane
+          ref: f1a08360c32aa73512e751039bcc3c26b579c765
+          path: octane
+          persist-credentials: false
+
+      - name: Checkout matching Renderer revision
+        uses: actions/checkout@v4
+        with:
+          repository: JoshuaDeGreat/Octane-Renderer
+          ref: cb3f067b7d55305c2b431621bc9a551096177192
+          path: octane-renderer
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: octane/.nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Renderer dependencies
+        working-directory: octane-renderer
+        run: corepack yarn install --immutable
+
+      - name: Install Octane dependencies
+        working-directory: octane
+        run: corepack yarn install --immutable
+
+      - name: Link Renderer SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p octane/node_modules/@octane
+          ln -sfn "$GITHUB_WORKSPACE/octane-renderer" octane/node_modules/@octane/renderer
+          test -d octane/node_modules/@octane/renderer/packages/api/src
+
+      - name: Build paired production client
+        working-directory: octane
+        run: corepack yarn build
+
+      - name: Package static output
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s octane/dist/index.html
+          if find octane/dist -type l -print -quit | grep -q .; then
+            echo "::error::Refusing to package symlinks in static output."
+            exit 1
+          fi
+          tar -C octane/dist -czf octane-dist.tar.gz .
+          sha256sum octane-dist.tar.gz
+          du -h octane-dist.tar.gz
+
+      - name: Verify VPS identity and transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$OVH_HOST" || -z "$OVH_KEY_B64" || ! "$OVH_HOST" =~ ^[0-9.]+$ ]]; then
+            echo "::error::Missing or invalid OVH staging secrets."
+            exit 1
+          fi
+          key_file="$(mktemp "$RUNNER_TEMP/ovh-key.XXXXXXXX")"
+          known_hosts="$(mktemp "$RUNNER_TEMP/ovh-known-hosts.XXXXXXXX")"
+          trap 'rm -f "$key_file" "$known_hosts"' EXIT
+          chmod 600 "$key_file" "$known_hosts"
+          printf '%s' "$OVH_KEY_B64" | base64 --decode > "$key_file"
+          ssh-keygen -y -P '' -f "$key_file" >/dev/null
+          ssh-keyscan -T 10 -t ed25519 "$OVH_HOST" 2>/dev/null > "$known_hosts"
+          if [[ "$(wc -l < "$known_hosts")" -ne 1 ]]; then
+            echo "::error::Could not read exactly one VPS host key."
+            exit 1
+          fi
+          actual="$(ssh-keygen -lf "$known_hosts" -E sha256 | awk '{print $2}')"
+          if [[ "$actual" != "$EXPECTED_FINGERPRINT" ]]; then
+            echo "::error::VPS host fingerprint mismatch."
+            exit 1
+          fi
+          ssh_opts=(-i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts" -o ConnectTimeout=10)
+          target="heaven-deploy@$OVH_HOST"
+          checksum="$(sha256sum octane-dist.tar.gz | awk '{print $1}')"
+          ssh "${ssh_opts[@]}" "$target" "umask 027; mkdir -p ~/heaven-staging/releases/$RELEASE; chmod 750 ~/heaven-staging/releases/$RELEASE"
+          scp "${ssh_opts[@]}" octane-dist.tar.gz "$target:heaven-staging/releases/$RELEASE/dist.tar.gz.part"
+          ssh "${ssh_opts[@]}" "$target" "set -eu; cd ~/heaven-staging/releases/$RELEASE; echo '$checksum  dist.tar.gz.part' | sha256sum -c -; mkdir -p site; tar -xzf dist.tar.gz.part -C site --no-same-owner --no-same-permissions; test -s site/index.html; mv dist.tar.gz.part dist.tar.gz; chmod 640 dist.tar.gz; echo 'Octane static site verified in staging. No web server started.'"

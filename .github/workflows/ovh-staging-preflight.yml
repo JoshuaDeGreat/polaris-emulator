@@ -1,0 +1,76 @@
+name: OVH staging preflight (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ovh-staging-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Inspect OVH staging prerequisites
+    runs-on: ubuntu-24.04
+    environment: ovh-staging
+    timeout-minutes: 5
+    env:
+      OVH_HOST: ${{ secrets.OVH_VPS_HOST }}
+      OVH_KEY_B64: ${{ secrets.OVH_DEPLOY_SSH_KEY_B64 }}
+      EXPECTED_FINGERPRINT: SHA256:9uEzPHDpmC7ToX1eNxt/4YOwkCswzsw/Dxhrj12Fj6U
+    steps:
+      - name: Read-only VPS preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$OVH_HOST" || -z "$OVH_KEY_B64" || ! "$OVH_HOST" =~ ^[0-9.]+$ ]]; then
+            echo "::error::Missing or invalid OVH staging secrets."
+            exit 1
+          fi
+          key_file="$(mktemp "$RUNNER_TEMP/ovh-key.XXXXXXXX")"
+          known_hosts="$(mktemp "$RUNNER_TEMP/ovh-known-hosts.XXXXXXXX")"
+          trap 'rm -f "$key_file" "$known_hosts"' EXIT
+          chmod 600 "$key_file" "$known_hosts"
+          printf '%s' "$OVH_KEY_B64" | base64 --decode > "$key_file"
+          ssh-keygen -y -P '' -f "$key_file" >/dev/null
+          ssh-keyscan -T 10 -t ed25519 "$OVH_HOST" 2>/dev/null > "$known_hosts"
+          if [[ "$(wc -l < "$known_hosts")" -ne 1 ]]; then
+            echo "::error::Could not read exactly one SSH host key."
+            exit 1
+          fi
+          actual="$(ssh-keygen -lf "$known_hosts" -E sha256 | awk '{print $2}')"
+          if [[ "$actual" != "$EXPECTED_FINGERPRINT" ]]; then
+            echo "::error::SSH host fingerprint mismatch."
+            exit 1
+          fi
+          ssh -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts" \
+            -o ConnectTimeout=10 "heaven-deploy@$OVH_HOST" 'bash -se' <<'REMOTE'
+          set -eu
+          echo "=== Identity ==="
+          id
+          hostname
+          echo "=== Operating system ==="
+          . /etc/os-release
+          printf "%s %s\n" "$NAME" "$VERSION_ID"
+          echo "=== Resources ==="
+          nproc
+          free -h
+          df -h /
+          echo "=== Tools ==="
+          command -v docker || true
+          docker --version 2>/dev/null || true
+          docker compose version 2>/dev/null || true
+          echo "=== Services ==="
+          systemctl is-active docker || true
+          echo "=== Deployment account access ==="
+          test -d "$HOME/.ssh" && echo "SSH directory present"
+          if test -w /home/ubuntu/heaven-hotel/compose; then
+            echo "Existing compose directory writable"
+          else
+            echo "Existing compose directory NOT writable (expected for unprivileged deploy account)"
+          fi
+          echo "=== Completed (no server changes) ==="
+          REMOTE

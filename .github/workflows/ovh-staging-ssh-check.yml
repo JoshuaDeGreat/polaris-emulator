@@ -1,0 +1,64 @@
+name: OVH staging SSH connection check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ovh-staging-ssh-check
+  cancel-in-progress: false
+
+jobs:
+  verify-ssh:
+    name: Verify restricted SSH access
+    runs-on: ubuntu-24.04
+    environment: ovh-staging
+    timeout-minutes: 5
+    env:
+      OVH_HOST: ${{ secrets.OVH_VPS_HOST }}
+      OVH_KEY: ${{ secrets.OVH_DEPLOY_SSH_KEY }}
+      EXPECTED_FINGERPRINT: SHA256:9uEzPHDpmC7ToX1eNxt/4YOwkCswzsw/Dxhrj12Fj6U
+    steps:
+      - name: Verify VPS identity and SSH login
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$OVH_HOST" || -z "$OVH_KEY" ]]; then
+            echo "::error::Missing OVH_VPS_HOST or OVH_DEPLOY_SSH_KEY in the ovh-staging environment."
+            exit 1
+          fi
+          if [[ ! "$OVH_HOST" =~ ^[0-9.]+$ ]]; then
+            echo "::error::OVH_VPS_HOST must contain only an IPv4 address."
+            exit 1
+          fi
+
+          key_file="$(mktemp "$RUNNER_TEMP/ovh-key.XXXXXXXX")"
+          known_hosts="$(mktemp "$RUNNER_TEMP/ovh-known-hosts.XXXXXXXX")"
+          trap 'rm -f "$key_file" "$known_hosts"' EXIT
+          chmod 600 "$key_file" "$known_hosts"
+          printf '%s\n' "$OVH_KEY" > "$key_file"
+
+          ssh-keyscan -T 10 -t ed25519 "$OVH_HOST" 2>/dev/null > "$known_hosts"
+          if [[ "$(wc -l < "$known_hosts")" -ne 1 ]]; then
+            echo "::error::Could not retrieve exactly one ED25519 host key."
+            exit 1
+          fi
+          actual_fingerprint="$(ssh-keygen -lf "$known_hosts" -E sha256 | awk '{print $2}')"
+          if [[ "$actual_fingerprint" != "$EXPECTED_FINGERPRINT" ]]; then
+            echo "::error::VPS host key fingerprint mismatch; refusing to connect."
+            exit 1
+          fi
+
+          ssh -i "$key_file" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$known_hosts" \
+            -o ConnectTimeout=10 \
+            "heaven-deploy@$OVH_HOST" \
+            'test "$(id -un)" = "heaven-deploy" && printf "Restricted SSH login verified on %s\n" "$(hostname)"'
+
+          echo "VPS identity and restricted SSH login verified; no deployment performed."

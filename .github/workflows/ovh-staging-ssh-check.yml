@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 5
     env:
       OVH_HOST: ${{ secrets.OVH_VPS_HOST }}
-      OVH_KEY: ${{ secrets.OVH_DEPLOY_SSH_KEY }}
+      OVH_KEY_B64: ${{ secrets.OVH_DEPLOY_SSH_KEY_B64 }}
       EXPECTED_FINGERPRINT: SHA256:9uEzPHDpmC7ToX1eNxt/4YOwkCswzsw/Dxhrj12Fj6U
     steps:
       - name: Verify VPS identity and SSH login
@@ -26,8 +26,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ -z "$OVH_HOST" || -z "$OVH_KEY" ]]; then
-            echo "::error::Missing OVH_VPS_HOST or OVH_DEPLOY_SSH_KEY in the ovh-staging environment."
+          if [[ -z "$OVH_HOST" || -z "$OVH_KEY_B64" ]]; then
+            echo "::error::Missing OVH_VPS_HOST or OVH_DEPLOY_SSH_KEY_B64 in the ovh-staging environment."
             exit 1
           fi
           if [[ ! "$OVH_HOST" =~ ^[0-9.]+$ ]]; then
@@ -39,10 +39,13 @@ jobs:
           known_hosts="$(mktemp "$RUNNER_TEMP/ovh-known-hosts.XXXXXXXX")"
           trap 'rm -f "$key_file" "$known_hosts"' EXIT
           chmod 600 "$key_file" "$known_hosts"
-          # Windows clipboard copies may use CRLF; OpenSSH expects LF for PEM key lines.
-          printf '%s\n' "$OVH_KEY" | tr -d '\r' > "$key_file"
+          # The Base64 secret is a single line and preserves the original key bytes.
+          if ! printf '%s' "$OVH_KEY_B64" | base64 --decode > "$key_file"; then
+            echo "::error::OVH_DEPLOY_SSH_KEY_B64 is not valid Base64."
+            exit 1
+          fi
           if ! ssh-keygen -y -P '' -f "$key_file" >/dev/null 2>&1; then
-            echo "::error::The SSH private key secret is not a valid unencrypted private key. Re-copy the entire key, including BEGIN/END lines."
+            echo "::error::Decoded SSH key is invalid or passphrase-protected."
             exit 1
           fi
 

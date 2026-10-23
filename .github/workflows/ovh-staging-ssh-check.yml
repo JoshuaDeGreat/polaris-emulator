@@ -39,7 +39,12 @@ jobs:
           known_hosts="$(mktemp "$RUNNER_TEMP/ovh-known-hosts.XXXXXXXX")"
           trap 'rm -f "$key_file" "$known_hosts"' EXIT
           chmod 600 "$key_file" "$known_hosts"
-          printf '%s\n' "$OVH_KEY" > "$key_file"
+          # Windows clipboard copies may use CRLF; OpenSSH expects LF for PEM key lines.
+          printf '%s\n' "$OVH_KEY" | tr -d '\r' > "$key_file"
+          if ! ssh-keygen -y -P '' -f "$key_file" >/dev/null 2>&1; then
+            echo "::error::The SSH private key secret is not a valid unencrypted private key. Re-copy the entire key, including BEGIN/END lines."
+            exit 1
+          fi
 
           ssh-keyscan -T 10 -t ed25519 "$OVH_HOST" 2>/dev/null > "$known_hosts"
           if [[ "$(wc -l < "$known_hosts")" -ne 1 ]]; then

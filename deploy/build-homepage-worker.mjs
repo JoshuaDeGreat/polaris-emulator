@@ -1,0 +1,17 @@
+import {readFile,writeFile} from 'node:fs/promises';
+const base=new URL('./',import.meta.url);
+let source=await readFile(new URL('homepage-shell.mjs',base),'utf8');
+const routes=await readFile(new URL('staff-routes.mjs',base),'utf8');
+const page=await readFile(new URL('../Emulator/src/main/resources/community-staff.html',base),'utf8');
+const start=source.indexOf('const FILES = ')+14,end=source.indexOf(';\n// FILES',start);
+if(start<14||end<0)throw Error('Homepage source format changed');
+const files=JSON.parse(source.slice(start,end));
+files['/index.html'].body=files['/index.html'].body.replace('href="https://polaris-polaris-hotel.up.railway.app/community/staff" hidden>Staff news desk','href="/staff">Staff area');
+files['/config.js'].body=files['/config.js'].body.replace('staffReady: false','staffReady: true').replace("staffUrl: 'https://polaris-polaris-hotel.up.railway.app/community/staff'","staffUrl: 'https://heavenhotel.uk/staff'");
+files['/robots.txt'].body=files['/robots.txt'].body.replace('Allow: /','Allow: /\nDisallow: /staff\nDisallow: /api/community/staff/');
+source=source.slice(0,start)+JSON.stringify(files)+source.slice(end);
+source=source.replace('export default {',routes.replace('export async function staffRoute','async function staffRoute')+'\nconst STAFF_PAGE='+JSON.stringify(page)+';\nexport default {');
+const hook="  if(request.method!=='GET'&&request.method!=='HEAD')";
+if(!source.includes(hook))throw Error('Homepage route hook changed');
+source=source.replace(hook,'  const staffResponse=await staffRoute(request,STAFF_PAGE);if(staffResponse)return staffResponse;\n'+hook);
+await writeFile(new URL('heaven-homepage-worker.mjs',base),source);

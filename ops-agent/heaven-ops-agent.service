@@ -1,0 +1,24 @@
+[Unit]
+Description=Heaven Hotel restricted operations agent
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=heaven-ops
+Group=heaven-ops
+EnvironmentFile=/etc/heaven-ops/agent.env
+ExecStart=/usr/bin/python3 /opt/heaven-ops/agent.py
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/heaven-ops
+RestrictAddressFamilies=AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

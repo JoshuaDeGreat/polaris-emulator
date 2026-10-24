@@ -7,10 +7,13 @@ import com.google.gson.JsonObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -20,22 +23,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AuthHttpUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthHttpUtil.class);
 
     static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,32}$");
-    static final Pattern EMAIL_RE    = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
-    static final Pattern FIGURE_RE   = Pattern.compile("^[A-Za-z0-9.\\-]{1,200}$");
+    static final Pattern EMAIL_RE = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    static final Pattern FIGURE_RE = Pattern.compile("^[A-Za-z0-9.\\-]{1,200}$");
 
     static final SecureRandom RNG = new SecureRandom();
     static final int MAX_BODY_BYTES = 8 * 1024;
 
     private static final long PERMANENT_BAN_THRESHOLD_SECONDS = 30L * 365L * 24L * 60L * 60L;
 
-    private AuthHttpUtil() {
-    }
+    private AuthHttpUtil() {}
 
     static String readString(JsonObject obj, String key) {
         if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return "";
@@ -73,12 +77,13 @@ public final class AuthHttpUtil {
         return obj;
     }
 
-    static void sendJson(ChannelHandlerContext ctx, FullHttpRequest req,
-                         HttpResponseStatus status, JsonObject body) {
+    static void sendJson(ChannelHandlerContext ctx, FullHttpRequest req, HttpResponseStatus status, JsonObject body) {
         byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
-        FullHttpResponse response = new DefaultFullHttpResponse(
-                HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(bytes));
+        FullHttpResponse response =
+                new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(bytes));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "no-store");
+        response.headers().set("Referrer-Policy", "no-referrer");
         response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
         applyCors(req, response);
         boolean keepAlive = isKeepAlive(req);
@@ -88,8 +93,7 @@ public final class AuthHttpUtil {
     }
 
     static void sendCors(ChannelHandlerContext ctx, FullHttpRequest req) {
-        FullHttpResponse response = new DefaultFullHttpResponse(
-                HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
         applyCors(req, response);
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
@@ -107,8 +111,10 @@ public final class AuthHttpUtil {
         if (requestedHeaders != null && !requestedHeaders.isEmpty()) {
             response.headers().set("Access-Control-Allow-Headers", requestedHeaders);
         } else {
-            response.headers().set("Access-Control-Allow-Headers",
-                    "Authorization, Content-Type, X-Requested-With, X-Nitro-Key, X-Nitro-Api");
+            response.headers()
+                    .set(
+                            "Access-Control-Allow-Headers",
+                            "Authorization, Content-Type, X-Requested-With, X-Nitro-Key, X-Nitro-Api");
         }
 
         response.headers().set("Vary", "Origin, Access-Control-Request-Headers, Access-Control-Request-Method");
@@ -122,9 +128,7 @@ public final class AuthHttpUtil {
     }
 
     static String resolveClientIp(ChannelHandlerContext ctx, FullHttpRequest req) {
-        String ipHeader = Emulator.getConfig() != null
-                ? Emulator.getConfig().getValue("ws.ip.header", "")
-                : "";
+        String ipHeader = Emulator.getConfig() != null ? Emulator.getConfig().getValue("ws.ip.header", "") : "";
         // Only trust a client-supplied forwarded-IP header when the DIRECT peer
         // is a trusted reverse proxy; otherwise an attacker hitting the port
         // directly could spoof it to evade per-IP rate limiting and IP bans.
@@ -154,11 +158,14 @@ public final class AuthHttpUtil {
         if (isTrustedProxy(ctx)) return true;
 
         String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
-                ? a.getAddress().getHostAddress() : null;
+                ? a.getAddress().getHostAddress()
+                : null;
         if (peerIp != null && WARNED_UNTRUSTED_PEERS.size() < MAX_WARNED_PEERS && WARNED_UNTRUSTED_PEERS.add(peerIp)) {
-            LOGGER.warn("Ignoring forwarded-IP header '{}' from untrusted peer {} — if this is your reverse proxy, "
+            LOGGER.warn(
+                    "Ignoring forwarded-IP header '{}' from untrusted peer {} — if this is your reverse proxy, "
                             + "add its IP to the ws.ip.header.trusted setting (comma-separated; a trailing '.' or ':' makes it a prefix range).",
-                    headerName, peerIp);
+                    headerName,
+                    peerIp);
         }
         return false;
     }
@@ -178,15 +185,14 @@ public final class AuthHttpUtil {
      */
     public static boolean isTrustedProxy(ChannelHandlerContext ctx) {
         String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
-                ? a.getAddress().getHostAddress() : null;
+                ? a.getAddress().getHostAddress()
+                : null;
         if (peerIp == null || peerIp.isEmpty()) return false;
         if (peerIp.equals("127.0.0.1") || peerIp.equals("::1") || peerIp.equals("0:0:0:0:0:0:0:1")) {
             return true;
         }
         if (CloudflareIpRanges.isCloudflareEdge(peerIp)) return true;
-        String trusted = Emulator.getConfig() != null
-                ? Emulator.getConfig().getValue("ws.ip.header.trusted", "")
-                : "";
+        String trusted = Emulator.getConfig() != null ? Emulator.getConfig().getValue("ws.ip.header.trusted", "") : "";
         if (trusted.isEmpty()) return false;
         byte[] peerAddress = null; // lazily parsed, only needed for CIDR entries
         for (String entry : trusted.split(",")) {
@@ -244,10 +250,9 @@ public final class AuthHttpUtil {
     }
 
     static BanInfo lookupAccountBan(Connection conn, int userId) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT ban_expire, ban_reason, type FROM bans " +
-                        "WHERE user_id = ? AND ban_expire >= ? AND (type = 'account' OR type = 'super') " +
-                        "ORDER BY ban_expire DESC LIMIT 1")) {
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT ban_expire, ban_reason, type FROM bans "
+                + "WHERE user_id = ? AND ban_expire >= ? AND (type = 'account' OR type = 'super') "
+                + "ORDER BY ban_expire DESC LIMIT 1")) {
             stmt.setInt(1, userId);
             stmt.setInt(2, Emulator.getIntUnixTimestamp());
             try (ResultSet rs = stmt.executeQuery()) {
@@ -260,10 +265,9 @@ public final class AuthHttpUtil {
     }
 
     static BanInfo lookupIpBan(Connection conn, String ip) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT ban_expire, ban_reason, type FROM bans " +
-                        "WHERE ip = ? AND ban_expire >= ? AND (type = 'ip' OR type = 'super') " +
-                        "ORDER BY ban_expire DESC LIMIT 1")) {
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT ban_expire, ban_reason, type FROM bans "
+                + "WHERE ip = ? AND ban_expire >= ? AND (type = 'ip' OR type = 'super') "
+                + "ORDER BY ban_expire DESC LIMIT 1")) {
             stmt.setString(1, ip);
             stmt.setInt(2, Emulator.getIntUnixTimestamp());
             try (ResultSet rs = stmt.executeQuery()) {
@@ -277,9 +281,8 @@ public final class AuthHttpUtil {
 
     static JsonObject bannedPayload(BanInfo ban) {
         boolean permanent = ban.isPermanent();
-        String message = permanent
-                ? "Your account has been permanently banned."
-                : "Your account is temporarily banned.";
+        String message =
+                permanent ? "Your account has been permanently banned." : "Your account is temporarily banned.";
 
         JsonObject details = new JsonObject();
         details.addProperty("type", ban.type);

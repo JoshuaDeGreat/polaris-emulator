@@ -75,9 +75,13 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         return configured > 0 ? configured : fallback;
     }
 
+    static final String WEBSITE_LOGIN_PATH = "/api/auth/website-login";
     static final String LOGIN_PATH = "/api/auth/login";
     static final String REGISTER_PATH = "/api/auth/register";
     static final String FORGOT_PATH = "/api/auth/forgot-password";
+    static final String RESET_PATH = "/api/auth/reset-password";
+    static final String VERIFY_EMAIL_PATH = "/api/auth/verify-email";
+    static final String REQUEST_EMAIL_VERIFICATION_PATH = "/api/auth/request-email-verification";
     static final String LOGOUT_PATH = "/api/auth/logout";
     static final String CHECK_EMAIL_PATH = "/api/auth/check-email";
     static final String CHECK_USERNAME_PATH = "/api/auth/check-username";
@@ -135,8 +139,13 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private static boolean isOurRoute(String path) {
         return CommunityEndpoints.isRoute(path)
                 || path.equals(LOGIN_PATH)
+                || path.equals(WEBSITE_LOGIN_PATH)
+                || WebsiteAccountEndpoints.isRoute(path)
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
+                || path.equals(RESET_PATH)
+                || path.equals(VERIFY_EMAIL_PATH)
+                || path.equals(REQUEST_EMAIL_VERIFICATION_PATH)
                 || path.equals(LOGOUT_PATH)
                 || path.equals(CHECK_EMAIL_PATH)
                 || path.equals(CHECK_USERNAME_PATH)
@@ -154,6 +163,9 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void handle(ChannelHandlerContext ctx, FullHttpRequest req, String path) {
+        if (WebsiteAccountEndpoints.isRoute(path)) {
+            WebsiteAccountEndpoints.handle(ctx, req, path); return;
+        }
         if (CommunityEndpoints.isRoute(path)) {
             CommunityEndpoints.handle(ctx, req, path);
             return;
@@ -256,6 +268,26 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (path.equals(VERIFY_EMAIL_PATH)) {
+            EmailVerificationEndpoints.handleConfirm(ctx, req, body, ip);
+            return;
+        }
+        if (path.equals(REQUEST_EMAIL_VERIFICATION_PATH)) {
+            EmailVerificationEndpoints.handleRequest(ctx, req, ip);
+            return;
+        }
+        if (path.equals(RESET_PATH)) {
+            if (!AuthRateLimiter.tryProbe(ip)) {
+                sendJson(
+                        ctx,
+                        req,
+                        HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many requests. Try again later."));
+                return;
+            }
+            PasswordResetEndpoints.handleReset(ctx, req, body, ip);
+            return;
+        }
         if (path.equals(LOGOUT_PATH)) {
             SessionEndpoints.handleLogout(ctx, req, body);
             return;
@@ -293,15 +325,28 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (path.equals(FORGOT_PATH) && !AuthRateLimiter.tryProbe(ip)) {
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.TOO_MANY_REQUESTS,
+                    errorPayload("Too many requests. Try again later."));
+            return;
+        }
+
         String turnstileToken = readString(body, "turnstileToken");
         if (!TurnstileVerifier.verify(turnstileToken, ip)) {
             AuthRateLimiter.recordFailure(ip);
-            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN,
+            sendJson(
+                    ctx,
+                    req,
+                    HttpResponseStatus.FORBIDDEN,
                     errorPayload("Security check failed. Please wait a moment, then refresh and try again."));
             return;
         }
 
         switch (path) {
+            case WEBSITE_LOGIN_PATH -> SessionEndpoints.handleWebsiteLogin(ctx, req, body, ip);
             case LOGIN_PATH -> SessionEndpoints.handleLogin(ctx, req, body, ip);
             case REGISTER_PATH -> SessionEndpoints.handleRegister(ctx, req, body, ip);
             case FORGOT_PATH -> SessionEndpoints.handleForgot(ctx, req, body, ip);

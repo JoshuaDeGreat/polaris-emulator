@@ -61,6 +61,15 @@ class MigrationRunnerIT {
 
             // Base table and representative Polaris-only tables both exist.
             assertTrue(tableExists(ds, "users"), "base table users must exist");
+            assertTrue(columnExists(ds, "users", "email_verified_at"), "account email verification state must exist");
+            assertTrue(tableExists(ds, "email_verification_tokens"), "mailbox verification tokens must exist");
+            assertTrue(tableExists(ds, "password_recovery_limits"), "per-account recovery cooldown must exist");
+            assertEquals(
+                    "InnoDB",
+                    tableEngine(ds, "email_verification_tokens"),
+                    "email verification tokens must be transactional");
+            assertEquals(
+                    "InnoDB", tableEngine(ds, "password_recovery_limits"), "recovery cooldowns must be transactional");
             assertTrue(tableExists(ds, "permission_ranks"), "Polaris table permission_ranks must exist");
             assertTrue(tableExists(ds, "wired_emulator_settings"), "Polaris table wired_emulator_settings must exist");
             assertTrue(tableExists(ds, "habbo_mentions"), "current mentions schema must exist");

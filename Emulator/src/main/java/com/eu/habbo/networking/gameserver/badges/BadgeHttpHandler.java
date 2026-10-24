@@ -77,6 +77,17 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        // Public custom badge creation has been retired from Heaven Hotel.
+        // Keep GET endpoints available so previously earned/custom badges can
+        // still render in player inventories and their labels remain readable.
+        // Reject direct API writes as well as requests from older cached clients.
+        if (req.method() == HttpMethod.POST || req.method() == HttpMethod.PUT
+                || req.method() == HttpMethod.DELETE || req.method() == HttpMethod.PATCH) {
+            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN,
+                    error("Custom badge creation and editing are no longer available."));
+            return;
+        }
+
         int userId = authenticate(req);
         if (userId == 0) {
             sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, error("Authentication required."));

@@ -259,6 +259,14 @@ final class SessionEndpoints {
     }
 
     static void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        handleLogin(ctx, req, body, ip, false);
+    }
+
+    static void handleWebsiteLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        handleLogin(ctx, req, body, ip, true);
+    }
+
+    private static void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip, boolean website) {
         String username = readString(body, "username").trim();
         String password = readString(body, "password");
         boolean rememberMe = readBoolean(body, "remember", false) || readBoolean(body, "rememberMe", false);
@@ -331,6 +339,16 @@ final class SessionEndpoints {
 
                     if (!passesMaintenanceGate(ctx, req, rs.getInt("rank"), "auth/login", userId)) {
                         AuthRateLimiter.recordSuccess(ip);
+                        return;
+                    }
+
+                    if (website) {
+                        AuthRateLimiter.recordSuccess(ip);
+                        WebsiteSessionService.Issued access = WebsiteSessionService.issue(conn, userId, stored);
+                        JsonObject response = new JsonObject();
+                        response.addProperty("accessToken", access.token());
+                        response.addProperty("accessTokenExpiresAt", access.expiresAt());
+                        AuthHttpUtil.sendJson(ctx, req, HttpResponseStatus.OK, response);
                         return;
                     }
 
@@ -437,9 +455,13 @@ final class SessionEndpoints {
                         boolean userTaken = existingUser != null && existingUser.equalsIgnoreCase(username);
                         boolean mailTaken = existingMail != null && existingMail.equalsIgnoreCase(email);
                         String message;
-                        if (userTaken && mailTaken) message = "That Habbo name and email are already in use.";
+                        if (userTaken && mailTaken)
+                            message =
+                                    "These registration details cannot be used. Please choose another username or email.";
                         else if (userTaken) message = "That Habbo name is already in use.";
-                        else message = "That email address is already in use.";
+                        else
+                            message =
+                                    "These registration details cannot be used. Please choose another email or sign in.";
                         sendJson(ctx, req, HttpResponseStatus.CONFLICT, errorPayload(message));
                         return;
                     }
@@ -507,6 +529,9 @@ final class SessionEndpoints {
 
             AvailabilityCache.invalidateEmail(email);
             AvailabilityCache.invalidateUsername(username);
+            if (newUserId > 0 && !EmailVerificationEndpoints.request(newUserId, email)) {
+                LOGGER.warn("[auth/register] email verification could not be queued for user id={}", newUserId);
+            }
 
             JsonObject ok = new JsonObject();
             ok.addProperty(
@@ -534,44 +559,100 @@ final class SessionEndpoints {
                 "Email sent! If an account matches that address you'll find a reset link in your inbox shortly (check spam if it doesn't show up within a minute).");
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement stmt =
-                        conn.prepareStatement("SELECT id, username FROM users WHERE mail = ? LIMIT 1")) {
+                PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT id, username FROM users WHERE mail = ? AND email_verified_at IS NOT NULL LIMIT 1")) {
             stmt.setString(1, email);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int userId = rs.getInt("id");
                     String username = rs.getString("username");
+                    // A database email field alone is not evidence of mailbox ownership.
+                    // Enforce a per-account cooldown atomically in the database.
+                    try (PreparedStatement insertLimit = conn.prepareStatement(
+                            "INSERT IGNORE INTO password_recovery_limits (user_id, next_allowed_at) "
+                                    + "VALUES (?, '1970-01-01 00:00:01')")) {
+                        insertLimit.setInt(1, userId);
+                        insertLimit.executeUpdate();
+                    }
+                    try (PreparedStatement claim = conn.prepareStatement(
+                            "UPDATE password_recovery_limits SET next_allowed_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE) "
+                                    + "WHERE user_id = ? AND next_allowed_at <= NOW()")) {
+                        claim.setInt(1, userId);
+                        if (claim.executeUpdate() != 1) {
+                            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                            return;
+                        }
+                    }
                     String token = mintResetToken();
-                    long expiresAt = Instant.now().getEpochSecond() + 60L * 60L; // 1h
+                    long expiresAt = Instant.now().getEpochSecond() + 20L * 60L; // 20 minutes
 
                     try (PreparedStatement ins = conn.prepareStatement(
                             "INSERT INTO password_resets (user_id, token, expires_at, created_ip) "
                                     + "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
                                     + "token = VALUES(token), expires_at = VALUES(expires_at), created_ip = VALUES(created_ip)")) {
                         ins.setInt(1, userId);
-                        ins.setString(2, token);
+                        ins.setString(2, PasswordResetEndpoints.hashToken(token));
                         ins.setTimestamp(3, Timestamp.from(Instant.ofEpochSecond(expiresAt)));
                         ins.setString(4, ip == null ? "" : ip);
                         ins.executeUpdate();
                     }
 
-                    String resetUrlBase =
-                            Emulator.getConfig().getValue("password.reset.url", "http://localhost/reset-password");
-                    String fullUrl = resetUrlBase + (resetUrlBase.contains("?") ? "&" : "?") + "token=" + token;
-                    String subject = "Reset your Habbo password";
+                    String resetUrlBase = Emulator.getConfig()
+                            .getValue("password.reset.url", "https://heavenhotel.uk/client/?recovery=1");
+                    String fullUrl = resetUrlBase + "#token=" + token;
+                    String subject = "Reset your Heaven Hotel password";
                     String message = "Hi " + username + ",\n\n"
-                            + "Someone (hopefully you) requested a password reset for your Habbo account.\n"
-                            + "Click the link below within the next hour to choose a new password:\n\n"
+                            + "Someone (hopefully you) requested a password reset for your Heaven Hotel account.\n"
+                            + "Click the link below within 20 minutes to choose a new password:\n\n"
                             + fullUrl
                             + "\n\n" + "If you didn't request this you can safely ignore this email.";
 
-                    if (!submitResetEmail(() -> SmtpMailService.send(email, subject, message))) {
-                        LOGGER.warn("Reset email queue is full; " + "dropping delivery task");
+                    if (!submitResetEmail(() -> {
+                        if (!SmtpMailService.send(email, subject, message, AccountEmailTemplate.passwordReset(username, fullUrl))) {
+                            LOGGER.warn("[auth/forgot-password] recovery email delivery failed for user id={}", userId);
+                            // A failed send must not strand the user with an unusable token/cooldown.
+                            try (Connection cleanup =
+                                    Emulator.getDatabase().getDataSource().getConnection()) {
+                                try (PreparedStatement delete = cleanup.prepareStatement(
+                                        "DELETE FROM password_resets WHERE user_id = ? AND token = ?")) {
+                                    delete.setInt(1, userId);
+                                    delete.setString(2, PasswordResetEndpoints.hashToken(token));
+                                    if (delete.executeUpdate() == 1) {
+                                        try (PreparedStatement release = cleanup.prepareStatement(
+                                                "UPDATE password_recovery_limits SET next_allowed_at = NOW() WHERE user_id = ?")) {
+                                            release.setInt(1, userId);
+                                            release.executeUpdate();
+                                        }
+                                    }
+                                }
+                            } catch (Exception cleanupError) {
+                                LOGGER.warn("[auth/forgot-password] failed to clear undelivered token", cleanupError);
+                            }
+                        }
+                    })) {
+                        LOGGER.warn("[auth/forgot-password] recovery queue is full");
+                        try (Connection cleanup =
+                                Emulator.getDatabase().getDataSource().getConnection()) {
+                            try (PreparedStatement delete = cleanup.prepareStatement(
+                                    "DELETE FROM password_resets WHERE user_id = ? AND token = ?")) {
+                                delete.setInt(1, userId);
+                                delete.setString(2, PasswordResetEndpoints.hashToken(token));
+                                if (delete.executeUpdate() == 1) {
+                                    try (PreparedStatement release = cleanup.prepareStatement(
+                                            "UPDATE password_recovery_limits SET next_allowed_at = NOW() WHERE user_id = ?")) {
+                                        release.setInt(1, userId);
+                                        release.executeUpdate();
+                                    }
+                                }
+                            }
+                        } catch (Exception cleanupError) {
+                            LOGGER.warn("[auth/forgot-password] queue-full cleanup failed", cleanupError);
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("Forgot-password query failed for email=" + email, e);
+            LOGGER.error("Forgot-password query failed", e);
         }
 
         sendJson(ctx, req, HttpResponseStatus.OK, ok);
